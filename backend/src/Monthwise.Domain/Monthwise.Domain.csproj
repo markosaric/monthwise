@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Domain has no dependencies: entities, value objects and pure calculation logic only. -->
+
+</Project>
