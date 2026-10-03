@@ -1,0 +1,12 @@
+# CLAUDE.md
+
+Monthwise: home finance app (React + TypeScript front-end, .NET 10 Web API back-end, PostgreSQL).
+
+- Architecture, domain and data model: `docs/INIT.md`
+- Working practices: `CONTRIBUTING.md`. Follow it strictly, in particular:
+  - every feature starts with a plan in `docs/plans/<branch-name>.md` (from `docs/plans/_TEMPLATE.md`), committed first on the branch
+  - one feature per branch (`feat/...`, `fix/...`), branched from the latest `main`
+  - update branches with `git rebase origin/main`, never merge `main` into a branch
+  - push rebased branches with `git push --force-with-lease`; never force-push `main`
+  - every commit message follows Conventional Commits 1.0.0 (`type(scope): description`)
+- Money is stored as integer cents (EUR); never use floating point for amounts.

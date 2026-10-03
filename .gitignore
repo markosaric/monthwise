@@ -1,0 +1,7 @@
+node_modules/
+.next/
+.env*
+!.env.example
+*.numbers
+data/private/
+.DS_Store
