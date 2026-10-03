@@ -1,7 +1,7 @@
 # Plan: Initial architecture setup
 
 - **Branch:** `feat/init_architecture_setup`
-- **Status:** Draft
+- **Status:** Done
 - **Date:** 2026-10-03
 
 ## Goal
@@ -132,6 +132,23 @@ later needs no CORS setup. Production hosting is decided in a later plan.
   stop PostgreSQL and see the status turn unhealthy.
 
 ## Open questions
-- PostgreSQL in API integration tests: CI service container (planned default) or Testcontainers (self-contained, but needs Docker locally)?
-- Node.js version to pin for the front-end (planned default: current LTS, Node 24, via `.nvmrc`).
-- Should the first CI also run on a schedule or only on push and pull request (planned default: push and pull request only)?
+- Resolved with the planned defaults: CI PostgreSQL service container for API tests, Node 24 in
+  `.nvmrc`, CI on push to `main` and on pull requests only.
+
+## Changes during implementation
+- **Linting:** the current Vite template ships **oxlint** instead of ESLint; kept oxlint
+  (`--deny-warnings`) together with Prettier.
+- **TypeScript 5.9** instead of the template's 6.0, because `openapi-typescript` does not support 6.x yet.
+- **OpenAPI document** is written to `backend/openapi/monthwise.json` on every build and committed; the
+  front-end generates its types from that file, and CI fails if either file is stale (ADR 0003).
+- **Tests:** xUnit v3 on Microsoft.Testing.Platform (opted in via `global.json`). The layer rules test is
+  a small reflection test instead of NetArchTest. The healthy-database API test runs only when
+  `MONTHWISE_TEST_DB` is set (CI); an unreachable-database test runs everywhere.
+- **Health UI:** the dashboard shows the API as Reachable/Unreachable and the database status
+  separately, so a database outage is not reported as an API outage.
+- **DI:** Domain has no `AddDomain()` (it has no services); Application and Infrastructure expose
+  `AddApplication()` and `AddInfrastructure()`. The connection string is resolved lazily so build-time
+  OpenAPI generation runs without a database.
+- **YearMonth** is stored as a `date` (first day of the month) via an EF Core convention.
+- **Local secrets:** `appsettings.Development.json` has no database password; it goes in user secrets
+  (see README).
