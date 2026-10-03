@@ -19,7 +19,7 @@ public static class DependencyInjection
         {
             var connectionString = configuration.GetConnectionString(ConnectionStringName)
                 ?? throw new InvalidOperationException(
-                    $"Connection string '{ConnectionStringName}' is not configured. See README.md, 'Getting started'.");
+                    $"Connection string '{ConnectionStringName}' is not configured. See README.md, 'Initial development setup'.");
             ConfigureDbContext(options, connectionString);
         });
 
