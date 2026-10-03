@@ -13,11 +13,15 @@ public static class DependencyInjection
     /// <summary>Registers EF Core with PostgreSQL and the database health check.</summary>
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
-        var connectionString = configuration.GetConnectionString(ConnectionStringName)
-            ?? throw new InvalidOperationException(
-                $"Connection string '{ConnectionStringName}' is not configured. See README.md, 'Getting started'.");
-
-        services.AddDbContext<MonthwiseDbContext>(options => ConfigureDbContext(options, connectionString));
+        // Resolved when the DbContext is first used, so tooling such as OpenAPI document
+        // generation can start the app without a database.
+        services.AddDbContext<MonthwiseDbContext>(options =>
+        {
+            var connectionString = configuration.GetConnectionString(ConnectionStringName)
+                ?? throw new InvalidOperationException(
+                    $"Connection string '{ConnectionStringName}' is not configured. See README.md, 'Getting started'.");
+            ConfigureDbContext(options, connectionString);
+        });
 
         services.AddHealthChecks()
             .AddDbContextCheck<MonthwiseDbContext>(DatabaseHealthCheckName);
