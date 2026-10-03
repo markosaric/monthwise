@@ -1,0 +1,11 @@
+{
+  "dotnet.defaultSolution": "backend/Monthwise.sln",
+  "editor.formatOnSave": true,
+  "[typescript][typescriptreact][json][jsonc][css]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[csharp]": {
+    "editor.defaultFormatter": "ms-dotnettools.csharp"
+  },
+  "typescript.tsdk": "frontend/node_modules/typescript/lib"
+}

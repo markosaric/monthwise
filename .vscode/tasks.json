@@ -1,0 +1,29 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "build api",
+      "type": "process",
+      "command": "dotnet",
+      "args": ["build", "${workspaceFolder}/backend/src/Monthwise.Api/Monthwise.Api.csproj"],
+      "problemMatcher": "$msCompile",
+      "group": "build"
+    },
+    {
+      "label": "frontend dev server",
+      "type": "npm",
+      "script": "dev",
+      "path": "frontend",
+      "isBackground": true,
+      "problemMatcher": {
+        "owner": "vite",
+        "pattern": { "regexp": "^__never__$" },
+        "background": {
+          "activesBegin": "VITE",
+          "beginsPattern": "VITE",
+          "endsPattern": "Local:"
+        }
+      }
+    }
+  ]
+}
