@@ -1,0 +1,71 @@
+{
+  "openapi": "3.1.1",
+  "info": {
+    "title": "Monthwise.Api | v1",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/api/health": {
+      "get": {
+        "tags": [
+          "Health"
+        ],
+        "summary": "Reports whether the API and its database are reachable.",
+        "operationId": "GetHealth",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "HealthResponse": {
+        "required": [
+          "status",
+          "database"
+        ],
+        "type": "object",
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/HealthStatusValue"
+          },
+          "database": {
+            "$ref": "#/components/schemas/HealthStatusValue"
+          }
+        }
+      },
+      "HealthStatusValue": {
+        "enum": [
+          "Healthy",
+          "Degraded",
+          "Unhealthy"
+        ]
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Health"
+    }
+  ]
+}

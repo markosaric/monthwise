@@ -13,6 +13,21 @@ Every feature (and every non-trivial fix or refactor) starts with a written plan
 - If the approach changes during implementation, update the plan in the same branch.
 - When the feature is done, set the plan's status to `Done`; plans stay in the repo as history.
 
+## Secrets and sensitive data
+
+Never commit secrets or store them in code. This covers passwords, connection strings with
+passwords, API keys, tokens, certificates and private keys, as well as personal financial data
+(real bank statements, account or card numbers, exported budget files).
+
+- Local settings go in `.env` (git-ignored; only `.env.example` with placeholder values is committed)
+  and in .NET user secrets (`dotnet user-secrets`), never in `appsettings*.json`.
+- CI secrets go in GitHub Actions secrets; values used only by throwaway CI containers may stay in the
+  workflow.
+- Test data uses made-up values only. Real data stays in git-ignored folders such as `data/private/`.
+- Before committing, check `git diff --staged` for anything sensitive.
+- If a secret is committed by mistake, treat it as leaked: rotate it first, then remove it from
+  history before pushing. Rewriting history does not undo a push.
+
 ## Working with Git
 
 ### Branches

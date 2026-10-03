@@ -1,0 +1,80 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Back-end
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: monthwise_test
+          POSTGRES_USER: monthwise
+          POSTGRES_PASSWORD: monthwise
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U monthwise -d monthwise_test"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    env:
+      DOTNET_NOLOGO: true
+      MONTHWISE_TEST_DB: Host=localhost;Port=5432;Database=monthwise_test;Username=monthwise;Password=monthwise
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: backend/global.json
+      - name: Restore
+        run: dotnet restore
+      - name: Check formatting
+        run: dotnet format --verify-no-changes --no-restore
+      - name: Build
+        run: dotnet build --no-restore --configuration Release
+      - name: Check OpenAPI document is up to date
+        run: git diff --exit-code -- openapi/
+      - name: Test
+        run: dotnet test --no-build --configuration Release
+
+  frontend:
+    name: Front-end
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install
+        run: npm ci
+      - name: Check API client is up to date
+        run: |
+          npm run api:generate
+          git diff --exit-code -- src/api/schema.d.ts
+      - name: Lint
+        run: npm run lint
+      - name: Check formatting
+        run: npm run format:check
+      - name: Type-check
+        run: npm run typecheck
+      - name: Test
+        run: npm test
+      - name: Build
+        run: npm run build
