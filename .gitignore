@@ -1,7 +1,23 @@
+# Node / front-end
 node_modules/
+dist/
 .next/
+*.tsbuildinfo
+.vite/
+
+# .NET
+bin/
+obj/
+*.user
+.vs/
+TestResults/
+
+# Environment and private data
 .env*
 !.env.example
 *.numbers
 data/private/
+
+# OS / editors
 .DS_Store
+.idea/
