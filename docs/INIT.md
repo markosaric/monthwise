@@ -54,7 +54,15 @@ Amounts are stored as **integer cents** (`amount_cents`), currency EUR.
 
 ```
 household            id, name, currency
-account              id, household_id, name, type (current|fx|savings|card|loan), issuer
+account              id, household_id, name, type (current|fx|savings|loan), issuer
+card                 id, name, issuer_id, bank_id, card_number (encrypted)?, iban (encrypted)?,
+                     card_number_last4, iban_country, iban_last4, valid_from?, valid_through,
+                     type (Debit|Charge|Credit|Prepaid), is_primary, allows_installments (Debit only),
+                     debt_limit_cents?,
+                     blocked_on?, expired_on?, archived_on?, replaced_by_card_id?
+                     (payment cards and current accounts; see docs/feature-requirements/credit-card-settings.md)
+card_issuer          id, name, is_predefined   (Visa, Mastercard, … extendable by the user)
+bank                 id, name, is_predefined   (ZaBa, PBZ, … extendable by the user)
 period               id, household_id, year, month, opening_carryover_cents, closed_at
 category             id, household_id, direction (in|out), group, name
                      group ∈ salary | salary_addon | shared_contribution | other_in |
@@ -63,11 +71,11 @@ category             id, household_id, direction (in|out), group, name
 recurring_item       id, category_id, name, default_amount_cents, due_day, share_pct (e.g. 50), account_id, active
 transaction          id, period_id, category_id, recurring_item_id?, account_id?, description,
                      amount_cents, due_date?, paid_date?, received/paid flag, share_pct
-installment_plan     id, account_id (card), merchant, purchase_date, total_amount_cents,
+installment_plan     id, card_id, merchant, purchase_date, total_amount_cents,
                      installments_total, installment_amount_cents, first_period
                      (current installment and remaining amount are CALCULATED, not entered)
 loan                 id, account_id, name, principal_cents?, monthly_payment_cents, due_day, share_pct, end_date?
-card_statement       id, account_id, period_id, calculated_cents, actual_cents  (difference = actual - calculated)
+card_statement       id, card_id, period_id, calculated_cents, actual_cents  (difference = actual - calculated)
 balance_snapshot     id, account_id, date, balance_cents   (savings / account balances)
 user                 id, email, household_id, role
 ```

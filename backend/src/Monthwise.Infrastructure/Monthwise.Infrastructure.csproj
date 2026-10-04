@@ -16,4 +16,8 @@
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="Monthwise.Api.Tests" />
+  </ItemGroup>
+
 </Project>

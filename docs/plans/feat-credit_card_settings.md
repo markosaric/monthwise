@@ -1,7 +1,7 @@
 # Plan: Card and bank account settings
 
 - **Branch:** `feat/credit_card_settings`
-- **Status:** Draft
+- **Status:** Done
 - **Date:** 2026-10-04
 - **Requirements:** [credit-card-settings.md](../feature-requirements/credit-card-settings.md) (approved)
 
@@ -41,8 +41,9 @@ message) in a **Cards** widget on the Dashboard. Card numbers and IBANs are stor
 |---|---|
 | A8 | Types: `Debit`, `Charge`, `Credit`, `Prepaid`. |
 | A2, A3 | Issuers and banks are database tables seeded with the predefined entries; the user adds entries from the card form. |
-| A4, A5 | Full card number and full IBAN, both optional but at least one required, stored encrypted (see "Protecting card numbers and IBANs"). |
-| A6, A7, FR-11 | Validity is month/year (`YearMonth`). "Expiring soon": the last day of *Valid through* is within 2 months of today. |
+| A4, A5 | Full card number and full IBAN, both optional (a card can have neither), stored encrypted when given (see "Protecting card numbers and IBANs"). |
+| A6, A7, FR-11 | Validity is month/year (`YearMonth`). *Valid from* is optional: without it the card is never "not yet valid". "Expiring soon": the last day of *Valid through* is within 2 months of today. |
+| A11 | Debit cards have an "allows monthly installments" flag (default off). Credit and Charge cards always allow installments and Prepaid never does, so the flag is stored only as true for Debit and `AllowsInstallments` is derived for the other types. |
 | A10 | Debt limit is optional for every type, ≥ 0 when given. |
 | A1 | Custom names are unique, case-insensitive. |
 | FR-1, FR-5 | No delete; **Archive** instead, and it cannot be undone. The default list hides expired cards without ongoing transactions. |
@@ -63,13 +64,15 @@ message) in a **Cards** widget on the Dashboard. Card numbers and IBANs are stor
 - `CardIssuer` and `Bank` entities (Guid id, `Name`, `IsPredefined`).
 - `Card` entity (Guid v7 id). Fields:
   - `Name`, `IssuerId`, `BankId`, `CardNumber?`, `Iban?`;
-  - `ValidFrom` and `ValidThrough` (`YearMonth`), `Type`, `IsPrimary`, `DebtLimit` (`Money?`);
+  - `ValidFrom?` and `ValidThrough` (`YearMonth`), `Type`, `IsPrimary`, `DebtLimit` (`Money?`),
+    `AllowsInstallmentsFlag` (Debit only) and the derived `AllowsInstallments`;
   - `BlockedOn?`, `BlockReason?`, `ExpiredOn?` (manual expiry), `ExpiryReason?`;
   - `ArchivedOn?`, `ReplacedByCardId?`, `CreatedAt`, `UpdatedAt`.
 - Behaviour on the entity, so the rules live in one place and are unit-tested without a database:
-  - `Create(...)` and `Update(...)` validate the rules in section 3 of the requirements: at least
-    one number, validity order, debt limit ≥ 0, primary only for Debit. `Update` fails while
-    blocked, manually expired or archived.
+  - `Create(...)` and `Update(...)` validate the rules in section 3 of the requirements:
+    validity order (only when *Valid from* is given), debt limit ≥ 0, primary and the installments
+    flag only for Debit. Numbers are optional. `Update` fails while blocked, manually expired or
+    archived.
   - `Block(today, reason)`, `Unblock()`, `MarkExpired(today, reason, replacement?)` (final), and
     `Archive(today)`. Block, expire and archive clear `IsPrimary`.
   - `StatusOn(DateOnly today)` returns the status using the priority order of FR-11.
@@ -119,7 +122,8 @@ message) in a **Cards** widget on the Dashboard. Card numbers and IBANs are stor
   - `card`:
     - `issuer_id` and `bank_id` foreign keys;
     - encrypted `card_number` and `iban` (text), their `_hash` and masking columns;
-    - `valid_from` and `valid_through` as `date` (the existing `YearMonth` convention);
+    - `valid_from` (nullable) and `valid_through` as `date` (the existing `YearMonth` convention);
+    - `allows_installments`, a boolean for Debit cards (default false);
     - `type` as text, `is_primary`, `debt_limit_cents bigint null`;
     - block, expiry and archive dates and reasons;
     - `replaced_by_card_id`, a self-referencing foreign key.
@@ -127,10 +131,10 @@ message) in a **Cards** widget on the Dashboard. Card numbers and IBANs are stor
   - unique index on `lower(name)` (A1);
   - partial unique indexes on `card_number_hash` and `iban_hash` where `archived_on is null`;
   - check constraints:
-    - `card_number is not null or iban is not null`;
-    - `valid_through >= valid_from`;
+    - `valid_from is null or valid_through >= valid_from`;
     - `debt_limit_cents >= 0`;
-    - `not is_primary or type = 'Debit'`.
+    - `not is_primary or type = 'Debit'`;
+    - `not allows_installments or type = 'Debit'`.
 - Update `docs/INIT.md` section 3: replace `card` as a kind of `account` with the new `card`,
   `card_issuer` and `bank` tables, and point `installment_plan` and `card_statement` at `card_id`.
 
@@ -179,8 +183,8 @@ handler in `Monthwise.Application/Cards`, and requests are checked with FluentVa
   Settings and the Dashboard stay in sync. The reveal is a plain call, not a cached query.
 - Components in `src/components/cards/`:
   - `CardForm`: add/edit form. It shows field errors from the API `ValidationProblem`, and the same
-    rules (including Luhn and IBAN checks) run on the client. The primary switch is shown only for
-    Debit. On edit, the number fields are empty with a "leave empty to keep •••• 1234" hint.
+    rules (including Luhn and IBAN checks) run on the client. The primary switch and the
+    installments switch are shown only for Debit; *Valid from*, card number and IBAN are optional. On edit, the number fields are empty with a "leave empty to keep •••• 1234" hint.
   - `ListSelectWithAdd`: select with an "Add new…" option, used for issuer and bank.
   - `CardList`: Default, Expired and Archived filters, and the empty state with an
     **Add card** action (FR-1).
@@ -234,10 +238,12 @@ handler in `Monthwise.Application/Cards`, and requests are checked with FluentVa
 - Unit tests (Domain):
   - `CardNumber` and `Iban`: valid and invalid checksums, spaces, length limits, and a masked
     `ToString()`;
-  - the card rules: each invalid case from section 3 of the requirements;
+  - the card rules: each invalid case from section 3 of the requirements, and that a card can
+    have no numbers and no *Valid from*;
+  - installments: the flag is Debit only, and Credit and Charge always allow installments;
   - `StatusOn`:
     - the priority order;
-    - the first and last day of the validity period;
+    - the first and last day of the validity period, and a card without *Valid from*;
     - the 2-month expiring window;
     - a manual expiry before *Valid through*;
   - primary is cleared on block, expire and archive;
@@ -262,15 +268,16 @@ handler in `Monthwise.Application/Cards`, and requests are checked with FluentVa
 - Front-end (Vitest + Testing Library):
   - `parseEuroInput` and `cardNumbers.ts`;
   - `CardForm`:
-    - shows the primary switch only for Debit;
-    - requires one of the two numbers;
+    - shows the primary and installments switches only for Debit;
+    - accepts a card without numbers and without *Valid from*, and still checks a given number;
     - maps API field errors;
   - adding a new list entry from `ListSelectWithAdd`;
   - `RevealableNumber` hides the number again when unmounted;
   - both Dashboard empty states and the Settings empty state;
   - `CardStatusBadge` renders every status.
 - Manual checks:
-  - add one card of each type, with a card number, an IBAN, and both;
+  - add one card of each type, with a card number, an IBAN, both, and neither;
+  - tick and untick the installments check box on a Debit card;
   - try every validation error;
   - add a new bank;
   - reveal a number;
@@ -282,3 +289,35 @@ handler in `Monthwise.Application/Cards`, and requests are checked with FluentVa
 
 ## Open questions
 - None.
+
+## Changes during implementation
+- **Numbers as a separate entity:** the full numbers are `CardSensitiveData`, table-split from
+  `Card` (same `card` table). Lists and the Dashboard load only `Card`, so they never decrypt anything.
+  Edit and reveal load the numbers explicitly.
+- **Keys:** read directly from configuration (`SensitiveDataOptions.FromConfiguration`). The API
+  checks them on startup, except while the build generates the OpenAPI document. CI needs no keys:
+  the API tests use fixed made-up keys in `MonthwiseApiFactory`.
+- **API shapes:**
+  - the list filter is `?show=Default|Expired|Archived` and the reveal path is
+    `/numbers/CardNumber|Iban` (enum names);
+  - a replacement is created with `POST /api/cards?replaces={id}` instead of a `replacesCardId`
+    body field;
+  - JSON number handling is strict, so cents are plain numbers in the generated client.
+- **Editing numbers:** the edit form shows each stored number masked with Replace and Remove.
+  In the request, `null` keeps the stored value and an empty string removes it.
+- **Replacement prefill:** expiring removes the primary mark, so "Add a new replacement card"
+  passes `&primary=1` to keep it in the prefill.
+- **Front-end:**
+  - native `<select>` elements instead of the shadcn Select, so phones use their own picker and
+    tests can drive them;
+  - no `next-themes` (the toaster follows the system theme);
+  - jsdom polyfills for `matchMedia` and `ResizeObserver` in the test setup.
+- **Form logic** (schema, defaults, request mapping) lives in `cardFormModel.ts`, apart from the
+  component, for fast refresh. Card labels and messages are in `components/cards/texts.ts` (NFR-5).
+- `TimeProvider.System` is registered in `AddApplication`. Infrastructure exposes internals to
+  `Monthwise.Api.Tests` for the cipher tests.
+- **Requirement changes after review (before merge to `main`, so no appendix):** *Valid from*,
+  card number and IBAN became optional; Debit cards got an "allows monthly installments" check
+  box; the changing debt limit is only a remark in the requirements (section 8) and is not built.
+  Because the first `AddCards` migration was already applied to local databases, the changes are a
+  second migration, `CardOptionalFieldsAndInstallments`.

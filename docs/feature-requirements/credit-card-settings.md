@@ -34,17 +34,18 @@ reconciliation, debt overview, income accounts), which refer to them.
 | A1 | Custom name | Yes | Free name chosen by the user, e.g. "Family Visa". Shown everywhere the card is referenced. Unique among the user's cards, ignoring upper/lower case. Maximum 50 characters. |
 | A2 | Issuer | Yes | Chosen from a list. The list starts with Visa, Mastercard, Diners, Maestro, American Express, and the user can **add new issuers**, which are then available for every card. |
 | A3 | Owner (bank) | Yes | Chosen from a list. The list starts with ZaBa, PBZ, Erste, OTP, RBA, Addiko, and the user can **add new banks**, which are then available for every card. |
-| A4 | Card number | One of A4/A5 | The full card number as printed on the card (13 to 19 digits), checked for typing mistakes (checksum). Shown **masked** (`•••• 1234`) everywhere unless the user reveals it (FR-3). |
-| A5 | IBAN | One of A4/A5 | The bank account IBAN, e.g. `HR12 3456 7890 1234 5678 9`, checked for a valid format and checksum. Shown **masked** (country code and last 4 digits, `HR•• … 6789`) unless revealed. |
-| A6 | Valid from | Yes | Month and year as printed on the card (`MM/YYYY`). |
-| A7 | Valid through | Yes | Month and year as printed on the card (`MM/YYYY`). Same as or later than *Valid from*. The card is valid until the last day of that month. |
+| A4 | Card number | No | The full card number as printed on the card (13 to 19 digits), checked for typing mistakes (checksum). Shown **masked** (`•••• 1234`) everywhere unless the user reveals it (FR-3). |
+| A5 | IBAN | No | The bank account IBAN, e.g. `HR12 3456 7890 1234 5678 9`, checked for a valid format and checksum. Shown **masked** (country code and last 4 digits, `HR•• … 6789`) unless revealed. |
+| A6 | Valid from | No | Month and year as printed on the card (`MM/YYYY`). Some cards print it, some do not; when it is empty, the card counts as valid from the start. |
+| A7 | Valid through | Yes | Month and year as printed on the card (`MM/YYYY`). Same as or later than *Valid from* when that is given. The card is valid until the last day of that month. |
 | A8 | Type | Yes | One of: **Debit**, **Charge**, **Credit**, **Prepaid**. |
 | A9 | Is primary account | No (default: No) | Marks the card as a primary current account (*tekući*). |
-| A10 | Max debt limit | No | The maximum amount that can be owed on the card (for Debit: the allowed overdraft, *dopušteni minus*), in EUR with cents. Optional for every type; when given, zero or greater. |
+| A10 | Max debt limit | No | The maximum amount that can be owed on the card (for Debit: the allowed overdraft, *dopušteni minus*), in EUR with cents. Optional for every type; when given, zero or greater. A fixed value for now (see section 8). |
+| A11 | Allows monthly installments | No (default: No) | A check box for **Debit** cards: the card can be used to pay in monthly installments. Credit and Charge cards always allow monthly installments, and Prepaid cards never do, so the check box is only offered for Debit cards. |
 
 General rules:
-- At least one of *Card number* and *IBAN* is required; both can be given.
-- The same card number or IBAN cannot be registered on two cards that are not archived.
+- *Card number* and *IBAN* are both optional; either, both or none can be given.
+- When given, the same card number or IBAN cannot be registered on two cards that are not archived.
 - All amounts are in EUR and exact to the cent.
 - Expired, blocked and archived cards stay in the app with their history.
 
@@ -151,7 +152,7 @@ checked in this order:
 | Archived | the user archived the card (FR-5) | user |
 | Blocked | the user blocked the card (FR-7) | user |
 | Expired | the user marked it as expired (FR-8), or today is after the last day of *Valid through* | user or date |
-| Not yet valid | today is before *Valid from* | date |
+| Not yet valid | *Valid from* is given and today is before it | date |
 | Expiring soon | *Valid through* ends within the next 2 months | date |
 | Active | none of the above | date |
 
@@ -197,9 +198,9 @@ remaining limit) can be added once card installments and other transactions exis
 2. The user can add a card with all attributes from section 3; a valid card then appears in
    Settings and on the Dashboard.
 3. Saving is blocked, with a clear message, when:
-   - a required field is missing, or neither a card number nor an IBAN is given;
-   - the card number or IBAN fails its check;
-   - *Valid through* is before *Valid from*;
+   - a required field is missing;
+   - a given card number or IBAN fails its check;
+   - *Valid from* is given and *Valid through* is before it;
    - the debt limit is negative;
    - the custom name, card number or IBAN is already used.
 4. The user can add a new issuer or bank from the form, and it is offered for the next card.
@@ -208,6 +209,8 @@ remaining limit) can be added once card installments and other transactions exis
 7. Archiving a card hides it from the list (except the Archived filter) and from the Dashboard,
    and keeps its details readable.
 8. Only Debit cards can be primary; several cards can be primary at once.
+   Only Debit cards offer the monthly installments check box; Credit and Charge cards always allow
+   installments and Prepaid cards never do.
 9. A card whose *Valid through* has passed is shown as Expired and is hidden from the default list
    and the Dashboard; one ending within the expiring window is shown as Expiring soon.
 10. Blocking a card shows it as Blocked, removes it from the Dashboard, and prevents any new
@@ -218,3 +221,16 @@ remaining limit) can be added once card installments and other transactions exis
     the two cards are linked after saving.
 13. Blocking, expiring or archiving a primary account removes its primary mark after the user
     confirms.
+14. A card can be saved without a card number and IBAN, and without *Valid from*. Such a card
+    shows no numbers (or only the one given) and is valid until *Valid through*.
+15. A Debit card with the monthly installments check box ticked shows that it allows installments
+    in its details; saving the card keeps the check box.
+
+## 8. Remarks (possible later, nice to have)
+
+These are not part of this feature and are kept here so they are not forgotten.
+
+- **Changing max debt limit:** the max debt limit is not always a fixed value; a bank can raise or
+  lower it over time. A later version may keep the limit as a history of values with the date each
+  one applies from, so that debt and remaining limit can be shown for any past or current month.
+  For now the limit is one value that the user edits.

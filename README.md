@@ -83,14 +83,50 @@ dotnet user-secrets set "ConnectionStrings:Monthwise" \
   --project src/Monthwise.Api
 ```
 
-### 5. Install front-end packages
+### 5. Create the encryption keys for card numbers
+
+Card numbers and IBANs are stored encrypted ([ADR 0005](docs/decisions/0005-encrypted-sensitive-data.md)).
+You create two random keys once: one encrypts the numbers, the other makes the fingerprints used to
+detect duplicate cards. The API does not start without them.
+
+**1. Generate the keys and show them.** Run this in one terminal (the values are kept in variables
+until you close it):
+
+```bash
+ENCRYPTION_KEY=$(openssl rand -base64 32)
+HASH_KEY=$(openssl rand -base64 32)
+echo "Encryption key (k1): $ENCRYPTION_KEY"
+echo "Hash key:            $HASH_KEY"
+```
+
+**2. Store them safely, now.** Copy both values into your password manager (or another safe place
+outside this repository) before you continue, for example as two entries named
+"Monthwise encryption key k1" and "Monthwise hash key". They are shown only here: without them,
+stored card numbers and IBANs can never be read again, for example after a new computer or a
+database restore. Never commit them or put them in `appsettings*.json`.
+
+**3. Give them to the API** (same terminal):
+
+```bash
+cd backend
+dotnet user-secrets set "SensitiveData:ActiveKeyId" "k1" --project src/Monthwise.Api
+dotnet user-secrets set "SensitiveData:EncryptionKeys:k1" "$ENCRYPTION_KEY" --project src/Monthwise.Api
+dotnet user-secrets set "SensitiveData:HashKey" "$HASH_KEY" --project src/Monthwise.Api
+cd ..
+unset ENCRYPTION_KEY HASH_KEY
+```
+
+On another computer, or after a reset, run only step 3 with the values from your password manager
+(replace the variables with the saved values). Do not generate new keys for an existing database.
+
+### 6. Install front-end packages
 
 ```bash
 cd frontend
 npm install
 ```
 
-### 6. Run the app
+### 7. Run the app
 
 **In VS Code:** open the `monthwise` folder (`code .`), install the recommended extensions when asked
 (most importantly C# Dev Kit), open Run and Debug (Cmd+Shift+D / Ctrl+Shift+D), select
@@ -114,7 +150,7 @@ In Development the API applies database migrations on startup, and Vite forwards
 The dashboard should show **API: Reachable** and **Database: Healthy**. Interactive API docs:
 http://localhost:5080/scalar.
 
-### 7. Run the tests (optional)
+### 8. Run the tests (optional)
 
 ```bash
 cd backend
@@ -125,7 +161,8 @@ MONTHWISE_TEST_DB="Host=localhost;Port=5432;Database=monthwise;Username=monthwis
 cd frontend && npm test
 ```
 
-Without `MONTHWISE_TEST_DB` the one back-end test that needs a real database is skipped.
+Without `MONTHWISE_TEST_DB` the back-end tests that need a real database are skipped. The tests use
+their own made-up encryption keys.
 
 ### Troubleshooting
 
@@ -134,6 +171,7 @@ Without `MONTHWISE_TEST_DB` the one back-end test that needs a real database is 
   `which dotnet`, remove the extra entry from your shell profile, then quit and reopen the terminal app.
 - **Database: Unhealthy on the dashboard:** check `docker compose ps` and that the password in user
   secrets matches `.env`.
+- **API stops on startup with "SensitiveData:… is missing":** create the encryption keys (step 5).
 
 ## Everyday commands
 
