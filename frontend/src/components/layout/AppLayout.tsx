@@ -1,4 +1,5 @@
 import { NavLink, Outlet } from 'react-router'
+import { Toaster } from '@/components/ui/sonner'
 import { cn } from '@/lib/utils'
 import { navItems } from './navigation'
 
@@ -53,6 +54,7 @@ export function AppLayout() {
           </NavLink>
         ))}
       </nav>
+      <Toaster position="top-center" />
     </div>
   )
 }

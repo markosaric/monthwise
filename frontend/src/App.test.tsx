@@ -1,14 +1,13 @@
 import { screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { renderRoute } from '@/test/renderRoute'
+import { json, stubApi } from '@/test/stubApi'
 
 function stubHealth(status: number, body: unknown) {
-  vi.stubGlobal(
-    'fetch',
-    vi.fn(async () =>
-      Response.json(body, { status, headers: { 'Content-Type': 'application/json' } }),
-    ),
-  )
+  stubApi({
+    'GET /api/health': () => json(body, status),
+    'GET /api/cards/dashboard': () => json({ hasAnyCards: false, cards: [] }),
+  })
 }
 
 describe('app shell', () => {
@@ -19,7 +18,7 @@ describe('app shell', () => {
 
     expect(screen.getByRole('heading', { name: 'Dashboard' })).toBeInTheDocument()
     expect(await screen.findByText('Reachable')).toBeInTheDocument()
-    expect(screen.getByText('Healthy')).toBeInTheDocument()
+    expect(screen.getByText('Healthy', { selector: '[data-slot=badge]' })).toBeInTheDocument()
   })
 
   it('shows an unhealthy database when the API returns 503', async () => {

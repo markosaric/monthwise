@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
+using Monthwise.Infrastructure.Security;
 
 namespace Monthwise.Infrastructure.Persistence;
 
@@ -16,6 +17,14 @@ internal sealed class MonthwiseDbContextFactory : IDesignTimeDbContextFactory<Mo
         var connectionString = Environment.GetEnvironmentVariable("ConnectionStrings__Monthwise") ?? LocalDefault;
         var options = new DbContextOptionsBuilder<MonthwiseDbContext>();
         DependencyInjection.ConfigureDbContext(options, connectionString);
-        return new MonthwiseDbContext(options.Options);
+        return new MonthwiseDbContext(options.Options, new DesignTimeCipher());
+    }
+
+    /// <summary>Migrations never read or write card numbers, so no keys are needed at design time.</summary>
+    private sealed class DesignTimeCipher : ISensitiveDataCipher
+    {
+        public string Encrypt(string plaintext) => throw new NotSupportedException();
+        public string Decrypt(string stored) => throw new NotSupportedException();
+        public string Hash(string value) => throw new NotSupportedException();
     }
 }

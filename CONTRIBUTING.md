@@ -2,13 +2,50 @@
 
 Working practices for this repository. Architecture and domain are described in [docs/INIT.md](docs/INIT.md).
 
+## Feature requirements
+
+Every feature starts with a requirements document in `docs/feature-requirements/`, written and
+approved **before** the plan.
+
+- It describes **what** the feature must do (attributes, functional and non-functional requirements,
+  out of scope, acceptance criteria), never **how** it is built.
+- File name is a short kebab-case name of the feature, e.g. `docs/feature-requirements/card-reconciliation.md`.
+- Open questions are answered before approval and their answers are written into the requirements
+  themselves; an approved document has no open questions section.
+- The approved requirements are the **first commit** on the feature branch:
+  `docs: add requirements for card reconciliation`
+- Fixes and refactors that do not change behaviour need no requirements document.
+
+### Changing requirements
+
+- **Before the feature is merged to `main`:** edit the requirements directly on the feature branch
+  and update the plan to match.
+- **After the requirements are merged to `main` through a pull request:** never rewrite the approved
+  text. Add an appendix at the end of the requirements document instead:
+
+  ```markdown
+  ## Appendix 1: <short title>
+
+  - **Date:** YYYY-MM-DD
+  - **Branch:** `feat/<short-name>`
+  - **Changes:** FR-7, A4 (the requirements this appendix replaces or extends)
+
+  <the new or changed requirements, written the same way as the original ones>
+  ```
+
+  Appendices are numbered in order and the newest appendix wins where they differ. The plan of the
+  branch that makes the change links the appendix in its **Requirements** line and repeats the
+  change in its **Requirement changes** section, so the plan shows what is built and why.
+
 ## Feature plans
 
-Every feature (and every non-trivial fix or refactor) starts with a written plan in `docs/plans/`.
+Every feature (and every non-trivial fix or refactor) has a written plan in `docs/plans/`.
 
 - File name matches the branch name: branch `feat/card-reconciliation` → `docs/plans/feat-card-reconciliation.md`.
 - Copy [docs/plans/_TEMPLATE.md](docs/plans/_TEMPLATE.md) and fill it in **before** writing code.
-- The plan is the **first commit** on the feature branch:
+- Every feature plan links its requirements document (and any appendix it implements) in its
+  **Requirements** line, and refers to requirement numbers (FR-1, A2, …) where it implements them.
+- The plan is committed right after the requirements, before any code:
   `docs(plans): add plan for card reconciliation`
 - If the approach changes during implementation, update the plan in the same branch.
 - When the feature is done, set the plan's status to `Done`; plans stay in the repo as history.
@@ -128,6 +165,6 @@ build(frontend): bump vite to 7.1
 ### Pull requests
 
 - Title follows the Conventional Commits format (it becomes the reference for the change).
-- The PR links its plan in `docs/plans/`.
+- The PR links its plan in `docs/plans/` and its requirements in `docs/feature-requirements/`.
 - Before requesting review: rebased on `origin/main`, build and tests pass locally.
 - Keep pull requests small and focused on one feature.

@@ -7,6 +7,9 @@ import { MonthPage } from '@/pages/MonthPage'
 import { NotFoundPage } from '@/pages/NotFoundPage'
 import { SavingsPage } from '@/pages/SavingsPage'
 import { SettingsPage } from '@/pages/SettingsPage'
+import { CardDetailsPage } from '@/pages/settings/CardDetailsPage'
+import { CardEditPage, CardNewPage } from '@/pages/settings/CardFormPages'
+import { CardsSettingsPage } from '@/pages/settings/CardsSettingsPage'
 
 export const routes: RouteObject[] = [
   {
@@ -18,6 +21,10 @@ export const routes: RouteObject[] = [
       { path: 'loans', element: <LoansPage /> },
       { path: 'savings', element: <SavingsPage /> },
       { path: 'settings', element: <SettingsPage /> },
+      { path: 'settings/cards', element: <CardsSettingsPage /> },
+      { path: 'settings/cards/new', element: <CardNewPage /> },
+      { path: 'settings/cards/:id', element: <CardDetailsPage /> },
+      { path: 'settings/cards/:id/edit', element: <CardEditPage /> },
       { path: '*', element: <NotFoundPage /> },
     ],
   },

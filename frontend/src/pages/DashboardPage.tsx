@@ -1,3 +1,4 @@
+import { CardsWidget } from '@/components/cards/CardsWidget'
 import { HealthStatus } from '@/components/HealthStatus'
 import { PageHeader } from './PageHeader'
 
@@ -8,7 +9,10 @@ export function DashboardPage() {
         title="Dashboard"
         description="Available budget, income vs. expenses, upcoming due dates and total debt will appear here."
       />
-      <HealthStatus />
+      <div className="flex flex-col gap-6">
+        <CardsWidget />
+        <HealthStatus />
+      </div>
     </>
   )
 }
