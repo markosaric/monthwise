@@ -5,6 +5,34 @@ Personal home finance app for tracking monthly income and expenses, credit card 
 Starting document with the domain, data model and architecture: [docs/INIT.md](docs/INIT.md).
 Architecture decisions: [docs/decisions](docs/decisions/README.md). Working practices: [CONTRIBUTING.md](CONTRIBUTING.md).
 
+## Development process
+
+Every feature goes through the same steps on its own branch, created from the latest `main`
+(details and rules in [CONTRIBUTING.md](CONTRIBUTING.md)):
+
+1. **Requirements:** describe what the feature must do, without implementation details, in
+   `docs/feature-requirements/`. Open questions are answered and written into the document, then
+   it is approved and committed first on the branch.
+2. **Plan:** describe how it is built in `docs/plans/<branch-name>.md`, linking the requirements.
+   It is approved and committed before any code.
+3. **Implementation:** small Conventional Commits, with tests, following the plan. If the approach
+   changes, the plan is updated in the same branch.
+4. **Pull request:** rebased on `main`, build and tests green, linking the plan and the
+   requirements; merged with *Rebase and merge*. The plan's status is set to `Done`.
+
+When requirements that are already on `main` change later, the original text stays as approved
+and the change is added as a numbered **appendix** at the end of the requirements document. The
+plan of the branch making the change links and repeats that appendix.
+
+### Documents in `docs/`
+
+| Document | Purpose | When it is written |
+|---|---|---|
+| [INIT.md](docs/INIT.md) | Goal, domain, first data model and architecture of the whole app | Once at the start; updated when the data model or architecture changes |
+| [feature-requirements/](docs/feature-requirements) | What a feature must do: attributes, functional and non-functional requirements, acceptance criteria; later changes as appendices | Before the plan, one per feature |
+| [plans/](docs/plans) | How a feature is built: scope, design, steps, tests; links its requirements ([template](docs/plans/_TEMPLATE.md)) | After the requirements, one per branch |
+| [decisions/](docs/decisions/README.md) | Architecture decision records (ADRs): one decision with its context and consequences | When a choice shapes the code base beyond one feature |
+
 ## Initial development setup
 
 Do this once on a new machine. Never commit secrets: see [Secrets and sensitive data](CONTRIBUTING.md#secrets-and-sensitive-data).
@@ -122,5 +150,5 @@ Without `MONTHWISE_TEST_DB` the one back-end test that needs a real database is 
 ```
 backend/    .NET 10 solution: Domain, Application, Infrastructure, Api (+ tests)
 frontend/   React + TypeScript app (Vite)
-docs/       INIT.md, feature plans, architecture decisions
+docs/       INIT.md, feature requirements, feature plans, architecture decisions
 ```

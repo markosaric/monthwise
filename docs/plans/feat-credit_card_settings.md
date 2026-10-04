@@ -227,9 +227,7 @@ handler in `Monthwise.Application/Cards`, and requests are checked with FluentVa
    - `docs/INIT.md` (data model);
    - `README.md`: key generation and backup, plus the user-secrets setup;
    - `.github/workflows/ci.yml`: throwaway keys for the tests;
-   - a new ADR `0005-encrypted-sensitive-data.md`;
-   - a short "Feature requirements" section in `CONTRIBUTING.md`, saying requirements go in
-     `docs/feature-requirements/` and are approved before the plan.
+   - a new ADR `0005-encrypted-sensitive-data.md`.
 10. Manual check on desktop and phone width, then set this plan's status to `Done`.
 
 ## Tests
