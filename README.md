@@ -7,18 +7,23 @@ Architecture decisions: [docs/decisions](docs/decisions/README.md). Working prac
 
 ## Development process
 
-Every feature goes through the same steps on its own branch, created from the latest `main`
-(details and rules in [CONTRIBUTING.md](CONTRIBUTING.md)):
+Every feature goes through the same steps on its own branch (details and rules in
+[CONTRIBUTING.md](CONTRIBUTING.md#feature-workflow)). Nothing is committed or pushed before its
+step is approved, and every commit message is approved first.
 
-1. **Requirements:** describe what the feature must do, without implementation details, in
-   `docs/feature-requirements/`. Open questions are answered and written into the document, then
-   it is approved and committed first on the branch.
-2. **Plan:** describe how it is built in `docs/plans/<branch-name>.md`, linking the requirements.
-   It is approved and committed before any code.
-3. **Implementation:** small Conventional Commits, with tests, following the plan. If the approach
-   changes, the plan is updated in the same branch.
-4. **Pull request:** rebased on `main`, build and tests green, linking the plan and the
-   requirements; merged with *Rebase and merge*. The plan's status is set to `Done`.
+1. **Branch:** created from the latest `main` before the requirements are written.
+2. **Requirements:** describe what the feature must do, without implementation details, in
+   `docs/feature-requirements/`. Open questions are answered and written into the document. Once
+   approved, it is committed as the first commit on the branch and pushed.
+3. **Plan:** describe how it is built in `docs/plans/<branch-name>.md`, linking the requirements.
+   Once approved, it is committed and pushed, before any code.
+4. **Implementation:** built with tests, following the plan. The changes are left staged, not
+   committed, for review; after the review they are committed (Conventional Commits) and pushed.
+   If the approach changes, the plan is updated in the same branch.
+5. **Pull request:** the final step, opened after the implementation is committed and pushed.
+   Rebased on `main`, build and tests green, linking the plan and the requirements. It is merged
+   with *Squash and merge*, so the branch's commits become one commit on `main`. The plan's status
+   is set to `Done`.
 
 When requirements that are already on `main` change later, the original text stays as approved
 and the change is added as a numbered **appendix** at the end of the requirements document. The
