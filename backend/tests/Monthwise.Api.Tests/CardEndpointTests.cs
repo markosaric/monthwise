@@ -9,6 +9,7 @@ namespace Monthwise.Api.Tests;
 /// Card endpoints against a real PostgreSQL (skipped without MONTHWISE_TEST_DB). The tests in this
 /// class run one after another and each starts from an empty card table.
 /// </summary>
+[Collection(SharedDatabase.Name)]
 public sealed class CardEndpointTests : IAsyncLifetime
 {
     // Published test values only; never real card numbers or IBANs.
@@ -35,7 +36,7 @@ public sealed class CardEndpointTests : IAsyncLifetime
         _client = _factory.CreateClient();
         // Starting the host applies the migrations.
         await Client.GetAsync(new Uri("/api/health", UriKind.Relative), Ct);
-        await ExecuteSqlAsync("DELETE FROM card;");
+        await ExecuteSqlAsync(CashFlowEndpointTests.DeleteAllSql);
     }
 
     public async ValueTask DisposeAsync()

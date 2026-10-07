@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Monthwise.Application.Cards;
+using Monthwise.Application.CashFlow;
 using Monthwise.Application.Common;
 using Monthwise.Infrastructure.Persistence;
 using Monthwise.Infrastructure.Persistence.Repositories;
@@ -35,6 +36,11 @@ public static class DependencyInjection
         services.AddScoped<ICardRepository, CardRepository>();
         services.AddScoped(typeof(ICardListRepository<>), typeof(CardListRepository<>));
         services.AddSingleton<ICardActivityQuery, CardActivityQuery>();
+        services.AddScoped<ICashFlowInputRepository, CashFlowInputRepository>();
+        services.AddScoped<IRecurringInputRepository, RecurringInputRepository>();
+        services.AddScoped<IPayerRepository, PayerRepository>();
+        services.AddScoped<IInputCategoryRepository, InputCategoryRepository>();
+        services.AddScoped<IBalanceEntryRepository, BalanceEntryRepository>();
 
         services.AddHealthChecks()
             .AddDbContextCheck<MonthwiseDbContext>(DatabaseHealthCheckName);

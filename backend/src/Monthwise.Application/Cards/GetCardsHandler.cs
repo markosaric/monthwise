@@ -1,3 +1,4 @@
+using Monthwise.Application.CashFlow;
 using Monthwise.Application.Common;
 using Monthwise.Domain.Cards;
 using Monthwise.Domain.Common;
@@ -51,6 +52,7 @@ public sealed class GetDashboardCardsHandler(
     ICardListRepository<CardIssuer> issuers,
     ICardListRepository<Bank> banks,
     ICardActivityQuery activity,
+    AccountBalanceQuery balances,
     TimeProvider timeProvider)
 {
     public async Task<DashboardCardsResponse> HandleAsync(CancellationToken cancellationToken)
@@ -59,8 +61,10 @@ public sealed class GetDashboardCardsHandler(
         var mapping = await CardMapping.LoadAsync(issuers, banks, cards, today, cancellationToken);
         var ongoing = await activity.CardsWithOngoingTransactionsAsync(cancellationToken);
 
-        var shown = mapping.AllCards.Where(card => card.IsShownOnDashboard(today, ongoing.Contains(card.Id)));
-        return new DashboardCardsResponse(mapping.AllCards.Count > 0, mapping.ToSortedResponses(shown));
+        var shown = mapping.ToSortedResponses(
+            mapping.AllCards.Where(card => card.IsShownOnDashboard(today, ongoing.Contains(card.Id))));
+        var shownBalances = await balances.ForAccountsAsync(shown.Select(c => c.Id).ToList(), cancellationToken);
+        return new DashboardCardsResponse(mapping.AllCards.Count > 0, shown, shown.Select(c => shownBalances[c.Id]).ToList());
     }
 }
 

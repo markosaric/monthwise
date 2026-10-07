@@ -4,6 +4,7 @@ import { toast } from 'sonner'
 import { useCard, useCardAction, useCards, type Card } from '@/api/cards'
 import { CardActionDialog } from '@/components/cards/CardActionDialog'
 import { CardStatusBadge } from '@/components/cards/CardStatusBadge'
+import { BalanceEntries } from '@/components/cashflow/BalanceEntries'
 import { formatDate, formatMonth } from '@/components/cards/format'
 import { RevealableNumber } from '@/components/cards/RevealableNumber'
 import { cardTexts } from '@/components/cards/texts'
@@ -17,7 +18,10 @@ import { PageHeader } from '@/pages/PageHeader'
 type Dialog = 'block' | 'unblock' | 'expire' | 'archive' | null
 const t = cardTexts
 
-/** Card details with reveal, status history and the block/unblock/expire/archive actions (FR-3, FR-5, FR-7, FR-8). */
+/**
+ * Card details with reveal, status history and the block/unblock/expire/archive actions (FR-3, FR-5,
+ * FR-7, FR-8), and the account balance with its starting balance and corrections (input cash flow FR-9).
+ */
 export function CardDetailsPage() {
   const { id } = useParams()
   const { data: card, isPending, isError } = useCard(id)
@@ -132,6 +136,7 @@ function CardDetails({ card }: { card: Card }) {
             </Button>
           </div>
         )}
+        <BalanceEntries accountId={card.id} canAdd={!archived} />
         <Link to="/settings/cards" className="text-sm text-muted-foreground underline">
           Back to {t.section.toLowerCase()}
         </Link>

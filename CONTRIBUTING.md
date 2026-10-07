@@ -2,6 +2,25 @@
 
 Working practices for this repository. Architecture and domain are described in [docs/INIT.md](docs/INIT.md).
 
+## Feature workflow
+
+Every feature goes through these steps in this order. Nothing is committed or pushed before the
+step it belongs to is approved, and every commit message is approved before the commit.
+
+1. **Branch:** before writing anything, create the feature branch from the latest `main`
+   (see [Rebase workflow](#rebase-workflow)).
+2. **Requirements:** write `docs/feature-requirements/<feature>.md` (see
+   [Feature requirements](#feature-requirements)) and review it until all open questions are
+   answered. After it is approved, commit it as the first commit on the branch and push the branch.
+3. **Plan:** write `docs/plans/<branch-name>.md` (see [Feature plans](#feature-plans)) and review
+   it. After it is approved, commit and push it.
+4. **Implementation:** build the feature following the plan and leave all changes **staged, not
+   committed**, so they can be reviewed as a whole (`git diff --staged`). After the review, commit
+   with the approved Conventional Commits message and push.
+5. **Pull request:** after the implementation is committed and pushed, open a pull request as
+   described in [Pull requests](#pull-requests). It is merged with **Squash and merge**, so all
+   commits of the branch become one commit on `main`, titled with the pull request title.
+
 ## Feature requirements
 
 Every feature starts with a requirements document in `docs/feature-requirements/`, written and
@@ -12,8 +31,8 @@ approved **before** the plan.
 - File name is a short kebab-case name of the feature, e.g. `docs/feature-requirements/card-reconciliation.md`.
 - Open questions are answered before approval and their answers are written into the requirements
   themselves; an approved document has no open questions section.
-- The approved requirements are the **first commit** on the feature branch:
-  `docs: add requirements for card reconciliation`
+- The approved requirements are the **first commit** on the feature branch, pushed right after
+  approval: `docs: add requirements for card reconciliation`
 - Fixes and refactors that do not change behaviour need no requirements document.
 
 ### Changing requirements
@@ -45,7 +64,8 @@ Every feature (and every non-trivial fix or refactor) has a written plan in `doc
 - Copy [docs/plans/_TEMPLATE.md](docs/plans/_TEMPLATE.md) and fill it in **before** writing code.
 - Every feature plan links its requirements document (and any appendix it implements) in its
   **Requirements** line, and refers to requirement numbers (FR-1, A2, …) where it implements them.
-- The plan is committed right after the requirements, before any code:
+- The plan is committed and pushed after it is approved, right after the requirements and before
+  any code:
   `docs(plans): add plan for card reconciliation`
 - If the approach changes during implementation, update the plan in the same branch.
 - When the feature is done, set the plan's status to `Done`; plans stay in the repo as history.
@@ -82,28 +102,25 @@ passwords, API keys, tokens, certificates and private keys, as well as personal 
 
 ### Rebase workflow
 
-1. Start from an up-to-date `main`:
+1. Start from an up-to-date `main`, before writing the requirements:
    ```bash
    git switch main && git pull --rebase
    git switch -c feat/card-reconciliation
    ```
-2. Add the feature plan as the first commit (see [Feature plans](#feature-plans)), then commit in small,
-   meaningful steps (Conventional Commits, below).
+2. Commit the approved requirements, then the approved plan, then the reviewed implementation
+   (see [Feature workflow](#feature-workflow)), each with a Conventional Commits message (below).
 3. Keep the branch current by **rebasing**, never by merging `main` into it:
    ```bash
    git fetch origin
    git rebase origin/main
    ```
-4. Before opening or merging a pull request, tidy the history with an interactive rebase
-   (squash fixups, reword unclear messages) so every commit on `main` is meaningful and builds:
-   ```bash
-   git rebase -i origin/main
-   ```
-5. After a rebase, push with lease (never plain `--force`):
+4. After a rebase, push with lease (never plain `--force`):
    ```bash
    git push --force-with-lease
    ```
-6. Merge the pull request with **Rebase and merge** (GitHub setting: only "Allow rebase merging" enabled).
+5. Merge the pull request with **Squash and merge** (GitHub setting: only "Allow squash merging"
+   enabled, with the pull request title as the default commit message). All commits of the branch
+   become one commit on `main`, so `main` stays linear and has one commit per feature.
    Delete the branch after merging.
 
 Rules:
@@ -164,7 +181,8 @@ build(frontend): bump vite to 7.1
 
 ### Pull requests
 
-- Title follows the Conventional Commits format (it becomes the reference for the change).
+- Title follows the Conventional Commits format; it becomes the message of the squashed commit
+  on `main`, e.g. `feat: add input cash flow (#3)`.
 - The PR links its plan in `docs/plans/` and its requirements in `docs/feature-requirements/`.
 - Before requesting review: rebased on `origin/main`, build and tests pass locally.
 - Keep pull requests small and focused on one feature.

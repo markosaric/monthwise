@@ -57,6 +57,7 @@ if (app.Configuration.GetValue<bool>("Database:MigrateOnStartup"))
 var api = app.MapGroup("/api");
 api.MapHealthEndpoints();
 api.MapCardEndpoints();
+api.MapCashFlowEndpoints();
 
 await app.RunAsync();
 
