@@ -52,6 +52,10 @@ describe('Dashboard cards widget', () => {
     expect(await screen.findByText('Tekući')).toBeInTheDocument()
     expect(screen.getByText('•••• 1111')).toBeInTheDocument()
     expect(screen.getByText(cardTexts.primary)).toBeInTheDocument()
+    // Issuer, bank, type, valid through and limit stay off the Dashboard (Appendix 1).
+    expect(screen.queryByText(/Visa · ZaBa/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/Valid through/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/Limit/)).not.toBeInTheDocument()
   })
 })
 

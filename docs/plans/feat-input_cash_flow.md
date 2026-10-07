@@ -1,9 +1,10 @@
 # Plan: Input cash flow
 
 - **Branch:** `feat/input_cash_flow`
-- **Status:** Draft
+- **Status:** Done
 - **Date:** 2026-10-06
-- **Requirements:** [input-cash-flow.md](../feature-requirements/input-cash-flow.md) (approved)
+- **Requirements:** [input-cash-flow.md](../feature-requirements/input-cash-flow.md) (approved), and
+  [credit-card-settings.md, Appendix 1](../feature-requirements/credit-card-settings.md#appendix-1-shorter-card-entries-on-the-dashboard)
 
 ## Goal
 The user records incoming payments (inputs) on the **Month** screen: payer, category, account,
@@ -11,6 +12,14 @@ amount, issue date, expected date and, once the money arrives, the received date
 are recorded once as recurring. Each account can get a starting balance and balance corrections.
 The Dashboard shows the current and the expected end-of-month balance per account, a new
 **Cash flow** dashboard charts inputs over time, and a monthly cash flow report sums them up.
+
+## Requirement changes
+- [credit-card-settings.md, Appendix 1](../feature-requirements/credit-card-settings.md#appendix-1-shorter-card-entries-on-the-dashboard)
+  (2026-10-07, changes card FR-9): a Dashboard card entry shows only its name, primary marker,
+  status, masked card number and/or IBAN, and its balances. Issuer, bank, type, valid through and
+  max debt limit are no longer shown on the Dashboard; the Settings list and card details keep them.
+  - Front-end: `CardSummary` gets a compact form used by the Dashboard `CardsWidget`; the Settings
+    list keeps the full form.
 
 ## Scope
 - In scope:
@@ -245,3 +254,30 @@ case in `Monthwise.Application/CashFlow`, FluentValidation validators, same erro
 
 ## Open questions
 - None.
+
+## Changes during implementation
+- **Dashboard balances:** `GET /api/cards/dashboard` gets a separate `balances` list (one entry per
+  shown card) instead of new fields on each card, so `CardResponse` stays unchanged.
+- **Template changes:** instead of updating them, stored occurrences that are not received and fall
+  on or after today are deleted when the recurring input changes, so they are calculated again from
+  the new template. The result is the same as in the plan.
+- **Stopped recurring inputs:** a recurring input stopped before its first occurrence ends the day
+  before it (so it has none); `isStopped` covers that case.
+- **Balance entries:** routes are `GET /api/cards/{id}/balance` (balance and entries),
+  `POST /api/cards/{id}/balance-entries`, and `PUT`/`DELETE /api/balance-entries/{id}`. The kind of
+  an entry cannot be changed after it is saved; one starting balance per account is also a unique
+  index in the database.
+- **Payer autocomplete:** a native `<datalist>` on the payer field instead of an own component; it
+  works with the phone keyboard and needs no new dependency. No shadcn `checkbox`: the Received
+  check boxes are native inputs.
+- **Shared API helpers:** `ApiError` and `unwrap` moved from `api/cards.ts` to `api/http.ts`
+  (re-exported from `cards.ts`).
+- **Chart colours:** one blue hue, received strong (`#2a78d6`, dark `#3987e5`) and expected lighter
+  (`#86b6ef`, dark `#184f95`), as `--chart-received` and `--chart-expected` tokens; checked as an
+  ordinal ramp in light and dark. The chart has a legend, a hover tooltip and a "Show as table"
+  view.
+- **Monthly report groups** are lists (name and total, with received and expected below) rather than
+  tables, so they fit a phone screen.
+- **Tests:** the API test classes share a `Database` test collection so they never run in parallel
+  on the same database; the card tests empty the cash flow tables first.
+

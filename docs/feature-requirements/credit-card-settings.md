@@ -234,3 +234,21 @@ These are not part of this feature and are kept here so they are not forgotten.
   lower it over time. A later version may keep the limit as a history of values with the date each
   one applies from, so that debt and remaining limit can be shown for any past or current month.
   For now the limit is one value that the user edits.
+
+## Appendix 1: Shorter card entries on the Dashboard
+
+- **Date:** 2026-10-07
+- **Branch:** `feat/input_cash_flow`
+- **Changes:** FR-9 (what each Dashboard entry shows)
+
+Each entry of the Dashboard **Cards** widget shows only: custom name, primary marker, card status,
+masked card number and/or IBAN (when given), and the account balance (current balance and expected
+balance at the end of the month, see
+[input-cash-flow.md](input-cash-flow.md) FR-11).
+
+Issuer, owner (bank), type, valid through and max debt limit are **no longer shown on the
+Dashboard**. They stay visible in the Settings list and on the card details.
+
+The other rules of FR-9 (which cards appear, primary accounts first, selecting an entry opens the
+card's details) are unchanged.
+

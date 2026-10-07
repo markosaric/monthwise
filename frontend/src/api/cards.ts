@@ -1,5 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api, type Schemas } from './client'
+import { unwrap } from './http'
+
+export { ApiError } from './http'
 
 export type Card = Schemas['CardResponse']
 export type CardRequest = Schemas['CardRequest']
@@ -15,34 +18,6 @@ export const cardTypes: CardType[] = ['Debit', 'Charge', 'Credit', 'Prepaid']
 
 /** All card queries share this prefix, so one invalidation refreshes Settings and the Dashboard. */
 export const cardsQueryKey = ['cards'] as const
-
-/** A failed API call. `fieldErrors` holds validation messages keyed by request field. */
-export class ApiError extends Error {
-  readonly status: number
-  readonly fieldErrors: Record<string, string[]>
-
-  constructor(
-    status: number,
-    title: string | null | undefined,
-    fieldErrors?: Record<string, string[]>,
-  ) {
-    super(title ?? 'Something went wrong. Please try again.')
-    this.status = status
-    this.fieldErrors = fieldErrors ?? {}
-  }
-}
-
-interface ApiResult<T> {
-  data?: T
-  error?: { title?: string | null; errors?: Record<string, string[]> } | unknown
-  response: Response
-}
-
-function unwrap<T>({ data, error, response }: ApiResult<T>): T {
-  if (data !== undefined && response.ok) return data
-  const problem = (error ?? {}) as { title?: string | null; errors?: Record<string, string[]> }
-  throw new ApiError(response.status, problem.title, problem.errors)
-}
 
 export function useCards(filter: CardListFilter) {
   return useQuery({

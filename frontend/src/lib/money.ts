@@ -43,3 +43,11 @@ export function centsToEuroInput(cents: number): string {
   const rest = Math.abs(cents % 100)
   return rest === 0 ? String(euros) : `${euros},${String(rest).padStart(2, '0')}`
 }
+
+/** Parses a balance that may be negative, e.g. "-250,00" → -25000. */
+export function parseSignedEuroInput(text: string): number | null {
+  const trimmed = text.trim()
+  const negative = trimmed.startsWith('-')
+  const cents = parseEuroInput(negative ? trimmed.slice(1) : trimmed)
+  return cents === null ? null : negative ? -cents : cents
+}

@@ -12,7 +12,10 @@ import {
 import { CardSummary } from './CardSummary'
 import { cardTexts } from './texts'
 
-/** Dashboard widget: all valid cards, or a message to set cards up (FR-9, FR-10). */
+/**
+ * Dashboard widget: all valid cards with their balances, or a message to set cards up (FR-9, FR-10;
+ * balances: input cash flow FR-11).
+ */
 export function CardsWidget() {
   const { data, isPending, isError } = useDashboardCards()
 
@@ -44,7 +47,12 @@ export function CardsWidget() {
           </div>
         )}
         {data?.cards.map((card) => (
-          <CardSummary key={card.id} card={card} />
+          <CardSummary
+            key={card.id}
+            card={card}
+            compact
+            balance={(data.balances ?? []).find((b) => b.accountId === card.id)}
+          />
         ))}
       </CardContent>
     </Card>

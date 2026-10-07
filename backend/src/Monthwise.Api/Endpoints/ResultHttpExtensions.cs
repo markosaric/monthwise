@@ -27,6 +27,16 @@ internal static class ResultHttpExtensions
         return validation is not null ? validation : problem!;
     }
 
+    public static Results<NoContent, ValidationProblem, ProblemHttpResult> ToNoContent(this Result result)
+    {
+        if (result.IsSuccess)
+        {
+            return TypedResults.NoContent();
+        }
+        var (validation, problem) = ToProblem(result);
+        return validation is not null ? validation : problem!;
+    }
+
     /// <summary>Validation errors become a 400 with field keys; conflicts a 409; missing items a 404.</summary>
     private static (ValidationProblem? Validation, ProblemHttpResult? Problem) ToProblem(Result result)
     {

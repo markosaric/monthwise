@@ -1,6 +1,7 @@
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
 using Monthwise.Application.Cards;
+using Monthwise.Application.CashFlow;
 
 namespace Monthwise.Application;
 
@@ -25,6 +26,29 @@ public static class DependencyInjection
         services.AddScoped<ExpireCardHandler>();
         services.AddScoped<ArchiveCardHandler>();
         services.AddScoped(typeof(CardListHandler<>));
+
+        services.AddScoped<InputLedger>();
+        services.AddScoped<InputDetailsResolver>();
+        services.AddScoped<InputResponder>();
+        services.AddScoped<OccurrenceFinder>();
+        services.AddScoped<AccountBalanceQuery>();
+        services.AddScoped<GetMonthInputsHandler>();
+        services.AddScoped<GetInputHandler>();
+        services.AddScoped<CreateInputHandler>();
+        services.AddScoped<UpdateInputHandler>();
+        services.AddScoped<DeleteInputHandler>();
+        services.AddScoped<SetInputReceivedHandler>();
+        services.AddScoped<UpdateOccurrenceHandler>();
+        services.AddScoped<ReceiveOccurrenceHandler>();
+        services.AddScoped<DeleteOccurrenceHandler>();
+        services.AddScoped<GetRecurringInputHandler>();
+        services.AddScoped<UpdateRecurringInputHandler>();
+        services.AddScoped<StopRecurringInputHandler>();
+        services.AddScoped<PayerHandler>();
+        services.AddScoped<InputCategoryHandler>();
+        services.AddScoped<BalanceEntryHandler>();
+        services.AddScoped<GetCashFlowChartHandler>();
+        services.AddScoped<GetMonthlyReportHandler>();
         return services;
     }
 }

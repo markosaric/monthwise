@@ -300,6 +300,314 @@ namespace Monthwise.Infrastructure.Persistence.Migrations
                     b.ToTable("card", (string)null);
                 });
 
+            modelBuilder.Entity("Monthwise.Domain.CashFlow.BalanceEntry", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("AccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("account_id");
+
+                    b.Property<long>("Balance")
+                        .HasColumnType("bigint")
+                        .HasColumnName("balance_cents");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateOnly>("Date")
+                        .HasColumnType("date")
+                        .HasColumnName("date");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("kind");
+
+                    b.Property<string>("Note")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("note");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id")
+                        .HasName("pk_balance_entry");
+
+                    b.HasIndex("AccountId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_balance_entry_one_starting")
+                        .HasFilter("kind = 'Starting'");
+
+                    b.HasIndex("AccountId", "Date")
+                        .HasDatabaseName("ix_balance_entry_account_id_date");
+
+                    b.ToTable("balance_entry", (string)null);
+                });
+
+            modelBuilder.Entity("Monthwise.Domain.CashFlow.CashFlowInput", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("AccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("account_id");
+
+                    b.Property<long>("Amount")
+                        .HasColumnType("bigint")
+                        .HasColumnName("amount_cents");
+
+                    b.Property<Guid>("CategoryId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("category_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("description");
+
+                    b.Property<DateOnly>("ExpectedDate")
+                        .HasColumnType("date")
+                        .HasColumnName("expected_date");
+
+                    b.Property<DateOnly>("IssueDate")
+                        .HasColumnType("date")
+                        .HasColumnName("issue_date");
+
+                    b.Property<DateOnly?>("OccurrenceDate")
+                        .HasColumnType("date")
+                        .HasColumnName("occurrence_date");
+
+                    b.Property<Guid>("PayerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("payer_id");
+
+                    b.Property<DateOnly?>("ReceivedDate")
+                        .HasColumnType("date")
+                        .HasColumnName("received_date");
+
+                    b.Property<Guid?>("RecurringInputId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("recurring_input_id");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id")
+                        .HasName("pk_cash_flow_input");
+
+                    b.HasIndex("AccountId")
+                        .HasDatabaseName("ix_cash_flow_input_account_id");
+
+                    b.HasIndex("CategoryId")
+                        .HasDatabaseName("ix_cash_flow_input_category_id");
+
+                    b.HasIndex("ExpectedDate")
+                        .HasDatabaseName("ix_cash_flow_input_expected_date");
+
+                    b.HasIndex("PayerId")
+                        .HasDatabaseName("ix_cash_flow_input_payer_id");
+
+                    b.HasIndex("ReceivedDate")
+                        .HasDatabaseName("ix_cash_flow_input_received_date");
+
+                    b.HasIndex("RecurringInputId", "OccurrenceDate")
+                        .IsUnique()
+                        .HasDatabaseName("ix_cash_flow_input_recurring_input_id_occurrence_date")
+                        .HasFilter("recurring_input_id IS NOT NULL");
+
+                    b.ToTable("cash_flow_input", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_cash_flow_input_amount_positive", "amount_cents > 0");
+
+                            t.HasCheckConstraint("ck_cash_flow_input_expected_after_issue", "expected_date >= issue_date");
+
+                            t.HasCheckConstraint("ck_cash_flow_input_occurrence", "(recurring_input_id IS NULL) = (occurrence_date IS NULL)");
+
+                            t.HasCheckConstraint("ck_cash_flow_input_received_after_issue", "received_date IS NULL OR received_date >= issue_date");
+                        });
+                });
+
+            modelBuilder.Entity("Monthwise.Domain.CashFlow.InputCategory", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateOnly?>("HiddenOn")
+                        .HasColumnType("date")
+                        .HasColumnName("hidden_on");
+
+                    b.Property<bool>("IsPredefined")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_predefined");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("name");
+
+                    b.HasKey("Id")
+                        .HasName("pk_input_category");
+
+                    b.ToTable("input_category", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("0199b0c0-0000-7000-8000-000000000201"),
+                            IsPredefined = true,
+                            Name = "Salary"
+                        },
+                        new
+                        {
+                            Id = new Guid("0199b0c0-0000-7000-8000-000000000202"),
+                            IsPredefined = true,
+                            Name = "Salary add-ons"
+                        },
+                        new
+                        {
+                            Id = new Guid("0199b0c0-0000-7000-8000-000000000203"),
+                            IsPredefined = true,
+                            Name = "Agreed contributions"
+                        },
+                        new
+                        {
+                            Id = new Guid("0199b0c0-0000-7000-8000-000000000204"),
+                            IsPredefined = true,
+                            Name = "Other income"
+                        });
+                });
+
+            modelBuilder.Entity("Monthwise.Domain.CashFlow.Payer", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("name");
+
+                    b.Property<DateOnly?>("RemovedOn")
+                        .HasColumnType("date")
+                        .HasColumnName("removed_on");
+
+                    b.HasKey("Id")
+                        .HasName("pk_payer");
+
+                    b.ToTable("payer", (string)null);
+                });
+
+            modelBuilder.Entity("Monthwise.Domain.CashFlow.RecurringInput", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("AccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("account_id");
+
+                    b.Property<long>("Amount")
+                        .HasColumnType("bigint")
+                        .HasColumnName("amount_cents");
+
+                    b.Property<Guid>("CategoryId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("category_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("description");
+
+                    b.Property<DateOnly?>("EndDate")
+                        .HasColumnType("date")
+                        .HasColumnName("end_date");
+
+                    b.Property<DateOnly>("ExpectedAnchor")
+                        .HasColumnType("date")
+                        .HasColumnName("expected_anchor");
+
+                    b.Property<string>("Frequency")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("frequency");
+
+                    b.Property<DateOnly>("IssueAnchor")
+                        .HasColumnType("date")
+                        .HasColumnName("issue_anchor");
+
+                    b.Property<Guid>("PayerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("payer_id");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id")
+                        .HasName("pk_recurring_input");
+
+                    b.HasIndex("AccountId")
+                        .HasDatabaseName("ix_recurring_input_account_id");
+
+                    b.HasIndex("CategoryId")
+                        .HasDatabaseName("ix_recurring_input_category_id");
+
+                    b.HasIndex("PayerId")
+                        .HasDatabaseName("ix_recurring_input_payer_id");
+
+                    b.ToTable("recurring_input", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_recurring_input_amount_positive", "amount_cents > 0");
+
+                            t.HasCheckConstraint("ck_recurring_input_expected_after_issue", "expected_anchor >= issue_anchor");
+                        });
+                });
+
+            modelBuilder.Entity("Monthwise.Domain.CashFlow.SkippedOccurrence", b =>
+                {
+                    b.Property<Guid>("RecurringInputId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("recurring_input_id");
+
+                    b.Property<DateOnly>("OccurrenceDate")
+                        .HasColumnType("date")
+                        .HasColumnName("occurrence_date");
+
+                    b.HasKey("RecurringInputId", "OccurrenceDate")
+                        .HasName("pk_skipped_occurrence");
+
+                    b.ToTable("skipped_occurrence", (string)null);
+                });
+
             modelBuilder.Entity("Monthwise.Domain.Cards.Card", b =>
                 {
                     b.HasOne("Monthwise.Domain.Cards.Bank", null)
@@ -331,6 +639,80 @@ namespace Monthwise.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_card_card_card_id");
+                });
+
+            modelBuilder.Entity("Monthwise.Domain.CashFlow.BalanceEntry", b =>
+                {
+                    b.HasOne("Monthwise.Domain.Cards.Card", null)
+                        .WithMany()
+                        .HasForeignKey("AccountId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_balance_entry_card_account_id");
+                });
+
+            modelBuilder.Entity("Monthwise.Domain.CashFlow.CashFlowInput", b =>
+                {
+                    b.HasOne("Monthwise.Domain.Cards.Card", null)
+                        .WithMany()
+                        .HasForeignKey("AccountId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_cash_flow_input_card_account_id");
+
+                    b.HasOne("Monthwise.Domain.CashFlow.InputCategory", null)
+                        .WithMany()
+                        .HasForeignKey("CategoryId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_cash_flow_input_input_categories_category_id");
+
+                    b.HasOne("Monthwise.Domain.CashFlow.Payer", null)
+                        .WithMany()
+                        .HasForeignKey("PayerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_cash_flow_input_payers_payer_id");
+
+                    b.HasOne("Monthwise.Domain.CashFlow.RecurringInput", null)
+                        .WithMany()
+                        .HasForeignKey("RecurringInputId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_cash_flow_input_recurring_inputs_recurring_input_id");
+                });
+
+            modelBuilder.Entity("Monthwise.Domain.CashFlow.RecurringInput", b =>
+                {
+                    b.HasOne("Monthwise.Domain.Cards.Card", null)
+                        .WithMany()
+                        .HasForeignKey("AccountId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_recurring_input_card_account_id");
+
+                    b.HasOne("Monthwise.Domain.CashFlow.InputCategory", null)
+                        .WithMany()
+                        .HasForeignKey("CategoryId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_recurring_input_input_categories_category_id");
+
+                    b.HasOne("Monthwise.Domain.CashFlow.Payer", null)
+                        .WithMany()
+                        .HasForeignKey("PayerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_recurring_input_payers_payer_id");
+                });
+
+            modelBuilder.Entity("Monthwise.Domain.CashFlow.SkippedOccurrence", b =>
+                {
+                    b.HasOne("Monthwise.Domain.CashFlow.RecurringInput", null)
+                        .WithMany()
+                        .HasForeignKey("RecurringInputId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_skipped_occurrence_recurring_input_recurring_input_id");
                 });
 
             modelBuilder.Entity("Monthwise.Domain.Cards.Card", b =>

@@ -1,5 +1,6 @@
 import {
   CalendarDays,
+  ChartColumn,
   CreditCard,
   Landmark,
   LayoutDashboard,
@@ -17,6 +18,7 @@ export interface NavItem {
 export const navItems: NavItem[] = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/month', label: 'Month', icon: CalendarDays },
+  { to: '/cash-flow', label: 'Cash flow', icon: ChartColumn },
   { to: '/cards', label: 'Cards', icon: CreditCard },
   { to: '/loans', label: 'Loans', icon: Landmark },
   { to: '/savings', label: 'Savings', icon: PiggyBank },

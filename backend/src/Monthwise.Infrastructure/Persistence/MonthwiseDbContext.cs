@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Monthwise.Application.Common;
 using Monthwise.Domain.Cards;
+using Monthwise.Domain.CashFlow;
 using Monthwise.Domain.Common;
 using Monthwise.Infrastructure.Persistence.Configurations;
 using Monthwise.Infrastructure.Persistence.Converters;
@@ -15,6 +16,12 @@ public sealed class MonthwiseDbContext(DbContextOptions<MonthwiseDbContext> opti
     public DbSet<Card> Cards => Set<Card>();
     public DbSet<CardIssuer> CardIssuers => Set<CardIssuer>();
     public DbSet<Bank> Banks => Set<Bank>();
+    public DbSet<CashFlowInput> CashFlowInputs => Set<CashFlowInput>();
+    public DbSet<RecurringInput> RecurringInputs => Set<RecurringInput>();
+    public DbSet<SkippedOccurrence> SkippedOccurrences => Set<SkippedOccurrence>();
+    public DbSet<Payer> Payers => Set<Payer>();
+    public DbSet<InputCategory> InputCategories => Set<InputCategory>();
+    public DbSet<BalanceEntry> BalanceEntries => Set<BalanceEntry>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -24,6 +31,12 @@ public sealed class MonthwiseDbContext(DbContextOptions<MonthwiseDbContext> opti
         modelBuilder.ApplyConfiguration(new CardSensitiveDataConfiguration(cipher));
         modelBuilder.ApplyConfiguration(new CardIssuerConfiguration());
         modelBuilder.ApplyConfiguration(new BankConfiguration());
+        modelBuilder.ApplyConfiguration(new CashFlowInputConfiguration());
+        modelBuilder.ApplyConfiguration(new RecurringInputConfiguration());
+        modelBuilder.ApplyConfiguration(new SkippedOccurrenceConfiguration());
+        modelBuilder.ApplyConfiguration(new PayerConfiguration());
+        modelBuilder.ApplyConfiguration(new InputCategoryConfiguration());
+        modelBuilder.ApplyConfiguration(new BalanceEntryConfiguration());
     }
 
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)

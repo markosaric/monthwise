@@ -53,7 +53,14 @@ public sealed record CardResponse(
     CardReference? ReplacedBy,
     CardReference? Replaces);
 
-public sealed record DashboardCardsResponse(bool HasAnyCards, IReadOnlyList<CardResponse> Cards);
+/// <summary>
+/// The Dashboard widget: the cards shown, whether any card exists, and the balance of each shown
+/// card (input cash flow FR-11).
+/// </summary>
+public sealed record DashboardCardsResponse(
+    bool HasAnyCards,
+    IReadOnlyList<CardResponse> Cards,
+    IReadOnlyList<CashFlow.AccountBalanceResponse> Balances);
 
 /// <summary>One full number, formatted in groups of four, sent only when the user presses Reveal.</summary>
 public sealed record RevealedNumberResponse(string Value);

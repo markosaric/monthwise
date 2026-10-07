@@ -63,20 +63,34 @@ card                 id, name, issuer_id, bank_id, card_number (encrypted)?, iba
                      (payment cards and current accounts; see docs/feature-requirements/credit-card-settings.md)
 card_issuer          id, name, is_predefined   (Visa, Mastercard, … extendable by the user)
 bank                 id, name, is_predefined   (ZaBa, PBZ, … extendable by the user)
+payer                id, name, removed_on?   (saved automatically when an input names it)
+input_category       id, name, is_predefined, hidden_on?   (Salary, Salary add-ons, … extendable)
+cash_flow_input      id, payer_id, category_id, account_id → card, amount_cents, issue_date,
+                     expected_date, received_date?, description?, recurring_input_id?, occurrence_date?
+                     (incoming cash flow; see docs/feature-requirements/input-cash-flow.md)
+recurring_input      id, payer_id, category_id, account_id → card, amount_cents, description?,
+                     frequency (Weekly|Monthly|Quarterly|Yearly), issue_anchor, expected_anchor, end_date?
+                     (occurrences are CALCULATED; one is stored as cash_flow_input only when changed or received)
+skipped_occurrence   recurring_input_id, occurrence_date   (a deleted occurrence)
+balance_entry        id, account_id → card, kind (Starting|Correction), date, balance_cents, note?
+                     (balance at the end of that date; account balance = latest entry + inputs received after it)
 period               id, household_id, year, month, opening_carryover_cents, closed_at
 category             id, household_id, direction (in|out), group, name
                      group ∈ salary | salary_addon | shared_contribution | other_in |
                              utility_shared | utility_private | variable | loan | card_installment |
                              card_payment | other_out
 recurring_item       id, category_id, name, default_amount_cents, due_day, share_pct (e.g. 50), account_id, active
+                     (expenses only; recurring income is recurring_input)
 transaction          id, period_id, category_id, recurring_item_id?, account_id?, description,
                      amount_cents, due_date?, paid_date?, received/paid flag, share_pct
+                     (expenses; income is cash_flow_input)
 installment_plan     id, card_id, merchant, purchase_date, total_amount_cents,
                      installments_total, installment_amount_cents, first_period
                      (current installment and remaining amount are CALCULATED, not entered)
 loan                 id, account_id, name, principal_cents?, monthly_payment_cents, due_day, share_pct, end_date?
 card_statement       id, card_id, period_id, calculated_cents, actual_cents  (difference = actual - calculated)
-balance_snapshot     id, account_id, date, balance_cents   (savings / account balances)
+balance_snapshot     id, account_id, date, balance_cents   (savings balances; card and current account
+                     balances are balance_entry)
 user                 id, email, household_id, role
 ```
 

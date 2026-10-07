@@ -35,7 +35,7 @@ export function AppLayout() {
 
       <nav
         aria-label="Main mobile"
-        className="fixed inset-x-0 bottom-0 grid grid-cols-6 border-t bg-background pb-[env(safe-area-inset-bottom)] md:hidden"
+        className="fixed inset-x-0 bottom-0 grid grid-cols-7 border-t bg-background pb-[env(safe-area-inset-bottom)] md:hidden"
       >
         {navItems.map(({ to, label, icon: Icon }) => (
           <NavLink
