@@ -242,8 +242,20 @@ describe('Cash flow dashboard and report', () => {
           to: lastDayOf(month),
           granularity: 'Day',
           buckets: [
-            { start: `${month}-01`, receivedCents: 0, expectedCents: 0 },
-            { start: `${month}-02`, receivedCents: 185000, expectedCents: 2000 },
+            {
+              start: `${month}-01`,
+              receivedCents: 0,
+              expectedCents: 0,
+              outputPaidCents: 0,
+              outputExpectedCents: 0,
+            },
+            {
+              start: `${month}-02`,
+              receivedCents: 185000,
+              expectedCents: 2000,
+              outputPaidCents: 50000,
+              outputExpectedCents: 0,
+            },
           ],
         }),
     })
@@ -254,10 +266,11 @@ describe('Cash flow dashboard and report', () => {
     const table = await screen.findByRole('table')
     expect(within(table).getByText('1.850,00 €')).toBeInTheDocument()
     expect(within(table).getByText('20,00 €')).toBeInTheDocument()
+    expect(within(table).getByText('500,00 €')).toBeInTheDocument()
     expect(within(table).getAllByRole('row')).toHaveLength(2)
   })
 
-  it('shows report totals, groups and the difference to the previous month', async () => {
+  it('shows report totals, groups, outputs, the month result and the previous month', async () => {
     stubApi({
       'GET /api/cash-flow/report': () =>
         json({
@@ -290,6 +303,32 @@ describe('Cash flow dashboard and report', () => {
           ],
           previousMonthTotalCents: 200000,
           differenceCents: 5000,
+          outputs: {
+            totals: { expectedCents: 30000, paidCents: 50000, totalCents: 80000 },
+            byCategory: [
+              {
+                id: 'bank-loan',
+                name: 'Bank loan',
+                totals: { expectedCents: 0, paidCents: 50000, totalCents: 50000 },
+              },
+              {
+                id: 'lease',
+                name: 'Lease',
+                totals: { expectedCents: 30000, paidCents: 0, totalCents: 30000 },
+              },
+            ],
+            byAccount: [
+              {
+                id: null,
+                name: 'No account yet',
+                totals: { expectedCents: 30000, paidCents: 0, totalCents: 30000 },
+              },
+            ],
+            byLoan: [],
+          },
+          monthResultCents: 125000,
+          previousMonthOutputsCents: 80000,
+          previousMonthResultCents: 120000,
         }),
     })
     renderRoute('/cash-flow/2026-10')
@@ -298,5 +337,9 @@ describe('Cash flow dashboard and report', () => {
     expect(screen.getByText(t.report.byCategory)).toBeInTheDocument()
     expect(screen.getByText(t.balance.kinds.Correction)).toBeInTheDocument()
     expect(screen.getByText('(-5,00 €)')).toBeInTheDocument()
+    expect(screen.getByText(t.report.monthResult)).toBeInTheDocument()
+    expect(screen.getByText('1.250,00 €')).toBeInTheDocument()
+    expect(screen.getByText('Lease')).toBeInTheDocument()
+    expect(screen.getByText('No account yet')).toBeInTheDocument()
   })
 })

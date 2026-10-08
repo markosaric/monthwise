@@ -1,5 +1,6 @@
 import { Navigate, useParams } from 'react-router'
 import { useMonthlyReport, type InputTotals, type MonthlyReport } from '@/api/cashFlow'
+import type { LoanPaymentTotals } from '@/api/loans'
 import { formatDate } from '@/components/cards/format'
 import { cashFlowTexts } from '@/components/cashflow/texts'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -10,7 +11,7 @@ import { PageHeader } from '@/pages/PageHeader'
 
 const t = cashFlowTexts.report
 
-/** The monthly cash flow report (FR-13). */
+/** The monthly cash flow report with outputs and the month result (FR-13, Appendix 1). */
 export function MonthlyReportPage() {
   const { yearMonth } = useParams()
   const { data: report, isPending, isError } = useMonthlyReport(yearMonth ?? '')
@@ -29,9 +30,29 @@ export function MonthlyReportPage() {
 
 function Report({ report }: { report: MonthlyReport }) {
   const empty = report.totals.totalCents === 0
+  const outputs = report.outputs
   return (
     <div className="flex max-w-3xl flex-col gap-4">
       <Card>
+        <CardContent>
+          <dl className="grid grid-cols-2 gap-2 text-sm">
+            <div>
+              <dt className="text-muted-foreground">{t.monthResult}</dt>
+              <dd className="text-lg font-semibold tabular-nums">
+                {formatCents(report.monthResultCents)}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-muted-foreground">{t.previousMonthResult}</dt>
+              <dd className="tabular-nums">{formatCents(report.previousMonthResultCents)}</dd>
+            </div>
+          </dl>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader>
+          <CardTitle>{t.inputs}</CardTitle>
+        </CardHeader>
         <CardContent className="flex flex-col gap-3">
           <TotalsRow totals={report.totals} />
           <dl className="grid grid-cols-2 gap-2 border-t pt-3 text-sm">
@@ -56,6 +77,29 @@ function Report({ report }: { report: MonthlyReport }) {
           <Groups title={t.byCategory} groups={report.byCategory} />
           <Groups title={t.byAccount} groups={report.byAccount} />
           <Groups title={t.byPayer} groups={report.byPayer} />
+        </>
+      )}
+      <Card>
+        <CardHeader>
+          <CardTitle>{t.outputs}</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-3">
+          <OutputTotalsRow totals={outputs.totals} />
+          <dl className="grid grid-cols-2 gap-2 border-t pt-3 text-sm">
+            <div>
+              <dt className="text-muted-foreground">{t.previousMonthOutputs}</dt>
+              <dd className="tabular-nums">{formatCents(report.previousMonthOutputsCents)}</dd>
+            </div>
+          </dl>
+        </CardContent>
+      </Card>
+      {outputs.totals.totalCents === 0 ? (
+        <p className="text-sm text-muted-foreground">{t.noOutputs}</p>
+      ) : (
+        <>
+          <OutputGroups title={t.outputsByCategory} groups={outputs.byCategory} />
+          <OutputGroups title={t.outputsByAccount} groups={outputs.byAccount} />
+          <OutputGroups title={t.outputsByLoan} groups={outputs.byLoan} />
         </>
       )}
       <Card>
@@ -137,6 +181,66 @@ function Groups({ title, groups }: { title: string; groups: MonthlyReport['byCat
                 </span>
                 <span>
                   {labels.expected}{' '}
+                  <span className="tabular-nums">{formatCents(group.totals.expectedCents)}</span>
+                </span>
+              </div>
+            </li>
+          ))}
+        </ul>
+      </CardContent>
+    </Card>
+  )
+}
+
+function OutputTotalsRow({ totals }: { totals: LoanPaymentTotals }) {
+  const labels = cashFlowTexts.totals
+  return (
+    <dl className="grid grid-cols-3 gap-2 text-sm">
+      <div>
+        <dt className="text-muted-foreground">{labels.expected}</dt>
+        <dd className="text-muted-foreground tabular-nums">{formatCents(totals.expectedCents)}</dd>
+      </div>
+      <div>
+        <dt className="text-muted-foreground">{t.paid}</dt>
+        <dd className="tabular-nums">{formatCents(totals.paidCents)}</dd>
+      </div>
+      <div>
+        <dt className="text-muted-foreground">{t.outputs}</dt>
+        <dd className="text-lg font-semibold tabular-nums">{formatCents(totals.totalCents)}</dd>
+      </div>
+    </dl>
+  )
+}
+
+function OutputGroups({
+  title,
+  groups,
+}: {
+  title: string
+  groups: MonthlyReport['outputs']['byCategory']
+}) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>{title}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <ul className="flex flex-col divide-y text-sm">
+          {groups.map((group) => (
+            <li key={group.id ?? 'none'} className="flex flex-col gap-0.5 py-2">
+              <div className="flex items-baseline gap-3">
+                <span className="min-w-0 flex-1 truncate">{group.name}</span>
+                <span className="font-medium tabular-nums">
+                  {formatCents(group.totals.totalCents)}
+                </span>
+              </div>
+              <div className="flex flex-wrap gap-x-4 text-xs text-muted-foreground">
+                <span>
+                  {t.paid}{' '}
+                  <span className="tabular-nums">{formatCents(group.totals.paidCents)}</span>
+                </span>
+                <span>
+                  {cashFlowTexts.totals.expected}{' '}
                   <span className="tabular-nums">{formatCents(group.totals.expectedCents)}</span>
                 </span>
               </div>

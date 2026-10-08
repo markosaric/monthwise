@@ -159,6 +159,47 @@
         }
       }
     },
+    "/api/loan-payments": {
+      "get": {
+        "tags": [
+          "Loans"
+        ],
+        "summary": "Loan payments of a month (yyyy-MM), with totals.",
+        "operationId": "GetMonthLoanPayments",
+        "parameters": [
+          {
+            "name": "month",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MonthLoanPaymentsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/cards": {
       "get": {
         "tags": [
@@ -2064,7 +2105,7 @@
         "tags": [
           "Cash flow"
         ],
-        "summary": "Received and expected inputs per day or month between two dates.",
+        "summary": "Received and expected inputs, and paid and expected loan payments, per day or month between two dates.",
         "operationId": "GetCashFlowChart",
         "parameters": [
           {
@@ -2110,6 +2151,14 @@
           },
           {
             "name": "categoryId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "loanCategoryId",
             "in": "query",
             "schema": {
               "type": "string",
@@ -2175,6 +2224,1355 @@
               "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/loans": {
+      "get": {
+        "tags": [
+          "Loans"
+        ],
+        "summary": "Active loans (active and paid off), or closed loans.",
+        "operationId": "GetLoans",
+        "parameters": [
+          {
+            "name": "show",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/LoanListFilter"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/LoanResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Loans"
+        ],
+        "summary": "Adds a loan. Give the number of payments or the end month (or both, when they agree).",
+        "operationId": "CreateLoan",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoanRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoanDetailsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/loans/dashboard": {
+      "get": {
+        "tags": [
+          "Loans"
+        ],
+        "summary": "Active loans with their next payment, and the totals of the monthly payments and the remaining amount.",
+        "operationId": "GetLoansDashboard",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoansDashboardResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/loans/{id}": {
+      "get": {
+        "tags": [
+          "Loans"
+        ],
+        "summary": "A loan with its payment changes and all its payments.",
+        "operationId": "GetLoan",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoanDetailsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Loans"
+        ],
+        "summary": "Edits a loan. Paid payments stay as they are.",
+        "operationId": "UpdateLoan",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoanRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoanDetailsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Loans"
+        ],
+        "summary": "Deletes a loan without paid payments; a loan with paid payments returns 409 and can only be closed.",
+        "operationId": "DeleteLoan",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/loans/{id}/close": {
+      "post": {
+        "tags": [
+          "Loans"
+        ],
+        "summary": "Closes the loan today: it keeps its paid payments and has no payments after today.",
+        "operationId": "CloseLoan",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoanDetailsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/loans/{id}/payment-changes": {
+      "post": {
+        "tags": [
+          "Loans"
+        ],
+        "summary": "Changes the monthly payment or the payment day from a month on.",
+        "operationId": "CreatePaymentChange",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PaymentChangeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoanDetailsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/loans/{id}/payment-changes/{changeId}": {
+      "put": {
+        "tags": [
+          "Loans"
+        ],
+        "summary": "Edits a payment change while none of the payments it covers is paid.",
+        "operationId": "UpdatePaymentChange",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "changeId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PaymentChangeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoanDetailsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Loans"
+        ],
+        "summary": "Removes a payment change while none of the payments it covers is paid.",
+        "operationId": "DeletePaymentChange",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "changeId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoanDetailsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/loans/{id}/payments/{month}/{kind}": {
+      "put": {
+        "tags": [
+          "Loans"
+        ],
+        "summary": "Changes the amount and due date of one payment without changing the loan.",
+        "operationId": "ChangeLoanPayment",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "month",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "kind",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/LoanPaymentKind"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoanPaymentChangeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoanPaymentResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/loans/{id}/payments/{month}/{kind}/paid": {
+      "post": {
+        "tags": [
+          "Loans"
+        ],
+        "summary": "Ticks Paid. The paid date defaults to today and the account to the loan's account.",
+        "operationId": "MarkLoanPaymentPaid",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "month",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "kind",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/LoanPaymentKind"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoanPaymentPaidRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoanPaymentResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Loans"
+        ],
+        "summary": "Unticks Paid.",
+        "operationId": "MarkLoanPaymentUnpaid",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "month",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "kind",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/LoanPaymentKind"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoanPaymentResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/loan-categories": {
+      "get": {
+        "tags": [
+          "Loans"
+        ],
+        "summary": "Loan categories with their subcategories.",
+        "operationId": "GetLoanCategories",
+        "parameters": [
+          {
+            "name": "includeHidden",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/LoanCategoryResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Loans"
+        ],
+        "operationId": "CreateLoanCategory",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoanCategoryRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoanCategoryResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/loan-categories/{id}": {
+      "put": {
+        "tags": [
+          "Loans"
+        ],
+        "summary": "Renames the category and sets whether its loans may have a residual value.",
+        "operationId": "UpdateLoanCategory",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoanCategoryRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoanCategoryResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Loans"
+        ],
+        "summary": "Deletes an unused category; a used one returns 409 and can only be hidden.",
+        "operationId": "DeleteLoanCategory",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/loan-categories/{id}/hide": {
+      "post": {
+        "tags": [
+          "Loans"
+        ],
+        "operationId": "HideLoanCategory",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoanCategoryResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/loan-categories/{id}/show": {
+      "post": {
+        "tags": [
+          "Loans"
+        ],
+        "operationId": "ShowLoanCategory",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoanCategoryResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/loan-categories/{id}/subcategories": {
+      "post": {
+        "tags": [
+          "Loans"
+        ],
+        "operationId": "CreateLoanSubcategory",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NameRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoanSubcategoryResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/loan-subcategories/{id}": {
+      "put": {
+        "tags": [
+          "Loans"
+        ],
+        "operationId": "RenameLoanSubcategory",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NameRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoanSubcategoryResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Loans"
+        ],
+        "summary": "Deletes an unused subcategory; a used one returns 409 and can only be hidden.",
+        "operationId": "DeleteLoanSubcategory",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/loan-subcategories/{id}/hide": {
+      "post": {
+        "tags": [
+          "Loans"
+        ],
+        "operationId": "HideLoanSubcategory",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoanSubcategoryResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/loan-subcategories/{id}/show": {
+      "post": {
+        "tags": [
+          "Loans"
+        ],
+        "operationId": "ShowLoanSubcategory",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoanSubcategoryResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -2628,7 +4026,9 @@
         "required": [
           "start",
           "receivedCents",
-          "expectedCents"
+          "expectedCents",
+          "outputPaidCents",
+          "outputExpectedCents"
         ],
         "type": "object",
         "properties": {
@@ -2641,6 +4041,14 @@
             "format": "int64"
           },
           "expectedCents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "outputPaidCents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "outputExpectedCents": {
             "type": "integer",
             "format": "int64"
           }
@@ -2966,6 +4374,537 @@
           }
         }
       },
+      "LoanCategoryRequest": {
+        "required": [
+          "name",
+          "allowsResidualValue"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "allowsResidualValue": {
+            "type": "boolean"
+          }
+        }
+      },
+      "LoanCategoryResponse": {
+        "required": [
+          "id",
+          "name",
+          "allowsResidualValue",
+          "isPredefined",
+          "isHidden",
+          "subcategories"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "allowsResidualValue": {
+            "type": "boolean"
+          },
+          "isPredefined": {
+            "type": "boolean"
+          },
+          "isHidden": {
+            "type": "boolean"
+          },
+          "subcategories": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LoanSubcategoryResponse"
+            }
+          }
+        }
+      },
+      "LoanDetailsResponse": {
+        "required": [
+          "loan",
+          "changes",
+          "payments"
+        ],
+        "type": "object",
+        "properties": {
+          "loan": {
+            "$ref": "#/components/schemas/LoanResponse"
+          },
+          "changes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PaymentChangeResponse"
+            }
+          },
+          "payments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LoanPaymentResponse"
+            }
+          }
+        }
+      },
+      "LoanListFilter": {
+        "enum": [
+          "Active",
+          "Closed",
+          null
+        ]
+      },
+      "LoanPaymentChangeRequest": {
+        "required": [
+          "amountCents",
+          "dueDate"
+        ],
+        "type": "object",
+        "properties": {
+          "amountCents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "dueDate": {
+            "type": "string",
+            "format": "date"
+          }
+        }
+      },
+      "LoanPaymentKind": {
+        "enum": [
+          "Regular",
+          "Residual"
+        ]
+      },
+      "LoanPaymentPaidRequest": {
+        "required": [
+          "paidDate",
+          "accountId"
+        ],
+        "type": "object",
+        "properties": {
+          "paidDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "accountId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          }
+        }
+      },
+      "LoanPaymentResponse": {
+        "required": [
+          "loanId",
+          "month",
+          "kind",
+          "loanName",
+          "category",
+          "subcategory",
+          "number",
+          "total",
+          "amountCents",
+          "billDate",
+          "dueDate",
+          "paidDate",
+          "account",
+          "paymentMethod",
+          "isPaid",
+          "isChanged",
+          "isOverdue",
+          "needsAccount"
+        ],
+        "type": "object",
+        "properties": {
+          "loanId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "month": {
+            "type": "string"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/LoanPaymentKind"
+          },
+          "loanName": {
+            "type": "string"
+          },
+          "category": {
+            "$ref": "#/components/schemas/NamedReference"
+          },
+          "subcategory": {
+            "$ref": "#/components/schemas/NamedReference"
+          },
+          "number": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "amountCents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "billDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "dueDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "paidDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "account": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NamedReference"
+              }
+            ]
+          },
+          "paymentMethod": {
+            "$ref": "#/components/schemas/PaymentMethod"
+          },
+          "isPaid": {
+            "type": "boolean"
+          },
+          "isChanged": {
+            "type": "boolean"
+          },
+          "isOverdue": {
+            "type": "boolean"
+          },
+          "needsAccount": {
+            "type": "boolean"
+          }
+        }
+      },
+      "LoanPaymentTotalsResponse": {
+        "required": [
+          "expectedCents",
+          "paidCents",
+          "totalCents"
+        ],
+        "type": "object",
+        "properties": {
+          "expectedCents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "paidCents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "totalCents": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "LoanRequest": {
+        "required": [
+          "name",
+          "categoryId",
+          "subcategoryId",
+          "lenderId",
+          "paymentMethod",
+          "accountId",
+          "startMonth",
+          "paymentDay",
+          "monthlyPaymentCents",
+          "paymentCount",
+          "endMonth",
+          "residualValueCents",
+          "description"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "categoryId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "subcategoryId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "lenderId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "paymentMethod": {
+            "$ref": "#/components/schemas/PaymentMethod"
+          },
+          "accountId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "startMonth": {
+            "type": "string"
+          },
+          "paymentDay": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "monthlyPaymentCents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "paymentCount": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "endMonth": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "residualValueCents": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int64"
+          },
+          "description": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "LoanResponse": {
+        "required": [
+          "id",
+          "name",
+          "category",
+          "subcategory",
+          "lender",
+          "paymentMethod",
+          "account",
+          "startMonth",
+          "endMonth",
+          "paymentDay",
+          "monthlyPaymentCents",
+          "paymentCount",
+          "residualValueCents",
+          "description",
+          "closedOn",
+          "status",
+          "currentMonthlyPaymentCents",
+          "currentPaymentDay",
+          "nextPaymentDate",
+          "paymentsPaid",
+          "paymentsLeft",
+          "paidAmountCents",
+          "remainingAmountCents",
+          "hasOverduePayment",
+          "needsAccount"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "category": {
+            "$ref": "#/components/schemas/NamedReference"
+          },
+          "subcategory": {
+            "$ref": "#/components/schemas/NamedReference"
+          },
+          "lender": {
+            "$ref": "#/components/schemas/NamedReference"
+          },
+          "paymentMethod": {
+            "$ref": "#/components/schemas/PaymentMethod"
+          },
+          "account": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NamedReference"
+              }
+            ]
+          },
+          "startMonth": {
+            "type": "string"
+          },
+          "endMonth": {
+            "type": "string"
+          },
+          "paymentDay": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "monthlyPaymentCents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "paymentCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "residualValueCents": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int64"
+          },
+          "description": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "closedOn": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "status": {
+            "$ref": "#/components/schemas/LoanStatus"
+          },
+          "currentMonthlyPaymentCents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "currentPaymentDay": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "nextPaymentDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "paymentsPaid": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "paymentsLeft": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "paidAmountCents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "remainingAmountCents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "hasOverduePayment": {
+            "type": "boolean"
+          },
+          "needsAccount": {
+            "type": "boolean"
+          }
+        }
+      },
+      "LoansDashboardResponse": {
+        "required": [
+          "hasAnyLoans",
+          "loans",
+          "totalMonthlyPaymentCents",
+          "totalRemainingCents"
+        ],
+        "type": "object",
+        "properties": {
+          "hasAnyLoans": {
+            "type": "boolean"
+          },
+          "loans": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LoanResponse"
+            }
+          },
+          "totalMonthlyPaymentCents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "totalRemainingCents": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "LoanStatus": {
+        "enum": [
+          "Active",
+          "PaidOff",
+          "Closed"
+        ]
+      },
+      "LoanSubcategoryResponse": {
+        "required": [
+          "id",
+          "categoryId",
+          "name",
+          "isPredefined",
+          "isHidden"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "categoryId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "isPredefined": {
+            "type": "boolean"
+          },
+          "isHidden": {
+            "type": "boolean"
+          }
+        }
+      },
       "MonthInputsResponse": {
         "required": [
           "month",
@@ -2988,6 +4927,28 @@
           }
         }
       },
+      "MonthLoanPaymentsResponse": {
+        "required": [
+          "month",
+          "payments",
+          "totals"
+        ],
+        "type": "object",
+        "properties": {
+          "month": {
+            "type": "string"
+          },
+          "payments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LoanPaymentResponse"
+            }
+          },
+          "totals": {
+            "$ref": "#/components/schemas/LoanPaymentTotalsResponse"
+          }
+        }
+      },
       "MonthlyReportResponse": {
         "required": [
           "month",
@@ -2997,7 +4958,11 @@
           "byPayer",
           "balanceEntries",
           "previousMonthTotalCents",
-          "differenceCents"
+          "differenceCents",
+          "outputs",
+          "monthResultCents",
+          "previousMonthOutputsCents",
+          "previousMonthResultCents"
         ],
         "type": "object",
         "properties": {
@@ -3036,6 +5001,21 @@
             "format": "int64"
           },
           "differenceCents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "outputs": {
+            "$ref": "#/components/schemas/ReportOutputsResponse"
+          },
+          "monthResultCents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "previousMonthOutputsCents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "previousMonthResultCents": {
             "type": "integer",
             "format": "int64"
           }
@@ -3087,6 +5067,93 @@
             "type": "boolean"
           }
         }
+      },
+      "PaymentChangeRequest": {
+        "required": [
+          "fromMonth",
+          "monthlyPaymentCents",
+          "paymentDay",
+          "note",
+          "keepChangedPayments"
+        ],
+        "type": "object",
+        "properties": {
+          "fromMonth": {
+            "type": "string"
+          },
+          "monthlyPaymentCents": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int64"
+          },
+          "paymentDay": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "note": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "keepChangedPayments": {
+            "type": "boolean"
+          }
+        }
+      },
+      "PaymentChangeResponse": {
+        "required": [
+          "id",
+          "fromMonth",
+          "monthlyPaymentCents",
+          "paymentDay",
+          "note",
+          "canChange"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "fromMonth": {
+            "type": "string"
+          },
+          "monthlyPaymentCents": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int64"
+          },
+          "paymentDay": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "note": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "canChange": {
+            "type": "boolean"
+          }
+        }
+      },
+      "PaymentMethod": {
+        "enum": [
+          "StandingOrder",
+          "Bill"
+        ]
       },
       "ProblemDetails": {
         "type": "object",
@@ -3326,6 +5393,61 @@
           }
         }
       },
+      "ReportOutputGroupResponse": {
+        "required": [
+          "id",
+          "name",
+          "totals"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "totals": {
+            "$ref": "#/components/schemas/LoanPaymentTotalsResponse"
+          }
+        }
+      },
+      "ReportOutputsResponse": {
+        "required": [
+          "totals",
+          "byCategory",
+          "byAccount",
+          "byLoan"
+        ],
+        "type": "object",
+        "properties": {
+          "totals": {
+            "$ref": "#/components/schemas/LoanPaymentTotalsResponse"
+          },
+          "byCategory": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReportOutputGroupResponse"
+            }
+          },
+          "byAccount": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReportOutputGroupResponse"
+            }
+          },
+          "byLoan": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReportOutputGroupResponse"
+            }
+          }
+        }
+      },
       "RevealedNumberResponse": {
         "required": [
           "value"
@@ -3351,6 +5473,9 @@
     },
     {
       "name": "Balances"
+    },
+    {
+      "name": "Loans"
     },
     {
       "name": "Cards"

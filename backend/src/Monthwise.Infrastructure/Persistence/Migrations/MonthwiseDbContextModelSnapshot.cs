@@ -608,6 +608,368 @@ namespace Monthwise.Infrastructure.Persistence.Migrations
                     b.ToTable("skipped_occurrence", (string)null);
                 });
 
+            modelBuilder.Entity("Monthwise.Domain.Loans.Loan", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid?>("AccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("account_id");
+
+                    b.Property<Guid>("CategoryId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("category_id");
+
+                    b.Property<DateOnly?>("ClosedOn")
+                        .HasColumnType("date")
+                        .HasColumnName("closed_on");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("description");
+
+                    b.Property<Guid>("LenderId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("lender_id");
+
+                    b.Property<long>("MonthlyPayment")
+                        .HasColumnType("bigint")
+                        .HasColumnName("monthly_payment_cents");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("name");
+
+                    b.Property<int>("PaymentCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("payment_count");
+
+                    b.Property<int>("PaymentDay")
+                        .HasColumnType("integer")
+                        .HasColumnName("payment_day");
+
+                    b.Property<string>("PaymentMethod")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("payment_method");
+
+                    b.Property<long?>("ResidualValue")
+                        .HasColumnType("bigint")
+                        .HasColumnName("residual_value_cents");
+
+                    b.Property<DateOnly>("StartMonth")
+                        .HasColumnType("date")
+                        .HasColumnName("start_month");
+
+                    b.Property<Guid>("SubcategoryId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("subcategory_id");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id")
+                        .HasName("pk_loan");
+
+                    b.HasIndex("AccountId")
+                        .HasDatabaseName("ix_loan_account_id");
+
+                    b.HasIndex("CategoryId")
+                        .HasDatabaseName("ix_loan_category_id");
+
+                    b.HasIndex("LenderId")
+                        .HasDatabaseName("ix_loan_lender_id");
+
+                    b.HasIndex("SubcategoryId")
+                        .HasDatabaseName("ix_loan_subcategory_id");
+
+                    b.ToTable("loan", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_loan_monthly_payment_positive", "monthly_payment_cents > 0");
+
+                            t.HasCheckConstraint("ck_loan_payment_count", "payment_count >= 1");
+
+                            t.HasCheckConstraint("ck_loan_payment_day", "payment_day BETWEEN 1 AND 31");
+
+                            t.HasCheckConstraint("ck_loan_residual_value_positive", "residual_value_cents IS NULL OR residual_value_cents > 0");
+
+                            t.HasCheckConstraint("ck_loan_standing_order_account", "(payment_method = 'StandingOrder') = (account_id IS NOT NULL)");
+                        });
+                });
+
+            modelBuilder.Entity("Monthwise.Domain.Loans.LoanCategory", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<bool>("AllowsResidualValue")
+                        .HasColumnType("boolean")
+                        .HasColumnName("allows_residual_value");
+
+                    b.Property<DateOnly?>("HiddenOn")
+                        .HasColumnType("date")
+                        .HasColumnName("hidden_on");
+
+                    b.Property<bool>("IsPredefined")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_predefined");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("name");
+
+                    b.HasKey("Id")
+                        .HasName("pk_loan_category");
+
+                    b.ToTable("loan_category", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("0199c2a0-0000-7000-8000-000000000301"),
+                            AllowsResidualValue = false,
+                            IsPredefined = true,
+                            Name = "Bank loan"
+                        },
+                        new
+                        {
+                            Id = new Guid("0199c2a0-0000-7000-8000-000000000302"),
+                            AllowsResidualValue = true,
+                            IsPredefined = true,
+                            Name = "Lease"
+                        });
+                });
+
+            modelBuilder.Entity("Monthwise.Domain.Loans.LoanPayment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<long?>("Amount")
+                        .HasColumnType("bigint")
+                        .HasColumnName("amount_cents");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateOnly?>("DueDate")
+                        .HasColumnType("date")
+                        .HasColumnName("due_date");
+
+                    b.Property<bool>("IsChanged")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_changed");
+
+                    b.Property<bool?>("IsPaid")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_paid");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("kind");
+
+                    b.Property<Guid>("LoanId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("loan_id");
+
+                    b.Property<DateOnly>("Month")
+                        .HasColumnType("date")
+                        .HasColumnName("month");
+
+                    b.Property<Guid?>("PaidAccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("paid_account_id");
+
+                    b.Property<DateOnly?>("PaidDate")
+                        .HasColumnType("date")
+                        .HasColumnName("paid_date");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id")
+                        .HasName("pk_loan_payment");
+
+                    b.HasIndex("DueDate")
+                        .HasDatabaseName("ix_loan_payment_due_date");
+
+                    b.HasIndex("PaidAccountId")
+                        .HasDatabaseName("ix_loan_payment_paid_account_id");
+
+                    b.HasIndex("PaidDate")
+                        .HasDatabaseName("ix_loan_payment_paid_date");
+
+                    b.HasIndex("LoanId", "Month", "Kind")
+                        .IsUnique()
+                        .HasDatabaseName("ux_loan_payment_loan_id_month_kind");
+
+                    b.ToTable("loan_payment", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_loan_payment_amount_positive", "amount_cents IS NULL OR amount_cents > 0");
+
+                            t.HasCheckConstraint("ck_loan_payment_paid", "(is_paid IS TRUE) = (paid_date IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_loan_payment_paid_account", "(is_paid IS TRUE) = (paid_account_id IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_loan_payment_paid_after_bill", "paid_date IS NULL OR paid_date >= month");
+                        });
+                });
+
+            modelBuilder.Entity("Monthwise.Domain.Loans.LoanSubcategory", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("CategoryId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("category_id");
+
+                    b.Property<DateOnly?>("HiddenOn")
+                        .HasColumnType("date")
+                        .HasColumnName("hidden_on");
+
+                    b.Property<bool>("IsPredefined")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_predefined");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("name");
+
+                    b.HasKey("Id")
+                        .HasName("pk_loan_subcategory");
+
+                    b.HasIndex("CategoryId")
+                        .HasDatabaseName("ix_loan_subcategory_category_id");
+
+                    b.ToTable("loan_subcategory", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("0199c2a0-0000-7000-8000-000000000311"),
+                            CategoryId = new Guid("0199c2a0-0000-7000-8000-000000000301"),
+                            IsPredefined = true,
+                            Name = "Mortgage"
+                        },
+                        new
+                        {
+                            Id = new Guid("0199c2a0-0000-7000-8000-000000000312"),
+                            CategoryId = new Guid("0199c2a0-0000-7000-8000-000000000301"),
+                            IsPredefined = true,
+                            Name = "Cash loan"
+                        },
+                        new
+                        {
+                            Id = new Guid("0199c2a0-0000-7000-8000-000000000313"),
+                            CategoryId = new Guid("0199c2a0-0000-7000-8000-000000000301"),
+                            IsPredefined = true,
+                            Name = "Car loan"
+                        },
+                        new
+                        {
+                            Id = new Guid("0199c2a0-0000-7000-8000-000000000314"),
+                            CategoryId = new Guid("0199c2a0-0000-7000-8000-000000000301"),
+                            IsPredefined = true,
+                            Name = "Other loan"
+                        },
+                        new
+                        {
+                            Id = new Guid("0199c2a0-0000-7000-8000-000000000321"),
+                            CategoryId = new Guid("0199c2a0-0000-7000-8000-000000000302"),
+                            IsPredefined = true,
+                            Name = "Car lease"
+                        },
+                        new
+                        {
+                            Id = new Guid("0199c2a0-0000-7000-8000-000000000322"),
+                            CategoryId = new Guid("0199c2a0-0000-7000-8000-000000000302"),
+                            IsPredefined = true,
+                            Name = "Equipment lease"
+                        },
+                        new
+                        {
+                            Id = new Guid("0199c2a0-0000-7000-8000-000000000323"),
+                            CategoryId = new Guid("0199c2a0-0000-7000-8000-000000000302"),
+                            IsPredefined = true,
+                            Name = "Other lease"
+                        });
+                });
+
+            modelBuilder.Entity("Monthwise.Domain.Loans.PaymentChange", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateOnly>("FromMonth")
+                        .HasColumnType("date")
+                        .HasColumnName("from_month");
+
+                    b.Property<Guid>("LoanId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("loan_id");
+
+                    b.Property<long?>("MonthlyPayment")
+                        .HasColumnType("bigint")
+                        .HasColumnName("monthly_payment_cents");
+
+                    b.Property<string>("Note")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("note");
+
+                    b.Property<int?>("PaymentDay")
+                        .HasColumnType("integer")
+                        .HasColumnName("payment_day");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id")
+                        .HasName("pk_loan_payment_change");
+
+                    b.HasIndex("LoanId", "FromMonth")
+                        .IsUnique()
+                        .HasDatabaseName("ux_loan_payment_change_loan_id_from_month");
+
+                    b.ToTable("loan_payment_change", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_loan_payment_change_monthly_payment_positive", "monthly_payment_cents IS NULL OR monthly_payment_cents > 0");
+
+                            t.HasCheckConstraint("ck_loan_payment_change_not_empty", "monthly_payment_cents IS NOT NULL OR payment_day IS NOT NULL");
+
+                            t.HasCheckConstraint("ck_loan_payment_change_payment_day", "payment_day IS NULL OR payment_day BETWEEN 1 AND 31");
+                        });
+                });
+
             modelBuilder.Entity("Monthwise.Domain.Cards.Card", b =>
                 {
                     b.HasOne("Monthwise.Domain.Cards.Bank", null)
@@ -715,10 +1077,81 @@ namespace Monthwise.Infrastructure.Persistence.Migrations
                         .HasConstraintName("fk_skipped_occurrence_recurring_input_recurring_input_id");
                 });
 
+            modelBuilder.Entity("Monthwise.Domain.Loans.Loan", b =>
+                {
+                    b.HasOne("Monthwise.Domain.Cards.Card", null)
+                        .WithMany()
+                        .HasForeignKey("AccountId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_loan_card_account_id");
+
+                    b.HasOne("Monthwise.Domain.Loans.LoanCategory", null)
+                        .WithMany()
+                        .HasForeignKey("CategoryId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_loan_loan_category_category_id");
+
+                    b.HasOne("Monthwise.Domain.Cards.Bank", null)
+                        .WithMany()
+                        .HasForeignKey("LenderId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_loan_bank_lender_id");
+
+                    b.HasOne("Monthwise.Domain.Loans.LoanSubcategory", null)
+                        .WithMany()
+                        .HasForeignKey("SubcategoryId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_loan_loan_subcategory_subcategory_id");
+                });
+
+            modelBuilder.Entity("Monthwise.Domain.Loans.LoanPayment", b =>
+                {
+                    b.HasOne("Monthwise.Domain.Loans.Loan", null)
+                        .WithMany()
+                        .HasForeignKey("LoanId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_loan_payment_loan_loan_id");
+
+                    b.HasOne("Monthwise.Domain.Cards.Card", null)
+                        .WithMany()
+                        .HasForeignKey("PaidAccountId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_loan_payment_card_paid_account_id");
+                });
+
+            modelBuilder.Entity("Monthwise.Domain.Loans.LoanSubcategory", b =>
+                {
+                    b.HasOne("Monthwise.Domain.Loans.LoanCategory", null)
+                        .WithMany()
+                        .HasForeignKey("CategoryId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_loan_subcategory_loan_category_category_id");
+                });
+
+            modelBuilder.Entity("Monthwise.Domain.Loans.PaymentChange", b =>
+                {
+                    b.HasOne("Monthwise.Domain.Loans.Loan", null)
+                        .WithMany("Changes")
+                        .HasForeignKey("LoanId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_loan_payment_change_loan_loan_id");
+                });
+
             modelBuilder.Entity("Monthwise.Domain.Cards.Card", b =>
                 {
                     b.Navigation("SensitiveData")
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("Monthwise.Domain.Loans.Loan", b =>
+                {
+                    b.Navigation("Changes");
                 });
 #pragma warning restore 612, 618
         }

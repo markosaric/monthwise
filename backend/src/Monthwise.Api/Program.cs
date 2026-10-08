@@ -58,6 +58,7 @@ var api = app.MapGroup("/api");
 api.MapHealthEndpoints();
 api.MapCardEndpoints();
 api.MapCashFlowEndpoints();
+api.MapLoanEndpoints();
 
 await app.RunAsync();
 

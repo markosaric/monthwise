@@ -1,0 +1,156 @@
+using Monthwise.Domain.Common;
+
+namespace Monthwise.Domain.Loans;
+
+/// <summary>
+/// A stored payment of a loan: created the first time the user changes, pays or unticks a payment
+/// (FR-4, FR-5). It is identified by its loan, scheduled <see cref="Month"/> and <see cref="Kind"/>.
+/// <see cref="Amount"/> and <see cref="DueDate"/> override the calculated values: set by the user
+/// (<see cref="IsChanged"/>), or kept when the payment is paid, so later edits of the loan leave paid
+/// payments unchanged. <see cref="IsPaid"/> is the user's explicit state; when it is null a
+/// standing order payment is paid automatically after its due date.
+/// </summary>
+public sealed class LoanPayment
+{
+    private LoanPayment()
+    {
+    }
+
+    public Guid Id { get; private set; }
+    public Guid LoanId { get; private set; }
+    public YearMonth Month { get; private set; }
+    public LoanPaymentKind Kind { get; private set; }
+    public Money? Amount { get; private set; }
+    public DateOnly? DueDate { get; private set; }
+    public bool IsChanged { get; private set; }
+    public bool? IsPaid { get; private set; }
+    public DateOnly? PaidDate { get; private set; }
+    public Guid? PaidAccountId { get; private set; }
+    public DateTimeOffset CreatedAt { get; private set; }
+    public DateTimeOffset UpdatedAt { get; private set; }
+
+    /// <summary>True when the payment holds nothing the calculation does not already give, so it can be removed.</summary>
+    public bool IsEmpty => !IsChanged && IsPaid is null && Amount is null && DueDate is null;
+
+    public static LoanPayment Create(Guid loanId, YearMonth month, LoanPaymentKind kind, DateTimeOffset now) =>
+        new()
+        {
+            Id = Guid.CreateVersion7(now),
+            LoanId = loanId,
+            Month = month,
+            Kind = kind,
+            CreatedAt = now,
+            UpdatedAt = now,
+        };
+
+    /// <summary>Changes one expected payment (FR-4). The due date stays in the payment's month.</summary>
+    public Result Change(Money amount, DateOnly dueDate, DateTimeOffset now)
+    {
+        var errors = new List<DomainError>();
+        if (!amount.IsPositive)
+        {
+            errors.Add(LoanErrors.PaymentAmountNotPositive);
+        }
+        if (YearMonth.FromDate(dueDate) != Month)
+        {
+            errors.Add(LoanErrors.PaymentDueDateOutsideMonth);
+        }
+        if (errors.Count > 0)
+        {
+            return Result.Failure(errors);
+        }
+        Amount = amount;
+        DueDate = dueDate;
+        IsChanged = true;
+        UpdatedAt = now;
+        return Result.Success();
+    }
+
+    /// <summary>
+    /// Marks the payment as paid on <paramref name="paidDate"/> from <paramref name="accountId"/> (FR-5).
+    /// The amount and due date it was paid with are kept.
+    /// </summary>
+    public Result MarkPaid(DateOnly paidDate, Guid accountId, Money amount, DateOnly dueDate, DateTimeOffset now)
+    {
+        var errors = new List<DomainError>();
+        if (paidDate < DueDateRule.BillDate(Month))
+        {
+            errors.Add(LoanErrors.PaidBeforeBillDate);
+        }
+        if (accountId == Guid.Empty)
+        {
+            errors.Add(LoanErrors.PaidAccountRequired);
+        }
+        if (errors.Count > 0)
+        {
+            return Result.Failure(errors);
+        }
+        Amount ??= amount;
+        DueDate ??= dueDate;
+        IsPaid = true;
+        PaidDate = paidDate;
+        PaidAccountId = accountId;
+        UpdatedAt = now;
+        return Result.Success();
+    }
+
+    /// <summary>Unticks the payment: it is expected again, also when it is a standing order (FR-5).</summary>
+    public void MarkUnpaid(DateTimeOffset now)
+    {
+        if (!IsChanged)
+        {
+            Amount = null;
+            DueDate = null;
+        }
+        IsPaid = false;
+        PaidDate = null;
+        PaidAccountId = null;
+        UpdatedAt = now;
+    }
+
+    /// <summary>
+    /// Forgets the explicit paid state of an expected payment, e.g. an unticked standing order
+    /// payment once the loan is paid as a bill; it is then expected as calculated.
+    /// </summary>
+    public void ClearPaidState(DateTimeOffset now)
+    {
+        if (IsPaid == true)
+        {
+            return;
+        }
+        if (!IsChanged)
+        {
+            Amount = null;
+            DueDate = null;
+        }
+        IsPaid = null;
+        UpdatedAt = now;
+    }
+
+    /// <summary>Drops the hand-changed amount and due date of an expected payment (FR-7).</summary>
+    public void ClearChanges(DateTimeOffset now)
+    {
+        if (IsPaid == true)
+        {
+            return;
+        }
+        Amount = null;
+        DueDate = null;
+        IsChanged = false;
+        UpdatedAt = now;
+    }
+
+    /// <summary>
+    /// Stores a standing order payment that was paid automatically, so it stays paid with its values
+    /// when the loan or its payment method changes (FR-5, FR-10).
+    /// </summary>
+    public void KeepAutomaticPayment(Money amount, DateOnly dueDate, Guid accountId, DateTimeOffset now)
+    {
+        Amount ??= amount;
+        DueDate ??= dueDate;
+        IsPaid = true;
+        PaidDate = DueDate;
+        PaidAccountId = accountId;
+        UpdatedAt = now;
+    }
+}

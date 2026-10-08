@@ -3,6 +3,7 @@ using Monthwise.Application.Common;
 using Monthwise.Domain.Cards;
 using Monthwise.Domain.CashFlow;
 using Monthwise.Domain.Common;
+using Monthwise.Domain.Loans;
 using Monthwise.Infrastructure.Persistence.Configurations;
 using Monthwise.Infrastructure.Persistence.Converters;
 using Monthwise.Infrastructure.Security;
@@ -22,6 +23,11 @@ public sealed class MonthwiseDbContext(DbContextOptions<MonthwiseDbContext> opti
     public DbSet<Payer> Payers => Set<Payer>();
     public DbSet<InputCategory> InputCategories => Set<InputCategory>();
     public DbSet<BalanceEntry> BalanceEntries => Set<BalanceEntry>();
+    public DbSet<Loan> Loans => Set<Loan>();
+    public DbSet<PaymentChange> PaymentChanges => Set<PaymentChange>();
+    public DbSet<LoanPayment> LoanPayments => Set<LoanPayment>();
+    public DbSet<LoanCategory> LoanCategories => Set<LoanCategory>();
+    public DbSet<LoanSubcategory> LoanSubcategories => Set<LoanSubcategory>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -37,6 +43,11 @@ public sealed class MonthwiseDbContext(DbContextOptions<MonthwiseDbContext> opti
         modelBuilder.ApplyConfiguration(new PayerConfiguration());
         modelBuilder.ApplyConfiguration(new InputCategoryConfiguration());
         modelBuilder.ApplyConfiguration(new BalanceEntryConfiguration());
+        modelBuilder.ApplyConfiguration(new LoanConfiguration());
+        modelBuilder.ApplyConfiguration(new PaymentChangeConfiguration());
+        modelBuilder.ApplyConfiguration(new LoanPaymentConfiguration());
+        modelBuilder.ApplyConfiguration(new LoanCategoryConfiguration());
+        modelBuilder.ApplyConfiguration(new LoanSubcategoryConfiguration());
     }
 
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)

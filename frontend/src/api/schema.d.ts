@@ -54,6 +54,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/loan-payments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Loan payments of a month (yyyy-MM), with totals. */
+        get: operations["GetMonthLoanPayments"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/cards": {
         parameters: {
             query?: never;
@@ -465,7 +482,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Received and expected inputs per day or month between two dates. */
+        /** Received and expected inputs, and paid and expected loan payments, per day or month between two dates. */
         get: operations["GetCashFlowChart"];
         put?: never;
         post?: never;
@@ -486,6 +503,279 @@ export interface paths {
         get: operations["GetMonthlyReport"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/loans": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Active loans (active and paid off), or closed loans. */
+        get: operations["GetLoans"];
+        put?: never;
+        /** Adds a loan. Give the number of payments or the end month (or both, when they agree). */
+        post: operations["CreateLoan"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/loans/dashboard": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Active loans with their next payment, and the totals of the monthly payments and the remaining amount. */
+        get: operations["GetLoansDashboard"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/loans/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A loan with its payment changes and all its payments. */
+        get: operations["GetLoan"];
+        /** Edits a loan. Paid payments stay as they are. */
+        put: operations["UpdateLoan"];
+        post?: never;
+        /** Deletes a loan without paid payments; a loan with paid payments returns 409 and can only be closed. */
+        delete: operations["DeleteLoan"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/loans/{id}/close": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Closes the loan today: it keeps its paid payments and has no payments after today. */
+        post: operations["CloseLoan"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/loans/{id}/payment-changes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Changes the monthly payment or the payment day from a month on. */
+        post: operations["CreatePaymentChange"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/loans/{id}/payment-changes/{changeId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Edits a payment change while none of the payments it covers is paid. */
+        put: operations["UpdatePaymentChange"];
+        post?: never;
+        /** Removes a payment change while none of the payments it covers is paid. */
+        delete: operations["DeletePaymentChange"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/loans/{id}/payments/{month}/{kind}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Changes the amount and due date of one payment without changing the loan. */
+        put: operations["ChangeLoanPayment"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/loans/{id}/payments/{month}/{kind}/paid": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Ticks Paid. The paid date defaults to today and the account to the loan's account. */
+        post: operations["MarkLoanPaymentPaid"];
+        /** Unticks Paid. */
+        delete: operations["MarkLoanPaymentUnpaid"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/loan-categories": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Loan categories with their subcategories. */
+        get: operations["GetLoanCategories"];
+        put?: never;
+        post: operations["CreateLoanCategory"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/loan-categories/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Renames the category and sets whether its loans may have a residual value. */
+        put: operations["UpdateLoanCategory"];
+        post?: never;
+        /** Deletes an unused category; a used one returns 409 and can only be hidden. */
+        delete: operations["DeleteLoanCategory"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/loan-categories/{id}/hide": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["HideLoanCategory"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/loan-categories/{id}/show": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ShowLoanCategory"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/loan-categories/{id}/subcategories": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["CreateLoanSubcategory"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/loan-subcategories/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["RenameLoanSubcategory"];
+        post?: never;
+        /** Deletes an unused subcategory; a used one returns 409 and can only be hidden. */
+        delete: operations["DeleteLoanSubcategory"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/loan-subcategories/{id}/hide": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["HideLoanSubcategory"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/loan-subcategories/{id}/show": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ShowLoanSubcategory"];
         delete?: never;
         options?: never;
         head?: never;
@@ -615,6 +905,10 @@ export interface components {
             receivedCents: number;
             /** Format: int64 */
             expectedCents: number;
+            /** Format: int64 */
+            outputPaidCents: number;
+            /** Format: int64 */
+            outputExpectedCents: number;
         };
         /** @enum {unknown} */
         ChartGranularity: "Day" | "Month";
@@ -700,10 +994,166 @@ export interface components {
             /** Format: int64 */
             totalCents: number;
         };
+        LoanCategoryRequest: {
+            name: string;
+            allowsResidualValue: boolean;
+        };
+        LoanCategoryResponse: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            allowsResidualValue: boolean;
+            isPredefined: boolean;
+            isHidden: boolean;
+            subcategories: components["schemas"]["LoanSubcategoryResponse"][];
+        };
+        LoanDetailsResponse: {
+            loan: components["schemas"]["LoanResponse"];
+            changes: components["schemas"]["PaymentChangeResponse"][];
+            payments: components["schemas"]["LoanPaymentResponse"][];
+        };
+        /** @enum {unknown} */
+        LoanListFilter: "Active" | "Closed" | null;
+        LoanPaymentChangeRequest: {
+            /** Format: int64 */
+            amountCents: number;
+            /** Format: date */
+            dueDate: string;
+        };
+        /** @enum {unknown} */
+        LoanPaymentKind: "Regular" | "Residual";
+        LoanPaymentPaidRequest: {
+            /** Format: date */
+            paidDate: null | string;
+            /** Format: uuid */
+            accountId: null | string;
+        };
+        LoanPaymentResponse: {
+            /** Format: uuid */
+            loanId: string;
+            month: string;
+            kind: components["schemas"]["LoanPaymentKind"];
+            loanName: string;
+            category: components["schemas"]["NamedReference"];
+            subcategory: components["schemas"]["NamedReference"];
+            /** Format: int32 */
+            number: number;
+            /** Format: int32 */
+            total: number;
+            /** Format: int64 */
+            amountCents: number;
+            /** Format: date */
+            billDate: string;
+            /** Format: date */
+            dueDate: string;
+            /** Format: date */
+            paidDate: null | string;
+            account: null | components["schemas"]["NamedReference"];
+            paymentMethod: components["schemas"]["PaymentMethod"];
+            isPaid: boolean;
+            isChanged: boolean;
+            isOverdue: boolean;
+            needsAccount: boolean;
+        };
+        LoanPaymentTotalsResponse: {
+            /** Format: int64 */
+            expectedCents: number;
+            /** Format: int64 */
+            paidCents: number;
+            /** Format: int64 */
+            totalCents: number;
+        };
+        LoanRequest: {
+            name: string;
+            /** Format: uuid */
+            categoryId: string;
+            /** Format: uuid */
+            subcategoryId: string;
+            /** Format: uuid */
+            lenderId: string;
+            paymentMethod: components["schemas"]["PaymentMethod"];
+            /** Format: uuid */
+            accountId: null | string;
+            startMonth: string;
+            /** Format: int32 */
+            paymentDay: number;
+            /** Format: int64 */
+            monthlyPaymentCents: number;
+            /** Format: int32 */
+            paymentCount: null | number;
+            endMonth: null | string;
+            /** Format: int64 */
+            residualValueCents: null | number;
+            description: null | string;
+        };
+        LoanResponse: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            category: components["schemas"]["NamedReference"];
+            subcategory: components["schemas"]["NamedReference"];
+            lender: components["schemas"]["NamedReference"];
+            paymentMethod: components["schemas"]["PaymentMethod"];
+            account: null | components["schemas"]["NamedReference"];
+            startMonth: string;
+            endMonth: string;
+            /** Format: int32 */
+            paymentDay: number;
+            /** Format: int64 */
+            monthlyPaymentCents: number;
+            /** Format: int32 */
+            paymentCount: number;
+            /** Format: int64 */
+            residualValueCents: null | number;
+            description: null | string;
+            /** Format: date */
+            closedOn: null | string;
+            status: components["schemas"]["LoanStatus"];
+            /** Format: int64 */
+            currentMonthlyPaymentCents: number;
+            /** Format: int32 */
+            currentPaymentDay: number;
+            /** Format: date */
+            nextPaymentDate: null | string;
+            /** Format: int32 */
+            paymentsPaid: number;
+            /** Format: int32 */
+            paymentsLeft: number;
+            /** Format: int64 */
+            paidAmountCents: number;
+            /** Format: int64 */
+            remainingAmountCents: number;
+            hasOverduePayment: boolean;
+            needsAccount: boolean;
+        };
+        LoansDashboardResponse: {
+            hasAnyLoans: boolean;
+            loans: components["schemas"]["LoanResponse"][];
+            /** Format: int64 */
+            totalMonthlyPaymentCents: number;
+            /** Format: int64 */
+            totalRemainingCents: number;
+        };
+        /** @enum {unknown} */
+        LoanStatus: "Active" | "PaidOff" | "Closed";
+        LoanSubcategoryResponse: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            categoryId: string;
+            name: string;
+            isPredefined: boolean;
+            isHidden: boolean;
+        };
         MonthInputsResponse: {
             month: string;
             inputs: components["schemas"]["InputEntryResponse"][];
             totals: components["schemas"]["InputTotalsResponse"];
+        };
+        MonthLoanPaymentsResponse: {
+            month: string;
+            payments: components["schemas"]["LoanPaymentResponse"][];
+            totals: components["schemas"]["LoanPaymentTotalsResponse"];
         };
         MonthlyReportResponse: {
             month: string;
@@ -716,6 +1166,13 @@ export interface components {
             previousMonthTotalCents: number;
             /** Format: int64 */
             differenceCents: number;
+            outputs: components["schemas"]["ReportOutputsResponse"];
+            /** Format: int64 */
+            monthResultCents: number;
+            /** Format: int64 */
+            previousMonthOutputsCents: number;
+            /** Format: int64 */
+            previousMonthResultCents: number;
         };
         NamedReference: {
             /** Format: uuid */
@@ -731,6 +1188,28 @@ export interface components {
             name: string;
             isRemoved: boolean;
         };
+        PaymentChangeRequest: {
+            fromMonth: string;
+            /** Format: int64 */
+            monthlyPaymentCents: null | number;
+            /** Format: int32 */
+            paymentDay: null | number;
+            note: null | string;
+            keepChangedPayments: boolean;
+        };
+        PaymentChangeResponse: {
+            /** Format: uuid */
+            id: string;
+            fromMonth: string;
+            /** Format: int64 */
+            monthlyPaymentCents: null | number;
+            /** Format: int32 */
+            paymentDay: null | number;
+            note: null | string;
+            canChange: boolean;
+        };
+        /** @enum {unknown} */
+        PaymentMethod: "StandingOrder" | "Bill";
         ProblemDetails: {
             type?: null | string;
             title?: null | string;
@@ -797,6 +1276,18 @@ export interface components {
             id: string;
             name: string;
             totals: components["schemas"]["InputTotalsResponse"];
+        };
+        ReportOutputGroupResponse: {
+            /** Format: uuid */
+            id: null | string;
+            name: string;
+            totals: components["schemas"]["LoanPaymentTotalsResponse"];
+        };
+        ReportOutputsResponse: {
+            totals: components["schemas"]["LoanPaymentTotalsResponse"];
+            byCategory: components["schemas"]["ReportOutputGroupResponse"][];
+            byAccount: components["schemas"]["ReportOutputGroupResponse"][];
+            byLoan: components["schemas"]["ReportOutputGroupResponse"][];
         };
         RevealedNumberResponse: {
             value: string;
@@ -930,6 +1421,37 @@ export interface operations {
                 };
                 content: {
                     "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetMonthLoanPayments: {
+        parameters: {
+            query: {
+                month: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MonthLoanPaymentsResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
                 };
             };
         };
@@ -2409,6 +2931,7 @@ export interface operations {
                 accountId?: string;
                 payerId?: string;
                 categoryId?: string;
+                loanCategoryId?: string;
             };
             header?: never;
             path?: never;
@@ -2463,6 +2986,1011 @@ export interface operations {
                 };
                 content: {
                     "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+        };
+    };
+    GetLoans: {
+        parameters: {
+            query?: {
+                show?: components["schemas"]["LoanListFilter"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LoanResponse"][];
+                };
+            };
+        };
+    };
+    CreateLoan: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LoanRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LoanDetailsResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+        };
+    };
+    GetLoansDashboard: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LoansDashboardResponse"];
+                };
+            };
+        };
+    };
+    GetLoan: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LoanDetailsResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    UpdateLoan: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LoanRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LoanDetailsResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    DeleteLoan: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    CloseLoan: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LoanDetailsResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    CreatePaymentChange: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PaymentChangeRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LoanDetailsResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    UpdatePaymentChange: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                changeId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PaymentChangeRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LoanDetailsResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    DeletePaymentChange: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                changeId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LoanDetailsResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ChangeLoanPayment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                month: string;
+                kind: components["schemas"]["LoanPaymentKind"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LoanPaymentChangeRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LoanPaymentResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    MarkLoanPaymentPaid: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                month: string;
+                kind: components["schemas"]["LoanPaymentKind"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LoanPaymentPaidRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LoanPaymentResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    MarkLoanPaymentUnpaid: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                month: string;
+                kind: components["schemas"]["LoanPaymentKind"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LoanPaymentResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetLoanCategories: {
+        parameters: {
+            query?: {
+                includeHidden?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LoanCategoryResponse"][];
+                };
+            };
+        };
+    };
+    CreateLoanCategory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LoanCategoryRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LoanCategoryResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+        };
+    };
+    UpdateLoanCategory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LoanCategoryRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LoanCategoryResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    DeleteLoanCategory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    HideLoanCategory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LoanCategoryResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ShowLoanCategory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LoanCategoryResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    CreateLoanSubcategory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NameRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LoanSubcategoryResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    RenameLoanSubcategory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NameRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LoanSubcategoryResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    DeleteLoanSubcategory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    HideLoanSubcategory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LoanSubcategoryResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ShowLoanSubcategory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LoanSubcategoryResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
             };
         };

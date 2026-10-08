@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Monthwise.Application.Cards;
 using Monthwise.Application.CashFlow;
 using Monthwise.Application.Common;
+using Monthwise.Application.Loans;
 using Monthwise.Infrastructure.Persistence;
 using Monthwise.Infrastructure.Persistence.Repositories;
 using Monthwise.Infrastructure.Security;
@@ -35,12 +36,16 @@ public static class DependencyInjection
         services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<MonthwiseDbContext>());
         services.AddScoped<ICardRepository, CardRepository>();
         services.AddScoped(typeof(ICardListRepository<>), typeof(CardListRepository<>));
-        services.AddSingleton<ICardActivityQuery, CardActivityQuery>();
+        services.AddScoped<ICardActivityQuery, CardActivityQuery>();
         services.AddScoped<ICashFlowInputRepository, CashFlowInputRepository>();
         services.AddScoped<IRecurringInputRepository, RecurringInputRepository>();
         services.AddScoped<IPayerRepository, PayerRepository>();
         services.AddScoped<IInputCategoryRepository, InputCategoryRepository>();
         services.AddScoped<IBalanceEntryRepository, BalanceEntryRepository>();
+        services.AddScoped<ILoanRepository, LoanRepository>();
+        services.AddScoped<ILoanPaymentRepository, LoanPaymentRepository>();
+        services.AddScoped<ILoanCategoryRepository, LoanCategoryRepository>();
+        services.AddScoped<ILoanSubcategoryRepository, LoanSubcategoryRepository>();
 
         services.AddHealthChecks()
             .AddDbContextCheck<MonthwiseDbContext>(DatabaseHealthCheckName);

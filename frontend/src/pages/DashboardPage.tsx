@@ -1,4 +1,5 @@
 import { CardsWidget } from '@/components/cards/CardsWidget'
+import { LoansWidget } from '@/components/loans/LoansWidget'
 import { HealthStatus } from '@/components/HealthStatus'
 import { PageHeader } from './PageHeader'
 
@@ -11,6 +12,7 @@ export function DashboardPage() {
       />
       <div className="flex flex-col gap-6">
         <CardsWidget />
+        <LoansWidget />
         <HealthStatus />
       </div>
     </>

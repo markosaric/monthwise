@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Monthwise.Application.Cards;
+using Monthwise.Application.Loans;
 using Monthwise.Domain.Cards;
 using Monthwise.Infrastructure.Persistence.Configurations;
 using Monthwise.Infrastructure.Security;
@@ -68,11 +69,12 @@ internal sealed class CardListRepository<TEntry>(MonthwiseDbContext db) : ICardL
     public void Add(TEntry entry) => db.Set<TEntry>().Add(entry);
 }
 
-/// <summary>No feature creates ongoing transactions yet; the installments feature replaces this.</summary>
-internal sealed class CardActivityQuery : ICardActivityQuery
+/// <summary>
+/// Ongoing transactions are standing order loans with expected payments (loans FR-3). The
+/// installments feature adds its installment plans here.
+/// </summary>
+internal sealed class CardActivityQuery(LoanLedger loans) : ICardActivityQuery
 {
-    private static readonly IReadOnlySet<Guid> None = new HashSet<Guid>();
-
     public Task<IReadOnlySet<Guid>> CardsWithOngoingTransactionsAsync(CancellationToken cancellationToken) =>
-        Task.FromResult(None);
+        loans.AccountsWithOngoingStandingOrdersAsync(cancellationToken);
 }

@@ -10,7 +10,9 @@ public class AccountBalanceTests
     private static BalanceCheckpoint Checkpoint(int day, long cents, int minutes = 0) =>
         new(Guid.NewGuid(), new DateOnly(2026, 10, day), Money.FromCents(cents), Now.AddMinutes(minutes));
 
-    private static ReceivedAmount Received(int day, long cents) => new(new DateOnly(2026, 10, day), Money.FromCents(cents));
+    private static BalanceMovement Received(int day, long cents) => new(new DateOnly(2026, 10, day), Money.FromCents(cents));
+
+    private static BalanceMovement Paid(int day, long cents) => new(new DateOnly(2026, 10, day), Money.FromCents(-cents));
 
     [Fact]
     public void Without_a_checkpoint_the_balance_is_the_sum_of_received_inputs()
@@ -63,5 +65,35 @@ public class AccountBalanceTests
         Assert.Equal(
             Money.FromCents(4_000),
             balance.ExpectedBalance(new DateOnly(2026, 10, 6), [Money.FromCents(2_000), Money.FromCents(500)]));
+    }
+
+    [Fact]
+    public void Paid_outputs_lower_the_balance_after_the_checkpoint_only()
+    {
+        var balance = new AccountBalance([Checkpoint(10, 100_000)], [Paid(5, 30_000), Received(12, 5_000), Paid(15, 45_000)]);
+
+        Assert.Equal(Money.FromCents(-30_000), balance.BalanceOn(new DateOnly(2026, 10, 9)));
+        Assert.Equal(Money.FromCents(105_000), balance.BalanceOn(new DateOnly(2026, 10, 12)));
+        Assert.Equal(Money.FromCents(60_000), balance.BalanceOn(new DateOnly(2026, 10, 15)));
+    }
+
+    [Fact]
+    public void A_correction_after_a_payment_makes_the_balance_equal_to_it()
+    {
+        var correction = Checkpoint(16, 50_000);
+        var balance = new AccountBalance([Checkpoint(1, 100_000), correction], [Paid(15, 45_000)]);
+
+        Assert.Equal(Money.FromCents(50_000), balance.BalanceOn(new DateOnly(2026, 10, 16)));
+        Assert.Equal(Money.FromCents(-5_000), balance.DifferenceOf(correction.Id));
+    }
+
+    [Fact]
+    public void Expected_balance_subtracts_expected_payments()
+    {
+        var balance = new AccountBalance([Checkpoint(1, 100_000)], []);
+
+        Assert.Equal(
+            Money.FromCents(75_000),
+            balance.ExpectedBalance(new DateOnly(2026, 10, 6), [Money.FromCents(20_000), Money.FromCents(-45_000)]));
     }
 }
