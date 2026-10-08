@@ -277,3 +277,33 @@ validators and the same error mapping as cards and inputs.
 
 ## Open questions
 - None.
+
+## Changes during implementation
+- **Automatic payments:** `loan_payment.is_paid` is nullable: `null` means the payment follows the
+  rule (a standing order is paid at the end of its due date), `true` or `false` is the user's
+  choice. Before a loan is edited or closed, standing order payments already paid automatically
+  are stored as paid, so they stay paid. Check constraints:
+  `(is_paid IS TRUE) = (paid_date IS NOT NULL)`, the same for `paid_account_id`, and
+  `paid_date >= month`.
+- **Payment count limit:** at most 1200 payments (100 years), so the end month stays a valid date.
+- **Written without the .NET SDK:** the `AddLoans` migration, its model snapshot (no designer
+  target model) and `backend/openapi/monthwise.json` were written by hand. The first build checks
+  them: CI regenerates the OpenAPI document and fails on any difference, and
+  `dotnet ef migrations has-pending-model-changes` shows whether the snapshot matches the model.
+- **Accounts no longer usable:** a standing order stops being paid automatically on the day its
+  account is archived, blocked, expired or no longer valid, or from today when it is no longer
+  primary; such payments carry `needsAccount`.
+- **Ongoing transactions:** `ICardActivityQuery` is scoped (it reads the loans), not a singleton.
+- **Loan details** return all payments of the loan, paid and expected, not only a window.
+- **Duplicate loan name:** a `400` with a `name` field error (like cards and categories), not a
+  `409`. The database unique index on `lower(name)` for loans that are not closed still answers a
+  race with `409`.
+- **Paid date correction:** a paid payment is corrected with the same `POST …/paid` call (new paid
+  date and account); its amount and due date with `PUT …/payments/{month}/{kind}`.
+- **Chart colours:** outputs use an orange pair, paid strong (`#d4572a`, dark `#e5743d`) and
+  expected lighter (`#f0b396`, dark `#8a3a14`), as `--chart-output-paid` and
+  `--chart-output-expected`; inputs and outputs are two stacks per bucket.
+- **Dialogs:** the payment, paid and payment change dialogs use the existing alert dialog
+  component; no new shadcn component was added.
+- **Tests:** the shared test clean-up SQL empties the loan tables first, because loans reference
+  cards and banks.

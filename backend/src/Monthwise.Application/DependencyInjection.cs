@@ -2,6 +2,7 @@ using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
 using Monthwise.Application.Cards;
 using Monthwise.Application.CashFlow;
+using Monthwise.Application.Loans;
 
 namespace Monthwise.Application;
 
@@ -49,6 +50,20 @@ public static class DependencyInjection
         services.AddScoped<BalanceEntryHandler>();
         services.AddScoped<GetCashFlowChartHandler>();
         services.AddScoped<GetMonthlyReportHandler>();
+
+        services.AddScoped<LoanLedger>();
+        services.AddScoped<LoanInputChecker>();
+        services.AddScoped<GetLoansHandler>();
+        services.AddScoped<GetLoanHandler>();
+        services.AddScoped<GetMonthLoanPaymentsHandler>();
+        services.AddScoped<GetLoansDashboardHandler>();
+        services.AddScoped<CreateLoanHandler>();
+        services.AddScoped<UpdateLoanHandler>();
+        services.AddScoped<CloseLoanHandler>();
+        services.AddScoped<DeleteLoanHandler>();
+        services.AddScoped<PaymentChangeHandler>();
+        services.AddScoped<LoanPaymentHandler>();
+        services.AddScoped<LoanCategoryHandler>();
         return services;
     }
 }

@@ -73,7 +73,8 @@ recurring_input      id, payer_id, category_id, account_id → card, amount_cent
                      (occurrences are CALCULATED; one is stored as cash_flow_input only when changed or received)
 skipped_occurrence   recurring_input_id, occurrence_date   (a deleted occurrence)
 balance_entry        id, account_id → card, kind (Starting|Correction), date, balance_cents, note?
-                     (balance at the end of that date; account balance = latest entry + inputs received after it)
+                     (balance at the end of that date; account balance = latest entry + inputs received
+                     − loan payments paid after it)
 period               id, household_id, year, month, opening_carryover_cents, closed_at
 category             id, household_id, direction (in|out), group, name
                      group ∈ salary | salary_addon | shared_contribution | other_in |
@@ -87,7 +88,19 @@ transaction          id, period_id, category_id, recurring_item_id?, account_id?
 installment_plan     id, card_id, merchant, purchase_date, total_amount_cents,
                      installments_total, installment_amount_cents, first_period
                      (current installment and remaining amount are CALCULATED, not entered)
-loan                 id, account_id, name, principal_cents?, monthly_payment_cents, due_day, share_pct, end_date?
+loan                 id, name, category_id → loan_category, subcategory_id → loan_subcategory,
+                     lender_id → bank, payment_method (StandingOrder|Bill), account_id → card (standing order only),
+                     start_month, payment_day (1–31), monthly_payment_cents, payment_count, residual_value_cents?,
+                     description?, closed_on?
+                     (bank loans and leases; see docs/feature-requirements/loans-and-leases.md)
+loan_payment_change  id, loan_id, from_month, monthly_payment_cents?, payment_day?, note?
+                     (the newest change that applies to a month decides its amount and payment day)
+loan_payment         id, loan_id, month, kind (Regular|Residual), amount_cents?, due_date?, is_changed,
+                     is_paid? (null = automatic), paid_date?, paid_account_id → card?
+                     (payments are CALCULATED; one is stored only when changed or paid)
+loan_category        id, name, allows_residual_value, is_predefined, hidden_on?   (Bank loan, Lease, … extendable)
+loan_subcategory     id, category_id → loan_category, name, is_predefined, hidden_on?
+                     (Mortgage, Cash loan, Car lease, … extendable)
 card_statement       id, card_id, period_id, calculated_cents, actual_cents  (difference = actual - calculated)
 balance_snapshot     id, account_id, date, balance_cents   (savings balances; card and current account
                      balances are balance_entry)

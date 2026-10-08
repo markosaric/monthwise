@@ -293,6 +293,7 @@ export interface ChartQuery {
   accountId?: string
   payerId?: string
   categoryId?: string
+  loanCategoryId?: string
 }
 
 export function useCashFlowChart(query: ChartQuery) {
@@ -301,7 +302,7 @@ export function useCashFlowChart(query: ChartQuery) {
     // Keep the previous chart while another period or filter loads, so it does not flash.
     placeholderData: keepPreviousData,
     queryFn: async () => {
-      const { from, to, granularity, accountId, payerId, categoryId } = query
+      const { from, to, granularity, accountId, payerId, categoryId, loanCategoryId } = query
       return unwrap(
         await api.GET('/api/cash-flow/chart', {
           params: {
@@ -312,6 +313,7 @@ export function useCashFlowChart(query: ChartQuery) {
               ...(accountId ? { accountId } : {}),
               ...(payerId ? { payerId } : {}),
               ...(categoryId ? { categoryId } : {}),
+              ...(loanCategoryId ? { loanCategoryId } : {}),
             },
           },
         }),

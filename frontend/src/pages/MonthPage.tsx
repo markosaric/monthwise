@@ -2,6 +2,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { Link, Navigate, useParams } from 'react-router'
 import { IncomeSection } from '@/components/cashflow/IncomeSection'
 import { cashFlowTexts } from '@/components/cashflow/texts'
+import { ExpensesSection } from '@/components/loans/ExpensesSection'
 import { Button } from '@/components/ui/button'
 import { addMonths, currentMonth, formatYearMonth, isYearMonth } from '@/lib/dates'
 import { PageHeader } from './PageHeader'
@@ -18,10 +19,13 @@ export function MonthPage() {
     <>
       <PageHeader
         title={formatYearMonth(month)}
-        description="Income by category, received status and totals. Expenses follow in a later feature."
+        description="Income and loan payments of the month: received and paid status, and totals."
       />
       <MonthNavigation month={month} basePath="/month" />
-      <IncomeSection month={month} />
+      <div className="flex flex-col gap-6">
+        <IncomeSection month={month} />
+        <ExpensesSection month={month} />
+      </div>
     </>
   )
 }

@@ -1,3 +1,4 @@
+using Monthwise.Application.Loans;
 using Monthwise.Domain.CashFlow;
 
 namespace Monthwise.Application.CashFlow;
@@ -105,8 +106,16 @@ public enum ChartGranularity
     Month,
 }
 
-/// <summary>Sums of one day or month of the chart (FR-12).</summary>
-public sealed record ChartBucketResponse(DateOnly Start, long ReceivedCents, long ExpectedCents);
+/// <summary>
+/// Sums of one day or month of the chart (FR-12, Appendix 1): received and expected inputs, and
+/// paid and expected outputs (loan payments).
+/// </summary>
+public sealed record ChartBucketResponse(
+    DateOnly Start,
+    long ReceivedCents,
+    long ExpectedCents,
+    long OutputPaidCents,
+    long OutputExpectedCents);
 
 public sealed record CashFlowChartResponse(
     DateOnly From,
@@ -124,7 +133,20 @@ public sealed record ReportBalanceEntryResponse(
     long DifferenceCents,
     string? Note);
 
-/// <summary>The monthly cash flow report (FR-13).</summary>
+/// <summary>A group of outputs in the report; <see cref="Id"/> is null for bills without an account yet.</summary>
+public sealed record ReportOutputGroupResponse(Guid? Id, string Name, LoanPaymentTotalsResponse Totals);
+
+/// <summary>The month's outputs (loan payments) grouped by loan category, account and loan (Appendix 1).</summary>
+public sealed record ReportOutputsResponse(
+    LoanPaymentTotalsResponse Totals,
+    IReadOnlyList<ReportOutputGroupResponse> ByCategory,
+    IReadOnlyList<ReportOutputGroupResponse> ByAccount,
+    IReadOnlyList<ReportOutputGroupResponse> ByLoan);
+
+/// <summary>
+/// The monthly cash flow report (FR-13, Appendix 1). <see cref="MonthResultCents"/> is all inputs
+/// minus all outputs; the previous-month figures allow the comparison.
+/// </summary>
 public sealed record MonthlyReportResponse(
     string Month,
     InputTotalsResponse Totals,
@@ -133,4 +155,8 @@ public sealed record MonthlyReportResponse(
     IReadOnlyList<ReportGroupResponse> ByPayer,
     IReadOnlyList<ReportBalanceEntryResponse> BalanceEntries,
     long PreviousMonthTotalCents,
-    long DifferenceCents);
+    long DifferenceCents,
+    ReportOutputsResponse Outputs,
+    long MonthResultCents,
+    long PreviousMonthOutputsCents,
+    long PreviousMonthResultCents);

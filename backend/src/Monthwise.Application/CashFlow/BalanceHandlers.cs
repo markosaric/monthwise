@@ -1,16 +1,18 @@
 using Monthwise.Application.Cards;
 using Monthwise.Application.Common;
+using Monthwise.Application.Loans;
 using Monthwise.Domain.Cards;
 using Monthwise.Domain.CashFlow;
 using Monthwise.Domain.Common;
 
 namespace Monthwise.Application.CashFlow;
 
-/// <summary>Calculates account balances from balance entries and inputs (FR-10).</summary>
+/// <summary>Calculates account balances from balance entries, inputs and loan payments (FR-10, Appendix 1).</summary>
 public sealed class AccountBalanceQuery(
     IBalanceEntryRepository balanceEntries,
     ICashFlowInputRepository inputs,
     InputLedger ledger,
+    LoanLedger loanLedger,
     TimeProvider timeProvider)
 {
     /// <summary>Balances of the given accounts: current (today) and expected at the end of this month.</summary>
@@ -19,28 +21,43 @@ public sealed class AccountBalanceQuery(
     {
         ArgumentNullException.ThrowIfNull(accountIds);
         var today = timeProvider.Today();
+        var monthEnd = YearMonth.FromDate(today).LastDay;
         var calculators = await CalculatorsAsync(today, cancellationToken);
-        var expected = await ledger.ExpectedUpToAsync(YearMonth.FromDate(today).LastDay, cancellationToken);
+        var expected = await ledger.ExpectedUpToAsync(monthEnd, cancellationToken);
+        // Expected loan payments due by the end of the month, overdue ones included. A bill without an
+        // account yet, or a standing order that needs a new account, is not counted (Appendix 1).
+        var expectedPayments = (await loanLedger.LoadAsync(cancellationToken)).Payments()
+            .Where(p => !p.IsPaid && !p.NeedsAccount && p.AccountId is not null && p.DueDate <= monthEnd)
+            .ToList();
 
         return accountIds.Distinct().ToDictionary(id => id, id =>
         {
             var balance = calculators.TryGetValue(id, out var calculator) ? calculator : new AccountBalance([], []);
             var current = balance.BalanceOn(today);
-            var expectedBalance = balance.ExpectedBalance(
-                today, expected.Where(e => e.Details.AccountId == id).Select(e => e.Details.Amount));
+            var expectedInputs = expected.Where(e => e.Details.AccountId == id).Select(e => e.Details.Amount);
+            var expectedOutputs = expectedPayments.Where(p => p.AccountId == id).Select(p => -p.Amount);
+            var expectedBalance = balance.ExpectedBalance(today, expectedInputs.Concat(expectedOutputs));
             return new AccountBalanceResponse(id, current.Cents, expectedBalance.Cents, balance.HasCheckpoint);
         });
     }
 
-    /// <summary>One calculator per account that has entries or received inputs.</summary>
-    public async Task<IReadOnlyDictionary<Guid, AccountBalance>> CalculatorsAsync(DateOnly receivedUpTo, CancellationToken cancellationToken)
+    /// <summary>
+    /// One calculator per account that has entries, received inputs or paid loan payments: inputs
+    /// received and payments paid on or before <paramref name="movementsUpTo"/> are counted.
+    /// </summary>
+    public async Task<IReadOnlyDictionary<Guid, AccountBalance>> CalculatorsAsync(DateOnly movementsUpTo, CancellationToken cancellationToken)
     {
         var entries = await balanceEntries.ListAsync(null, cancellationToken);
-        var received = await inputs.ListReceivedUpToAsync(receivedUpTo, cancellationToken);
-        var accountIds = entries.Select(e => e.AccountId).Concat(received.Select(r => r.AccountId)).Distinct();
+        var received = (await inputs.ListReceivedUpToAsync(movementsUpTo, cancellationToken))
+            .Select(r => (r.AccountId, Movement: new BalanceMovement(r.ReceivedDate!.Value, r.Amount)));
+        var paid = (await loanLedger.LoadAsync(cancellationToken)).Payments()
+            .Where(p => p.IsPaid && p.AccountId is not null && p.PaidDate is { } date && date <= movementsUpTo)
+            .Select(p => (AccountId: p.AccountId!.Value, Movement: new BalanceMovement(p.PaidDate!.Value, -p.Amount)));
+        var movements = received.Concat(paid).ToList();
+        var accountIds = entries.Select(e => e.AccountId).Concat(movements.Select(m => m.AccountId)).Distinct();
         return accountIds.ToDictionary(id => id, id => new AccountBalance(
             entries.Where(e => e.AccountId == id).Select(ToCheckpoint),
-            received.Where(r => r.AccountId == id).Select(r => new ReceivedAmount(r.ReceivedDate!.Value, r.Amount))));
+            movements.Where(m => m.AccountId == id).Select(m => m.Movement)));
     }
 
     public static BalanceCheckpoint ToCheckpoint(BalanceEntry entry)
@@ -66,7 +83,7 @@ public sealed class BalanceEntryHandler(
         }
         var balance = (await balances.ForAccountsAsync([accountId], cancellationToken))[accountId];
         var entries = await balanceEntries.ListAsync(accountId, cancellationToken);
-        // Differences use every received input, also ones dated after today.
+        // Differences use every received input and paid payment, also ones dated after today.
         var calculators = await balances.CalculatorsAsync(DateOnly.MaxValue, cancellationToken);
         var calculator = calculators.TryGetValue(accountId, out var found) ? found : new AccountBalance([], []);
         var responses = entries

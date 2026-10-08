@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { useCashFlowChart, useInputCategories, usePayers, type ChartQuery } from '@/api/cashFlow'
 import { useCards } from '@/api/cards'
+import { useLoanCategories } from '@/api/loans'
 import { CashFlowChart, CashFlowTable, ChartLegend } from '@/components/cashflow/CashFlowChart'
 import { cashFlowTexts } from '@/components/cashflow/texts'
 import { Button } from '@/components/ui/button'
@@ -37,10 +38,12 @@ export function CashFlowPage() {
   const [accountId, setAccountId] = useState('')
   const [payerId, setPayerId] = useState('')
   const [categoryId, setCategoryId] = useState('')
+  const [loanCategoryId, setLoanCategoryId] = useState('')
   const [asTable, setAsTable] = useState(false)
   const { data: cards = [] } = useCards('Default')
   const { data: payers = [] } = usePayers()
   const { data: categories = [] } = useInputCategories(true)
+  const { data: loanCategories = [] } = useLoanCategories(true)
   const {
     data: chart,
     isPending,
@@ -50,13 +53,14 @@ export function CashFlowPage() {
     accountId,
     payerId,
     categoryId,
+    loanCategoryId,
   })
 
   return (
     <>
       <PageHeader title={t.title} description={t.description} />
       <div className="flex max-w-4xl flex-col gap-4">
-        <div className="grid gap-3 sm:grid-cols-4">
+        <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-5">
           <Filter
             id="period"
             label={t.period}
@@ -103,6 +107,19 @@ export function CashFlowPage() {
           >
             <option value="">{t.allCategories}</option>
             {categories.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </Filter>
+          <Filter
+            id="loan-category"
+            label={t.loanCategory}
+            value={loanCategoryId}
+            onChange={setLoanCategoryId}
+          >
+            <option value="">{t.allLoanCategories}</option>
+            {loanCategories.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.name}
               </option>

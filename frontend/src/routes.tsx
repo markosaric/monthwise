@@ -18,7 +18,10 @@ import {
   OccurrenceEditPage,
   RecurringInputEditPage,
 } from '@/pages/month/InputFormPages'
+import { LoanDetailsPage } from '@/pages/loans/LoanDetailsPage'
+import { LoanEditPage, LoanNewPage } from '@/pages/loans/LoanFormPages'
 import { InputCategoriesSettingsPage } from '@/pages/settings/InputCategoriesSettingsPage'
+import { LoanCategoriesSettingsPage } from '@/pages/settings/LoanCategoriesSettingsPage'
 import { PayersSettingsPage } from '@/pages/settings/PayersSettingsPage'
 
 export const routes: RouteObject[] = [
@@ -39,6 +42,9 @@ export const routes: RouteObject[] = [
       { path: 'cash-flow/:yearMonth', element: <MonthlyReportPage /> },
       { path: 'cards', element: <CardsPage /> },
       { path: 'loans', element: <LoansPage /> },
+      { path: 'loans/new', element: <LoanNewPage /> },
+      { path: 'loans/:id', element: <LoanDetailsPage /> },
+      { path: 'loans/:id/edit', element: <LoanEditPage /> },
       { path: 'savings', element: <SavingsPage /> },
       { path: 'settings', element: <SettingsPage /> },
       { path: 'settings/cards', element: <CardsSettingsPage /> },
@@ -47,6 +53,7 @@ export const routes: RouteObject[] = [
       { path: 'settings/cards/:id/edit', element: <CardEditPage /> },
       { path: 'settings/payers', element: <PayersSettingsPage /> },
       { path: 'settings/input-categories', element: <InputCategoriesSettingsPage /> },
+      { path: 'settings/loan-categories', element: <LoanCategoriesSettingsPage /> },
       { path: '*', element: <NotFoundPage /> },
     ],
   },
