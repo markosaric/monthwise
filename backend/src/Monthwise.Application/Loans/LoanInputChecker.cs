@@ -1,8 +1,8 @@
 using Monthwise.Application.Cards;
+using Monthwise.Application.Common;
 using Monthwise.Domain.Cards;
 using Monthwise.Domain.Common;
 using Monthwise.Domain.Loans;
-using Monthwise.Application.Common;
 
 namespace Monthwise.Application.Loans;
 
