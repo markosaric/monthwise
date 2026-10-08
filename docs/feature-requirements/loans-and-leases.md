@@ -100,6 +100,10 @@ General rules:
 - When the account of a standing order is later blocked, expired, archived or loses its primary
   mark, the loan and its expected payments are visibly marked as needing a new account, until the
   user chooses one or changes the payment method.
+- A standing-order loan with expected payments is an ongoing transaction of its account (see
+  [credit-card-settings.md](credit-card-settings.md)). So while the account is blocked or expired,
+  it stays on the Dashboard Cards widget until the loan has a new account, is switched to bill, or
+  has no expected payments left.
 
 **FR-4 Payments**
 - Each loan has one payment per month, from the start month to the end month. Each payment shows
@@ -109,7 +113,8 @@ General rules:
   that month.
 - **Weekends:** a standing order is charged on its payment day, also when that day is a Saturday
   or Sunday. For a bill, a due date that falls on a Saturday or Sunday moves to the following
-  Monday.
+  Monday, except when that Monday is in the next month: then the due date stays on its day, so the
+  bill stays in its own month.
 - The amount and the due date of a payment follow the monthly payment and the payment day that
   apply to its month (FR-7).
 - The Month screen shows the loan payment totals for the month: expected, paid and all payments.
@@ -253,7 +258,8 @@ General rules:
    - the name is already used by a loan that is not closed.
 4. A payment's bill date is the first day of its month and its due date is the payment day; with
    payment day 31, the due date in February is its last day. A bill due on a Saturday or Sunday
-   is due the following Monday; a standing order keeps its payment day.
+   is due the following Monday, unless that Monday is in the next month; a standing order keeps
+   its payment day.
 5. With exactly one primary account, a standing order is prefilled with it; with several, the user
    must choose. A standing order payment is paid at the end of its due date without user action,
    and the user can correct or untick it.
