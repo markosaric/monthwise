@@ -41,7 +41,7 @@ and the user can drill down from it to the purchases it contains.
 ### 3.1 Card billing details
 
 **FR-1 Billing dates and paying account on the card**
-- Every card that allows monthly installments has two more attributes: Credit and Charge cards
+- Every card that allows monthly installments has these attributes: Credit and Charge cards
   always, and Debit cards when *Allows monthly installments* is ticked (see
   [credit-card-settings.md](credit-card-settings.md) A11). Prepaid cards never have them.
 
@@ -51,6 +51,7 @@ and the user can drill down from it to the purchases it contains.
 | B2 | Payment date | Yes | Day of the month, 2 to 31, later than the statement date. The card payment for a statement is expected on this day **in the same month** as the statement (e.g. statement on the 5th, payment on the 20th). |
 | B3 | Paying account | Yes | The primary account the card payments are paid from. Prefilled when exactly one account is primary; with several, the user chooses. |
 | B4 | Connected to the paying account | No (default: No) | Ticked when the bank charges the card payment directly from the paying account. Decides whether card payments are paid automatically or by the user (FR-8). |
+| B5 | Max installments | Yes | The highest number of installments the card allows for one purchase: **12**, **24** or **36**. |
 
 - In a month that has fewer days, a date of 29, 30 or 31 falls on the last day of that month.
   When both dates fall on the same last day, the payment is expected on that day.
@@ -88,7 +89,7 @@ and the user can drill down from it to the purchases it contains.
 | P3 | Purchase date | Yes | The date of the purchase. Not before the card's *Valid from*, when given. |
 | P4 | Original amount | Yes | The full purchase amount in EUR, exact to the cent, greater than zero. |
 | P5 | In installments | Yes (default: No) | Whether the purchase is paid in monthly installments. When not, the whole amount is charged with one card payment. |
-| P6 | Number of installments | For installments | Whole number, 2 or more. |
+| P6 | Number of installments | For installments | Whole number, from 2 up to the card's *Max installments* (B5). |
 | P7 | Postpone first installment | No (default: No) | For installments only. When ticked, the first installment is moved one billing period later (FR-4). |
 | P8 | Category | No | Chosen from the purchase categories managed in Settings (FR-10). |
 
@@ -153,6 +154,9 @@ and the user can drill down from it to the purchases it contains.
   installment and credit of that card in that billing period, with description, purchase date,
   installment number (e.g. 3 of 12), category and amount. From there the user can open the
   purchase.
+- On the **Month** screen, card payments appear as expenses: one summed-up line per card with its
+  card payment for that month, not the single purchases. Selecting the line opens the card's
+  details for that month (the drill-down above).
 - How a card payment is paid depends on the card (B4):
   - **Connected to the paying account:** the card payment is paid automatically from the paying
     account at the end of its payment date, without any action from the user; until then it is
@@ -209,8 +213,8 @@ and the user can drill down from it to the purchases it contains.
 ## 6. Acceptance criteria
 
 1. A Credit or Charge card, or a Debit card with *Allows monthly installments* ticked, cannot be
-   saved without a statement date, a payment date and a paying account; other cards do not offer
-   them.
+   saved without a statement date, a payment date, a paying account and max installments (12, 24
+   or 36); other cards do not offer them.
 2. The payment date must be later than the statement date; a date of 29 to 31 falls on the last
    day of shorter months, and a payment date on a Saturday or Sunday moves to the following Monday
    unless that Monday is in the next month.
@@ -225,7 +229,7 @@ and the user can drill down from it to the purchases it contains.
    period later when *Postpone first installment* is ticked.
 7. A purchase can only be recorded on a card that allows monthly installments and is Active or
    Expiring soon, and cannot be saved with a missing required field, an amount of zero or less, or
-   fewer than 2 installments.
+   fewer than 2 installments or more than the card's max installments.
 8. Reversing a purchase or an installment removes it from card payments not yet due, subtracts
    already charged amounts from the next card payment, and keeps it visible as **Reversed** with
    its date and reason.
@@ -236,7 +240,8 @@ and the user can drill down from it to the purchases it contains.
     and in the monthly cash flow report, and its amount is the sum of that billing period's
     purchases and installments minus credits.
 12. Drilling down from a card payment shows every purchase, installment and credit in it, and
-    opens the purchase.
+    opens the purchase. On the Month screen each card payment is one summed-up expense line per
+    card, which opens that card's details for the month.
 13. A card payment of a card connected to its paying account is paid automatically at the end of
     its payment date; for other cards it stays expected until the user ticks **Paid**, which
     records today and the account (prefilled with the paying account); unticking reverses it.
