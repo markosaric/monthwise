@@ -228,3 +228,28 @@ General rules:
     distinguished, and opens the monthly report when a month is selected.
 12. The monthly report shows the month's inputs grouped by category, account and payer with
     correct totals, its balance entries separately, and the difference to the previous month.
+
+## Appendix 1: Loan payments in the account balance, chart and report
+
+- **Date:** 2026-10-08
+- **Branch:** `feat/loans_and_leases`
+- **Changes:** FR-10, FR-11, FR-12, FR-13
+
+The **current balance** of an account is its latest starting balance, plus all balance
+corrections and received inputs dated on or after it, **minus the paid loan payments** dated on
+or after it, up to today.
+
+The **expected balance** at the end of the current month is the current balance plus the
+expected inputs, **minus the expected loan payments**, on that account due by the end of the
+month. An expected bill payment that has no account yet is not counted.
+
+The Dashboard (FR-11) shows these balances unchanged in every other respect.
+
+The **Cash flow** dashboard (FR-12) also shows outputs: loan payments, paid and expected ones
+distinguished in the same way as inputs. It can be filtered by loan category in addition to the
+existing filters.
+
+The **monthly cash flow report** (FR-13) also lists the month's loan payments grouped by
+category, account and loan, with totals (expected, paid and all), and shows the **month
+result**: total inputs minus total outputs. The comparison with the previous month covers
+outputs and the month result too.
