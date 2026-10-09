@@ -250,3 +250,27 @@ and the user can drill down from it to the purchases it contains.
     payments due this month lower its end-of-month expected balance on the Dashboard.
 16. The user can add and rename purchase categories in Settings; a used category can only be
     hidden, and a purchase can be saved without a category.
+
+## Appendix 1: Shared expense categories
+
+- **Date:** 2026-10-09
+- **Branch:** `feat/monthly_bills_and_expenses`
+- **Changes:** FR-10, acceptance criterion 16
+
+The purchase categories become one shared list of **expense categories**, used by card purchases
+and by bills and expenses (see [monthly-bills-and-expenses.md](monthly-bills-and-expenses.md)
+FR-1), so e.g. "Mobile phone" is the same category whether it is paid by bill, as an expense or as
+a card purchase.
+
+- The Settings section **Purchase categories** is renamed **Expense categories**. Categories the
+  user already added stay, with their names and hidden state.
+- The list gets the starting categories described in
+  [monthly-bills-and-expenses.md](monthly-bills-and-expenses.md) FR-1; a starting category whose
+  name is already in the list (ignoring upper/lower case) is not added twice.
+- A category used by a purchase, a bill, a recurring bill or an expense cannot be deleted, only
+  hidden.
+- The category of a card purchase (P8) stays optional.
+
+Acceptance criterion 16 becomes: the user can add and rename expense categories in Settings; the
+same list is offered for card purchases, bills and expenses; a used category can only be hidden,
+and a purchase can be saved without a category.
