@@ -255,3 +255,21 @@ never counted twice.
 10. A cash withdrawal can only be recorded from a primary account and is totalled separately.
 11. The Month screen shows bills and expenses with their totals, and the Dashboard balances, the
     Cash flow dashboard and the monthly report include bills and expenses paid from an account.
+
+## Appendix 1: Shared bills
+
+- **Date:** 2026-10-09
+- **Branch:** `feat/shared_bills`
+- **Changes:** section 5 (Out of scope)
+
+Sharing a bill with someone else is no longer out of scope. A recurring bill or a bill can now be
+shared with one participant, who pays back a part of it as an agreed contribution, as described in
+[shared-bills.md](shared-bills.md).
+
+- The out-of-scope item "Sharing a bill with someone else (e.g. 50 % of shared utilities)" no
+  longer applies.
+- The bill itself is unchanged: the household still pays its full amount, and it counts in full in
+  the cash flow, the account balance and the card payment. The participant's part is a separate
+  input.
+- The Month screen also shows the own part of a shared bill and of the bills totals (see
+  [shared-bills.md](shared-bills.md) FR-7).
