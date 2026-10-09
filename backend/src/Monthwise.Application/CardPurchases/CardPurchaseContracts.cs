@@ -64,11 +64,15 @@ public sealed record CardPaymentResponse(
     bool IsOverdue,
     bool NeedsAccount);
 
-/// <summary>One line of a card payment in the drill-down (FR-8). Credits are negative.</summary>
+/// <summary>
+/// One line of a card payment in the drill-down (FR-8): a purchase, an installment, a credit (negative),
+/// or a bill or expense paid with the card (bills and expenses FR-6). <see cref="SourceId"/> is the
+/// purchase, bill or expense; <see cref="Date"/> its purchase, paid or expense date.
+/// </summary>
 public sealed record CardPaymentLineResponse(
-    Guid PurchaseId,
+    Guid SourceId,
     string Description,
-    DateOnly PurchaseDate,
+    DateOnly Date,
     CardPaymentLineKind Kind,
     int InstallmentNumber,
     int InstallmentTotal,
@@ -127,5 +131,3 @@ public sealed record MonthCardPaymentsResponse(
 /// the card's paying account.
 /// </summary>
 public sealed record CardPaymentPaidRequest(DateOnly? PaidDate, Guid? AccountId);
-
-public sealed record PurchaseCategoryResponse(Guid Id, string Name, bool IsHidden);

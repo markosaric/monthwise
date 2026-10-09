@@ -134,6 +134,8 @@ export const cashFlowTexts = {
     allLoanCategories: 'All loan categories',
     card: 'Card payments',
     allCardPayments: 'All cards',
+    expenseCategory: 'Bills and expenses',
+    allExpenseCategories: 'All expense categories',
     received: 'Received',
     expected: 'Expected',
     outputPaid: 'Paid out',

@@ -78,25 +78,27 @@ recurring_input      id, payer_id, category_id, account_id → card, amount_cent
 skipped_occurrence   recurring_input_id, occurrence_date   (a deleted occurrence)
 balance_entry        id, account_id → card, kind (Starting|Correction), date, balance_cents, note?
                      (balance at the end of that date; account balance = latest entry + inputs received
-                     − loan and card payments paid after it)
+                     − loan and card payments, bills and expenses paid from it after it)
 period               id, household_id, year, month, opening_carryover_cents, closed_at
-category             id, household_id, direction (in|out), group, name
-                     group ∈ salary | salary_addon | shared_contribution | other_in |
-                             utility_shared | utility_private | variable | loan | card_installment |
-                             card_payment | other_out
-recurring_item       id, category_id, name, default_amount_cents, due_day, share_pct (e.g. 50), account_id, active
-                     (expenses only; recurring income is recurring_input)
-transaction          id, period_id, category_id, recurring_item_id?, account_id?, description,
-                     amount_cents, due_date?, paid_date?, received/paid flag, share_pct
-                     (expenses; income is cash_flow_input)
+expense_category     id, name, is_predefined, is_fixed, hidden_on?
+                     (one list for card purchases, bills and expenses: Electricity, Groceries, … extendable;
+                     Cash withdrawal is fixed; see docs/feature-requirements/monthly-bills-and-expenses.md)
+recurring_bill       id, name, category_id → expense_category, payee?, paid_from_id → card?, description?,
+                     stopped_on?   (a monthly bill without dates or amount)
+bill                 id, recurring_bill_id?, month, name, category_id → expense_category, payee?, amount_cents
+                     (0 while not issued), issue_date?, due_date?, is_paid, paid_date?, paid_from_id → card?,
+                     description?   (paid with a Credit or Charge card it is a line of that card's card payment)
+expense              id, date, amount_cents, category_id → expense_category, paid_from_id → card, description?
+                     (one-time and always paid; Cash withdrawal from a primary account; paid with a Credit or
+                     Charge card it is a line of that card's card payment)
 card_purchase        id, card_id, description, purchase_date, amount_cents, installment_count (1 = paid in full),
-                     postpone_first, category_id → purchase_category?, reversed_on?, reversal_reason?
+                     postpone_first, category_id → expense_category?, reversed_on?, reversal_reason?
                      (installments, card payments and remaining amounts are CALCULATED, not stored;
                      see docs/feature-requirements/credit-card-installments.md)
 card_purchase_reversal id, purchase_id, installment_number, reversed_on, reason?   (one reversed installment)
-purchase_category    id, name, hidden_on?   (optional, extendable by the user)
 card_payment         id, card_id, month, is_paid? (null = automatic), paid_date?, paid_account_id → card?
-                     (card payments are CALCULATED per billing period; one is stored only when ticked or unticked)
+                     (card payments are CALCULATED per billing period from purchases, installments, credits and
+                     bills and expenses paid with the card; one is stored only when ticked or unticked)
 loan                 id, name, category_id → loan_category, subcategory_id → loan_subcategory,
                      lender_id → bank, payment_method (StandingOrder|Bill), account_id → card (standing order only),
                      start_month, payment_day (1–31), monthly_payment_cents, payment_count, residual_value_cents?,

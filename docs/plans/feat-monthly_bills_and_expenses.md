@@ -1,7 +1,7 @@
 # Plan: Monthly bills and expenses
 
 - **Branch:** `feat/monthly_bills_and_expenses`
-- **Status:** Draft
+- **Status:** In progress
 - **Date:** 2026-10-09
 - **Requirements:** [monthly-bills-and-expenses.md](../feature-requirements/monthly-bills-and-expenses.md) (approved), and
   [credit-card-installments.md, Appendix 1](../feature-requirements/credit-card-installments.md#appendix-1-shared-expense-categories)
@@ -258,3 +258,25 @@ handlers, FluentValidation validators and the same error mapping as before.
 - **Recurring bills** get their own page (`/recurring-bills`), linked from the Bills section.
 - **Month screen:** the current loan "Expenses" card becomes **Loan payments**, next to the new
   Bills and Expenses cards.
+
+## Changes during implementation
+- **Validation:** bill, recurring bill and expense rules live in the domain with field keys, as for
+  card purchases; no FluentValidation validators were needed.
+- **Card payment lines:** `CardPaymentLineResponse.purchaseId` is now `sourceId` (the purchase, bill
+  or expense) and `purchaseDate` is now `date`; the kinds `Bill` and `Expense` were added.
+- **Bills API:** a one-off bill is added with `POST /api/bills?month=yyyy-MM`. `BillRequest.paidDate`
+  sets the paid state when adding or editing (null = not paid); the `/paid` endpoints tick and untick
+  from the Month screen. The month list also returns `withCardCents` and `notIssuedCount`.
+- **Expenses API:** a cash withdrawal is edited with `PUT /api/expenses/cash-withdrawals/{id}`. The
+  month totals are `totalCents`, `fromAccountsCents`, `withCardCents` and `cashWithdrawalCents`.
+- **Expected bills with a credit card:** an expected bill whose usual *Paid from* is a credit card is
+  an expected output without an account in the chart and report (it joins the card payment only once
+  paid), and does not lower any account's expected balance.
+- **Routes:** bills and expenses are edited at `/bills/:id/edit` and `/expenses/:id/edit`, so the
+  card drill-down can open them; adding stays under `/month/:yearMonth/…`. The *Add recurring bills*
+  dialog asks for the month (next month by default) and then opens it.
+- **Recurring bills:** restarting a stopped recurring bill checks that its name is still unique
+  among the active ones.
+- **Chart:** the new filter is labelled **Bills and expenses** and lists the expense categories.
+- **Migration:** `Down` removes the starting categories that no purchase uses and Cash withdrawal,
+  and renames the table back to `purchase_category`.

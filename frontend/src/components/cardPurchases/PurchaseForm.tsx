@@ -1,12 +1,9 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useMemo, useState } from 'react'
 import { Controller, useForm, useWatch } from 'react-hook-form'
-import {
-  usePurchaseCategories,
-  type CardPurchaseRequest,
-  type InstallmentCard,
-} from '@/api/cardPurchases'
+import { type CardPurchaseRequest, type InstallmentCard } from '@/api/cardPurchases'
 import { ApiError } from '@/api/cards'
+import { useExpenseCategories } from '@/api/expenses'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -51,7 +48,7 @@ export function PurchaseForm({
   const [cardId, setCardId] = useState(defaultValues.cardId)
   const maxInstallments = cards.find((c) => c.id === cardId)?.maxInstallments ?? 36
   const schema = useMemo(() => purchaseFormSchema(maxInstallments), [maxInstallments])
-  const { data: categories = [] } = usePurchaseCategories(true)
+  const { data: categories = [] } = useExpenseCategories(true)
   const [formError, setFormError] = useState<string | null>(null)
   const {
     register,
@@ -64,7 +61,10 @@ export function PurchaseForm({
     control,
     name: ['inInstallments', 'amount', 'installmentCount'],
   })
-  const categoryOptions = categories.filter((c) => !c.isHidden || c.id === defaultValues.categoryId)
+  // Cash withdrawal is only for cash withdrawals (bills and expenses FR-1).
+  const categoryOptions = categories.filter(
+    (c) => !c.isFixed && (!c.isHidden || c.id === defaultValues.categoryId),
+  )
   const preview = inInstallments
     ? installmentAmounts(parseEuroInput(amount) ?? 0, Number(installmentCount) || 0)
     : []

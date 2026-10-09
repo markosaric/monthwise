@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Monthwise.Application.CardPurchases;
 using Monthwise.Application.Cards;
 using Monthwise.Application.CashFlow;
+using Monthwise.Application.Expenses;
 using Monthwise.Application.Loans;
 
 namespace Monthwise.Application;
@@ -77,7 +78,16 @@ public static class DependencyInjection
         services.AddScoped<DeleteCardPurchaseHandler>();
         services.AddScoped<ReverseCardPurchaseHandler>();
         services.AddScoped<CardPaymentHandler>();
-        services.AddScoped<PurchaseCategoryHandler>();
+
+        services.AddScoped<ExpenseCategoryHandler>();
+        services.AddScoped<ExpenseLedger>();
+        services.AddScoped<ExpenseInputChecker>();
+        services.AddScoped<RecurringBillHandler>();
+        services.AddScoped<GetMonthBillsHandler>();
+        services.AddScoped<AddRecurringBillsHandler>();
+        services.AddScoped<BillHandler>();
+        services.AddScoped<GetMonthExpensesHandler>();
+        services.AddScoped<ExpenseHandler>();
         return services;
     }
 }

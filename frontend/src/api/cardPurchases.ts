@@ -15,14 +15,12 @@ export type CardPurchaseRequest = Schemas['CardPurchaseRequest']
 export type Installment = Schemas['InstallmentResponse']
 export type MonthCardPayments = Schemas['MonthCardPaymentsResponse']
 export type CardPaymentPaidRequest = Schemas['CardPaymentPaidRequest']
-export type PurchaseCategory = Schemas['PurchaseCategoryResponse']
 
 /** The numbers of installments a card can allow at most (installments B5). */
 export const maxInstallmentsChoices = [12, 24, 36] as const
 
 /** Every card purchase query shares this prefix, so one invalidation refreshes the Cards and Month screens. */
 export const cardPurchasesQueryKey = ['card-purchases'] as const
-const categoriesKey = ['purchase-categories'] as const
 
 /** Refreshes everything a purchase or card payment change can affect: card payments, balances, chart and report. */
 function useInvalidateCardPurchases() {
@@ -176,60 +174,5 @@ export function useCardPaymentAction() {
           )
     },
     onSuccess: invalidate,
-  })
-}
-
-export function usePurchaseCategories(includeHidden = false) {
-  return useQuery({
-    queryKey: [...categoriesKey, includeHidden],
-    queryFn: async () =>
-      unwrap(await api.GET('/api/purchase-categories', { params: { query: { includeHidden } } })),
-  })
-}
-
-export type PurchaseCategoryChange =
-  | { action: 'create'; name: string }
-  | { action: 'rename'; id: string; name: string }
-  | { action: 'hide' | 'show' | 'delete'; id: string }
-
-export function useChangePurchaseCategory() {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: async (change: PurchaseCategoryChange) => {
-      switch (change.action) {
-        case 'create':
-          return unwrap(await api.POST('/api/purchase-categories', { body: { name: change.name } }))
-        case 'rename':
-          return unwrap(
-            await api.PUT('/api/purchase-categories/{id}', {
-              params: { path: { id: change.id } },
-              body: { name: change.name },
-            }),
-          )
-        case 'hide':
-          return unwrap(
-            await api.POST('/api/purchase-categories/{id}/hide', {
-              params: { path: { id: change.id } },
-            }),
-          )
-        case 'show':
-          return unwrap(
-            await api.POST('/api/purchase-categories/{id}/show', {
-              params: { path: { id: change.id } },
-            }),
-          )
-        case 'delete':
-          return ensureOk(
-            await api.DELETE('/api/purchase-categories/{id}', {
-              params: { path: { id: change.id } },
-            }),
-          )
-      }
-    },
-    onSuccess: () =>
-      Promise.all([
-        queryClient.invalidateQueries({ queryKey: categoriesKey }),
-        queryClient.invalidateQueries({ queryKey: cardPurchasesQueryKey }),
-      ]),
   })
 }

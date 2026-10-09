@@ -2170,7 +2170,7 @@
         "tags": [
           "Cash flow"
         ],
-        "summary": "Received and expected inputs, and paid and expected loan and card payments, per day or month between two dates.",
+        "summary": "Received and expected inputs, and paid and expected loan and card payments, bills and expenses, per day or month between two dates.",
         "operationId": "GetCashFlowChart",
         "parameters": [
           {
@@ -2232,6 +2232,14 @@
           },
           {
             "name": "cardId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "expenseCategoryId",
             "in": "query",
             "schema": {
               "type": "string",
@@ -4362,12 +4370,13 @@
         }
       }
     },
-    "/api/purchase-categories": {
+    "/api/expense-categories": {
       "get": {
         "tags": [
-          "Card purchases"
+          "Expense categories"
         ],
-        "operationId": "GetPurchaseCategories",
+        "summary": "The shared categories of card purchases, bills and expenses.",
+        "operationId": "GetExpenseCategories",
         "parameters": [
           {
             "name": "includeHidden",
@@ -4385,7 +4394,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/PurchaseCategoryResponse"
+                    "$ref": "#/components/schemas/ExpenseCategoryResponse"
                   }
                 }
               }
@@ -4395,9 +4404,9 @@
       },
       "post": {
         "tags": [
-          "Card purchases"
+          "Expense categories"
         ],
-        "operationId": "CreatePurchaseCategory",
+        "operationId": "CreateExpenseCategory",
         "requestBody": {
           "content": {
             "application/json": {
@@ -4414,7 +4423,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PurchaseCategoryResponse"
+                  "$ref": "#/components/schemas/ExpenseCategoryResponse"
                 }
               }
             }
@@ -4432,12 +4441,13 @@
         }
       }
     },
-    "/api/purchase-categories/{id}": {
+    "/api/expense-categories/{id}": {
       "put": {
         "tags": [
-          "Card purchases"
+          "Expense categories"
         ],
-        "operationId": "RenamePurchaseCategory",
+        "summary": "Renames a category; Cash withdrawal returns 409.",
+        "operationId": "RenameExpenseCategory",
         "parameters": [
           {
             "name": "id",
@@ -4465,7 +4475,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PurchaseCategoryResponse"
+                  "$ref": "#/components/schemas/ExpenseCategoryResponse"
                 }
               }
             }
@@ -4489,15 +4499,25 @@
                 }
               }
             }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       },
       "delete": {
         "tags": [
-          "Card purchases"
+          "Expense categories"
         ],
-        "summary": "Deletes an unused category; a used one returns 409 and can only be hidden.",
-        "operationId": "DeletePurchaseCategory",
+        "summary": "Deletes an unused category; a used one, or Cash withdrawal, returns 409.",
+        "operationId": "DeleteExpenseCategory",
         "parameters": [
           {
             "name": "id",
@@ -4546,12 +4566,13 @@
         }
       }
     },
-    "/api/purchase-categories/{id}/hide": {
+    "/api/expense-categories/{id}/hide": {
       "post": {
         "tags": [
-          "Card purchases"
+          "Expense categories"
         ],
-        "operationId": "HidePurchaseCategory",
+        "summary": "Hides a category from selection lists; Cash withdrawal returns 409.",
+        "operationId": "HideExpenseCategory",
         "parameters": [
           {
             "name": "id",
@@ -4569,7 +4590,68 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PurchaseCategoryResponse"
+                  "$ref": "#/components/schemas/ExpenseCategoryResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/expense-categories/{id}/show": {
+      "post": {
+        "tags": [
+          "Expense categories"
+        ],
+        "operationId": "ShowExpenseCategory",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExpenseCategoryResponse"
                 }
               }
             }
@@ -4597,12 +4679,83 @@
         }
       }
     },
-    "/api/purchase-categories/{id}/show": {
+    "/api/recurring-bills": {
+      "get": {
+        "tags": [
+          "Bills"
+        ],
+        "summary": "Recurring bills: active ones by name, then stopped ones when asked.",
+        "operationId": "GetRecurringBills",
+        "parameters": [
+          {
+            "name": "includeStopped",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/RecurringBillResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
       "post": {
         "tags": [
-          "Card purchases"
+          "Bills"
         ],
-        "operationId": "ShowPurchaseCategory",
+        "operationId": "CreateRecurringBill",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecurringBillRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecurringBillResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/recurring-bills/{id}": {
+      "get": {
+        "tags": [
+          "Bills"
+        ],
+        "operationId": "GetRecurringBill",
         "parameters": [
           {
             "name": "id",
@@ -4620,7 +4773,974 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PurchaseCategoryResponse"
+                  "$ref": "#/components/schemas/RecurringBillResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Bills"
+        ],
+        "summary": "Edits a recurring bill; bills already added from it stay unchanged.",
+        "operationId": "UpdateRecurringBill",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecurringBillRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecurringBillResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Bills"
+        ],
+        "summary": "Deletes a recurring bill that was never added to a month; otherwise 409.",
+        "operationId": "DeleteRecurringBill",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/recurring-bills/{id}/stop": {
+      "post": {
+        "tags": [
+          "Bills"
+        ],
+        "summary": "Stops adding the recurring bill to new months.",
+        "operationId": "StopRecurringBill",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecurringBillResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/recurring-bills/{id}/restart": {
+      "post": {
+        "tags": [
+          "Bills"
+        ],
+        "operationId": "RestartRecurringBill",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecurringBillResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/bills": {
+      "get": {
+        "tags": [
+          "Bills"
+        ],
+        "summary": "The bills of a month (yyyy-MM) with totals.",
+        "operationId": "GetMonthBills",
+        "parameters": [
+          {
+            "name": "month",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MonthBillsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Bills"
+        ],
+        "summary": "Adds a one-off bill to a month (yyyy-MM), expected or paid.",
+        "operationId": "CreateBill",
+        "parameters": [
+          {
+            "name": "month",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BillRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BillResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/bills/add-recurring": {
+      "post": {
+        "tags": [
+          "Bills"
+        ],
+        "summary": "Adds a Not issued bill for every active recurring bill that has none in the month (yyyy-MM) yet.",
+        "operationId": "AddRecurringBills",
+        "parameters": [
+          {
+            "name": "month",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AddRecurringBillsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/bills/{id}": {
+      "get": {
+        "tags": [
+          "Bills"
+        ],
+        "operationId": "GetBill",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BillResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Bills"
+        ],
+        "summary": "Edits a bill: issues it, changes it or sets its paid state.",
+        "operationId": "UpdateBill",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BillRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BillResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Bills"
+        ],
+        "summary": "Deletes a bill from its month; its recurring bill stays.",
+        "operationId": "DeleteBill",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/bills/{id}/paid": {
+      "post": {
+        "tags": [
+          "Bills"
+        ],
+        "summary": "Ticks Paid. The paid date defaults to today and what it was paid with to the bill's own.",
+        "operationId": "MarkBillPaid",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BillPaidRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BillResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Bills"
+        ],
+        "operationId": "MarkBillUnpaid",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BillResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/expenses": {
+      "get": {
+        "tags": [
+          "Expenses"
+        ],
+        "summary": "The expenses and cash withdrawals of a month (yyyy-MM), newest first, with totals.",
+        "operationId": "GetMonthExpenses",
+        "parameters": [
+          {
+            "name": "month",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MonthExpensesResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Expenses"
+        ],
+        "summary": "Records an expense, paid from an account or with a credit card.",
+        "operationId": "CreateExpense",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExpenseRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExpenseResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/expenses/last-paid-from": {
+      "get": {
+        "tags": [
+          "Expenses"
+        ],
+        "summary": "What the last expense was paid with, to prefill a new one.",
+        "operationId": "GetLastExpensePaidFrom",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LastPaidFromResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/expenses/{id}": {
+      "get": {
+        "tags": [
+          "Expenses"
+        ],
+        "operationId": "GetExpense",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExpenseResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Expenses"
+        ],
+        "operationId": "UpdateExpense",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExpenseRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExpenseResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Expenses"
+        ],
+        "operationId": "DeleteExpense",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/expenses/cash-withdrawals": {
+      "post": {
+        "tags": [
+          "Expenses"
+        ],
+        "summary": "Records a cash withdrawal from a primary account.",
+        "operationId": "CreateCashWithdrawal",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CashWithdrawalRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExpenseResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/expenses/cash-withdrawals/{id}": {
+      "put": {
+        "tags": [
+          "Expenses"
+        ],
+        "operationId": "UpdateCashWithdrawal",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CashWithdrawalRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExpenseResponse"
                 }
               }
             }
@@ -4692,6 +5812,22 @@
           },
           "hasStartingBalance": {
             "type": "boolean"
+          }
+        }
+      },
+      "AddRecurringBillsResponse": {
+        "required": [
+          "month",
+          "added"
+        ],
+        "type": "object",
+        "properties": {
+          "month": {
+            "type": "string"
+          },
+          "added": {
+            "type": "integer",
+            "format": "int32"
           }
         }
       },
@@ -4796,6 +5932,213 @@
           }
         }
       },
+      "BillPaidRequest": {
+        "required": [
+          "paidDate",
+          "paidFromId"
+        ],
+        "type": "object",
+        "properties": {
+          "paidDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "paidFromId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          }
+        }
+      },
+      "BillRequest": {
+        "required": [
+          "name",
+          "categoryId",
+          "payee",
+          "amountCents",
+          "issueDate",
+          "dueDate",
+          "paidFromId",
+          "description",
+          "paidDate"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "categoryId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "payee": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "amountCents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "issueDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "dueDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "paidFromId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "description": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "paidDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          }
+        }
+      },
+      "BillResponse": {
+        "required": [
+          "id",
+          "recurringBillId",
+          "month",
+          "name",
+          "category",
+          "payee",
+          "amountCents",
+          "issueDate",
+          "dueDate",
+          "state",
+          "paidDate",
+          "paidFrom",
+          "description",
+          "isOverdue",
+          "dueDateHint",
+          "paidWithCard",
+          "changesChargedCardPayment"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "recurringBillId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "month": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "category": {
+            "$ref": "#/components/schemas/NamedReference"
+          },
+          "payee": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "amountCents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "issueDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "dueDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "state": {
+            "$ref": "#/components/schemas/BillState"
+          },
+          "paidDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "paidFrom": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PaidFromResponse"
+              }
+            ]
+          },
+          "description": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "isOverdue": {
+            "type": "boolean"
+          },
+          "dueDateHint": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "paidWithCard": {
+            "type": "boolean"
+          },
+          "changesChargedCardPayment": {
+            "type": "boolean"
+          }
+        }
+      },
+      "BillState": {
+        "enum": [
+          "NotIssued",
+          "Expected",
+          "Paid"
+        ]
+      },
       "CardBillingResponse": {
         "required": [
           "statementDay",
@@ -4894,14 +6237,16 @@
         "enum": [
           "FullPurchase",
           "Installment",
-          "Credit"
+          "Credit",
+          "Bill",
+          "Expense"
         ]
       },
       "CardPaymentLineResponse": {
         "required": [
-          "purchaseId",
+          "sourceId",
           "description",
-          "purchaseDate",
+          "date",
           "kind",
           "installmentNumber",
           "installmentTotal",
@@ -4910,14 +6255,14 @@
         ],
         "type": "object",
         "properties": {
-          "purchaseId": {
+          "sourceId": {
             "type": "string",
             "format": "uuid"
           },
           "description": {
             "type": "string"
           },
-          "purchaseDate": {
+          "date": {
             "type": "string",
             "format": "date"
           },
@@ -5538,6 +6883,35 @@
           }
         }
       },
+      "CashWithdrawalRequest": {
+        "required": [
+          "date",
+          "amountCents",
+          "accountId",
+          "description"
+        ],
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "amountCents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "accountId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "description": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
       "ChartBucketResponse": {
         "required": [
           "start",
@@ -5598,6 +6972,144 @@
             "items": {
               "$ref": "#/components/schemas/AccountBalanceResponse"
             }
+          }
+        }
+      },
+      "ExpenseCategoryResponse": {
+        "required": [
+          "id",
+          "name",
+          "isPredefined",
+          "isFixed",
+          "isHidden"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "isPredefined": {
+            "type": "boolean"
+          },
+          "isFixed": {
+            "type": "boolean"
+          },
+          "isHidden": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ExpenseRequest": {
+        "required": [
+          "date",
+          "amountCents",
+          "categoryId",
+          "paidFromId",
+          "description"
+        ],
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "amountCents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "categoryId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "paidFromId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "description": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "ExpenseResponse": {
+        "required": [
+          "id",
+          "date",
+          "amountCents",
+          "category",
+          "paidFrom",
+          "description",
+          "isCashWithdrawal",
+          "paidWithCard",
+          "changesChargedCardPayment"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "amountCents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "category": {
+            "$ref": "#/components/schemas/NamedReference"
+          },
+          "paidFrom": {
+            "$ref": "#/components/schemas/PaidFromResponse"
+          },
+          "description": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "isCashWithdrawal": {
+            "type": "boolean"
+          },
+          "paidWithCard": {
+            "type": "boolean"
+          },
+          "changesChargedCardPayment": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ExpenseTotalsResponse": {
+        "required": [
+          "totalCents",
+          "fromAccountsCents",
+          "withCardCents",
+          "cashWithdrawalCents"
+        ],
+        "type": "object",
+        "properties": {
+          "totalCents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "fromAccountsCents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "withCardCents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "cashWithdrawalCents": {
+            "type": "integer",
+            "format": "int64"
           }
         }
       },
@@ -6055,6 +7567,24 @@
             "type": [
               "null",
               "string"
+            ]
+          }
+        }
+      },
+      "LastPaidFromResponse": {
+        "required": [
+          "paidFrom"
+        ],
+        "type": "object",
+        "properties": {
+          "paidFrom": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PaidFromResponse"
+              }
             ]
           }
         }
@@ -6590,6 +8120,38 @@
           }
         }
       },
+      "MonthBillsResponse": {
+        "required": [
+          "month",
+          "bills",
+          "totals",
+          "withCardCents",
+          "notIssuedCount"
+        ],
+        "type": "object",
+        "properties": {
+          "month": {
+            "type": "string"
+          },
+          "bills": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BillResponse"
+            }
+          },
+          "totals": {
+            "$ref": "#/components/schemas/LoanPaymentTotalsResponse"
+          },
+          "withCardCents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "notIssuedCount": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
       "MonthCardPaymentsResponse": {
         "required": [
           "month",
@@ -6609,6 +8171,28 @@
           },
           "totals": {
             "$ref": "#/components/schemas/LoanPaymentTotalsResponse"
+          }
+        }
+      },
+      "MonthExpensesResponse": {
+        "required": [
+          "month",
+          "expenses",
+          "totals"
+        ],
+        "type": "object",
+        "properties": {
+          "month": {
+            "type": "string"
+          },
+          "expenses": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ExpenseResponse"
+            }
+          },
+          "totals": {
+            "$ref": "#/components/schemas/ExpenseTotalsResponse"
           }
         }
       },
@@ -6755,6 +8339,26 @@
           }
         }
       },
+      "PaidFromResponse": {
+        "required": [
+          "id",
+          "name",
+          "isCreditCard"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "isCreditCard": {
+            "type": "boolean"
+          }
+        }
+      },
       "PayerResponse": {
         "required": [
           "id",
@@ -6898,26 +8502,6 @@
           }
         }
       },
-      "PurchaseCategoryResponse": {
-        "required": [
-          "id",
-          "name",
-          "isHidden"
-        ],
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "name": {
-            "type": "string"
-          },
-          "isHidden": {
-            "type": "boolean"
-          }
-        }
-      },
       "RecurrenceFrequency": {
         "enum": [
           "Weekly",
@@ -6943,6 +8527,105 @@
               "string"
             ],
             "format": "date"
+          }
+        }
+      },
+      "RecurringBillRequest": {
+        "required": [
+          "name",
+          "categoryId",
+          "payee",
+          "paidFromId",
+          "description"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "categoryId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "payee": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "paidFromId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "description": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "RecurringBillResponse": {
+        "required": [
+          "id",
+          "name",
+          "category",
+          "payee",
+          "paidFrom",
+          "description",
+          "isActive",
+          "stoppedOn",
+          "canBeDeleted"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "category": {
+            "$ref": "#/components/schemas/NamedReference"
+          },
+          "payee": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "paidFrom": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PaidFromResponse"
+              }
+            ]
+          },
+          "description": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "stoppedOn": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "canBeDeleted": {
+            "type": "boolean"
           }
         }
       },
@@ -7236,6 +8919,15 @@
     },
     {
       "name": "Cash flow"
+    },
+    {
+      "name": "Expense categories"
+    },
+    {
+      "name": "Bills"
+    },
+    {
+      "name": "Expenses"
     }
   ]
 }

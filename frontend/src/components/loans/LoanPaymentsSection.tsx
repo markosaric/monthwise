@@ -7,8 +7,8 @@ import { loanTexts } from './texts'
 
 const t = loanTexts.expenses
 
-/** The Expenses part of the Month screen: the month's loan payments, Paid check boxes and totals (FR-4, FR-5). */
-export function ExpensesSection({ month }: { month: string }) {
+/** The Loan payments part of the Month screen: the month's loan payments, Paid check boxes and totals (FR-4, FR-5). */
+export function LoanPaymentsSection({ month }: { month: string }) {
   const { data, isPending, isError } = useMonthLoanPayments(month)
 
   return (

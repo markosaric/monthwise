@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Http.HttpResults;
 using Monthwise.Application.CardPurchases;
-using Monthwise.Application.CashFlow;
 using Monthwise.Domain.Common;
 
 namespace Monthwise.Api.Endpoints;
@@ -13,7 +12,6 @@ internal static class CardPurchaseEndpoints
         MapCards(routes);
         MapPurchases(routes);
         MapCardPayments(routes);
-        MapCategories(routes);
         return routes;
     }
 
@@ -124,41 +122,6 @@ internal static class CardPurchaseEndpoints
             .WithTags("Card purchases")
             .WithName("GetMonthCardPayments")
             .WithSummary("Card payments of a month (yyyy-MM), one per card, with totals.");
-    }
-
-    private static void MapCategories(IEndpointRouteBuilder routes)
-    {
-        var categories = routes.MapGroup("/purchase-categories").WithTags("Card purchases");
-
-        categories.MapGet("/", (bool? includeHidden, PurchaseCategoryHandler handler, CancellationToken ct) =>
-                handler.ListAsync(includeHidden ?? false, ct))
-            .WithName("GetPurchaseCategories");
-
-        categories.MapPost("/", async (NameRequest request, PurchaseCategoryHandler handler, CancellationToken ct) =>
-                (await handler.CreateAsync(request, ct)).ToOk())
-            .WithName("CreatePurchaseCategory");
-
-        categories.MapPut("/{id:guid}", async (Guid id, NameRequest request, PurchaseCategoryHandler handler, CancellationToken ct) =>
-                (await handler.RenameAsync(id, request, ct)).ToOk())
-            .WithName("RenamePurchaseCategory")
-            .ProducesProblem(StatusCodes.Status404NotFound);
-
-        categories.MapPost("/{id:guid}/hide", async (Guid id, PurchaseCategoryHandler handler, CancellationToken ct) =>
-                (await handler.HideAsync(id, ct)).ToOk())
-            .WithName("HidePurchaseCategory")
-            .ProducesProblem(StatusCodes.Status404NotFound);
-
-        categories.MapPost("/{id:guid}/show", async (Guid id, PurchaseCategoryHandler handler, CancellationToken ct) =>
-                (await handler.ShowAsync(id, ct)).ToOk())
-            .WithName("ShowPurchaseCategory")
-            .ProducesProblem(StatusCodes.Status404NotFound);
-
-        categories.MapDelete("/{id:guid}", async (Guid id, PurchaseCategoryHandler handler, CancellationToken ct) =>
-                (await handler.DeleteAsync(id, ct)).ToNoContent())
-            .WithName("DeletePurchaseCategory")
-            .WithSummary("Deletes an unused category; a used one returns 409 and can only be hidden.")
-            .ProducesProblem(StatusCodes.Status404NotFound)
-            .ProducesProblem(StatusCodes.Status409Conflict);
     }
 
     private static ValidationProblem InvalidMonth() =>

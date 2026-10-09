@@ -3,7 +3,9 @@ import { Link, Navigate, useParams } from 'react-router'
 import { CardPaymentsSection } from '@/components/cardPurchases/CardPaymentsSection'
 import { IncomeSection } from '@/components/cashflow/IncomeSection'
 import { cashFlowTexts } from '@/components/cashflow/texts'
-import { ExpensesSection } from '@/components/loans/ExpensesSection'
+import { BillsSection } from '@/components/expenses/BillsSection'
+import { ExpensesSection } from '@/components/expenses/ExpensesSection'
+import { LoanPaymentsSection } from '@/components/loans/LoanPaymentsSection'
 import { Button } from '@/components/ui/button'
 import { addMonths, currentMonth, formatYearMonth, isYearMonth } from '@/lib/dates'
 import { PageHeader } from './PageHeader'
@@ -20,12 +22,14 @@ export function MonthPage() {
     <>
       <PageHeader
         title={formatYearMonth(month)}
-        description="Income, loan payments and card payments of the month: received and paid status, and totals."
+        description="Income, bills, expenses, loan payments and card payments of the month: received and paid status, and totals."
       />
       <MonthNavigation month={month} basePath="/month" />
       <div className="flex flex-col gap-6">
         <IncomeSection month={month} />
+        <BillsSection month={month} />
         <ExpensesSection month={month} />
+        <LoanPaymentsSection month={month} />
         <CardPaymentsSection month={month} />
       </div>
     </>

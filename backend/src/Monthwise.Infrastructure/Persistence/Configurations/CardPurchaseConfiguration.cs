@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Monthwise.Domain.CardPurchases;
 using Monthwise.Domain.Cards;
+using Monthwise.Domain.Expenses;
 
 namespace Monthwise.Infrastructure.Persistence.Configurations;
 
@@ -19,19 +20,6 @@ internal sealed class CardBillingTermsConfiguration : IEntityTypeConfiguration<C
         builder.HasKey(t => t.Id);
         builder.Property(t => t.Id).ValueGeneratedNever();
         builder.HasIndex(t => new { t.CardId, t.FromMonth }).IsUnique().HasDatabaseName("ux_card_billing_terms_card_id_from_month");
-    }
-}
-
-internal sealed class PurchaseCategoryConfiguration : IEntityTypeConfiguration<PurchaseCategory>
-{
-    public void Configure(EntityTypeBuilder<PurchaseCategory> builder)
-    {
-        builder.ToTable("purchase_category");
-        builder.HasKey(c => c.Id);
-        builder.Property(c => c.Id).ValueGeneratedNever();
-        builder.Property(c => c.Name).HasMaxLength(PurchaseCategory.NameMaxLength);
-        builder.Ignore(c => c.IsHidden);
-        // Name uniqueness ignoring case is a unique index on lower(name), created in the migration.
     }
 }
 
@@ -57,8 +45,8 @@ internal sealed class CardPurchaseConfiguration : IEntityTypeConfiguration<CardP
 
         builder.HasOne<Card>().WithMany().HasForeignKey(p => p.CardId)
             .OnDelete(DeleteBehavior.Restrict).HasConstraintName("fk_card_purchase_card_card_id");
-        builder.HasOne<PurchaseCategory>().WithMany().HasForeignKey(p => p.CategoryId)
-            .OnDelete(DeleteBehavior.Restrict).HasConstraintName("fk_card_purchase_purchase_category_category_id");
+        builder.HasOne<ExpenseCategory>().WithMany().HasForeignKey(p => p.CategoryId)
+            .OnDelete(DeleteBehavior.Restrict).HasConstraintName("fk_card_purchase_expense_category_category_id");
 
         builder.HasMany(p => p.Reversals).WithOne().HasForeignKey(r => r.PurchaseId)
             .OnDelete(DeleteBehavior.Cascade).HasConstraintName("fk_card_purchase_reversal_card_purchase_purchase_id");

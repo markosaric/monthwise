@@ -140,9 +140,10 @@ public sealed record ReportBalanceEntryResponse(
 public sealed record ReportOutputGroupResponse(Guid? Id, string Name, LoanPaymentTotalsResponse Totals);
 
 /// <summary>
-/// The month's outputs (loan and card payments) grouped by category, account, loan and card (Appendix 1,
-/// installments FR-8). Card payments are one group named "Card payments" in <see cref="ByCategory"/>,
-/// with a null id.
+/// The month's outputs (loan and card payments, bills and expenses) grouped by category, account, loan
+/// and card (Appendix 1, installments FR-8, bills and expenses FR-10). Card payments are one group named
+/// "Card payments" in <see cref="ByCategory"/>, with a null id; bills and expenses are grouped by their
+/// expense category.
 /// </summary>
 public sealed record ReportOutputsResponse(
     LoanPaymentTotalsResponse Totals,

@@ -1,8 +1,10 @@
 using Monthwise.Application.Cards;
 using Monthwise.Application.Common;
+using Monthwise.Application.Expenses;
 using Monthwise.Domain.CardPurchases;
 using Monthwise.Domain.Cards;
 using Monthwise.Domain.Common;
+using Monthwise.Domain.Expenses;
 
 namespace Monthwise.Application.CardPurchases;
 
@@ -106,7 +108,7 @@ public sealed class GetCardPurchaseHandler(CardPaymentLedger ledger)
 /// </summary>
 public sealed class CardPurchaseInputChecker(
     ICardRepository cards,
-    IPurchaseCategoryRepository categories,
+    IExpenseCategoryRepository categories,
     TimeProvider timeProvider)
 {
     /// <param name="existing">The purchase being edited: its card and category stay allowed when no longer usable or hidden.</param>
@@ -154,6 +156,11 @@ public sealed class CardPurchaseInputChecker(
             else if (category.IsHidden && existing?.CategoryId != category.Id)
             {
                 errors.Add(CardPurchaseErrors.CategoryHidden);
+            }
+            else if (category.IsFixed)
+            {
+                // Cash withdrawal is only for cash withdrawals (bills and expenses FR-1).
+                errors.Add(ExpenseErrors.CategoryCashWithdrawal);
             }
         }
         if (errors.Count > 0)

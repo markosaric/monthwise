@@ -1,5 +1,6 @@
 using Monthwise.Application.CardPurchases;
 using Monthwise.Application.Cards;
+using Monthwise.Application.Expenses;
 using Monthwise.Application.Loans;
 using Monthwise.Domain.CashFlow;
 using Monthwise.Domain.Common;
@@ -9,15 +10,18 @@ namespace Monthwise.Application.CashFlow;
 /// <summary>
 /// Filters of the cash flow chart (FR-12, Appendix 1). The account applies to inputs and outputs;
 /// payer and category to inputs only. The loan category shows only the payments of those loans, the
-/// card only that card's card payments (installments FR-8).
+/// card only that card's card payments (installments FR-8), and the expense category only the bills
+/// and expenses of that category (bills and expenses FR-10).
 /// </summary>
-public sealed record ChartFilter(Guid? AccountId, Guid? PayerId, Guid? CategoryId, Guid? LoanCategoryId = null, Guid? CardId = null);
+public sealed record ChartFilter(
+    Guid? AccountId, Guid? PayerId, Guid? CategoryId, Guid? LoanCategoryId = null, Guid? CardId = null, Guid? ExpenseCategoryId = null);
 
 /// <summary>
-/// Received and expected inputs, and paid and expected outputs (loan and card payments), per day or
-/// month (FR-12, Appendix 1; installments FR-8).
+/// Received and expected inputs, and paid and expected outputs (loan and card payments, bills and
+/// expenses), per day or month (FR-12, Appendix 1; installments FR-8; bills and expenses FR-10).
 /// </summary>
-public sealed class GetCashFlowChartHandler(InputLedger ledger, LoanLedger loanLedger, CardPaymentLedger cardPaymentLedger)
+public sealed class GetCashFlowChartHandler(
+    InputLedger ledger, LoanLedger loanLedger, CardPaymentLedger cardPaymentLedger, ExpenseLedger expenseLedger)
 {
     /// <summary>Longest period the chart accepts.</summary>
     public const int MaxYears = 10;
@@ -41,19 +45,25 @@ public sealed class GetCashFlowChartHandler(InputLedger ledger, LoanLedger loanL
             .Where(e => filter.CategoryId is null || e.Details.CategoryId == filter.CategoryId)
             .ToLookup(e => BucketStart(e.MonthDate, granularity));
         var book = await loanLedger.LoadAsync(cancellationToken);
-        IEnumerable<ChartOutput> loanPayments = filter.CardId is not null
+        IEnumerable<ChartOutput> loanPayments = filter.CardId is not null || filter.ExpenseCategoryId is not null
             ? []
             : book.PaymentsBetween(from, to)
                 .Where(p => filter.AccountId is null || p.AccountId == filter.AccountId)
                 .Where(p => filter.LoanCategoryId is null || book.CategoryOf(p.LoanId) == filter.LoanCategoryId)
                 .Select(p => new ChartOutput(p.MonthDate, p.IsPaid, p.Amount));
-        IEnumerable<ChartOutput> cardPayments = filter.LoanCategoryId is not null
+        IEnumerable<ChartOutput> cardPayments = filter.LoanCategoryId is not null || filter.ExpenseCategoryId is not null
             ? []
             : (await cardPaymentLedger.LoadAsync(cancellationToken)).PaymentsBetween(from, to)
                 .Where(p => filter.AccountId is null || p.AccountId == filter.AccountId)
                 .Where(p => filter.CardId is null || p.CardId == filter.CardId)
                 .Select(p => new ChartOutput(p.MonthDate, p.IsPaid, p.Amount));
-        var payments = loanPayments.Concat(cardPayments).ToLookup(p => BucketStart(p.Date, granularity));
+        IEnumerable<ChartOutput> billsAndExpenses = filter.LoanCategoryId is not null || filter.CardId is not null
+            ? []
+            : (await expenseLedger.LoadAsync(cancellationToken)).OutputsBetween(from, to)
+                .Where(o => filter.AccountId is null || o.AccountId == filter.AccountId)
+                .Where(o => filter.ExpenseCategoryId is null || o.CategoryId == filter.ExpenseCategoryId)
+                .Select(o => new ChartOutput(o.Date, o.IsPaid, o.Amount));
+        var payments = loanPayments.Concat(cardPayments).Concat(billsAndExpenses).ToLookup(p => BucketStart(p.Date, granularity));
 
         var buckets = new List<ChartBucketResponse>();
         for (var start = BucketStart(from, granularity); start <= to; start = granularity == ChartGranularity.Day ? start.AddDays(1) : start.AddMonths(1))
@@ -76,11 +86,15 @@ public sealed class GetCashFlowChartHandler(InputLedger ledger, LoanLedger loanL
     private sealed record ChartOutput(DateOnly Date, bool IsPaid, Money Amount);
 }
 
-/// <summary>The monthly cash flow report (FR-13, Appendix 1), with loan and card payments as outputs (installments FR-8).</summary>
+/// <summary>
+/// The monthly cash flow report (FR-13, Appendix 1), with loan and card payments, bills and expenses as
+/// outputs (installments FR-8; bills and expenses FR-10).
+/// </summary>
 public sealed class GetMonthlyReportHandler(
     InputLedger ledger,
     LoanLedger loanLedger,
     CardPaymentLedger cardPaymentLedger,
+    ExpenseLedger expenseLedger,
     IBalanceEntryRepository balanceEntries,
     AccountBalanceQuery balances,
     IPayerRepository payers,
@@ -109,9 +123,10 @@ public sealed class GetMonthlyReportHandler(
 
         var book = await loanLedger.LoadAsync(cancellationToken);
         var cardBook = await cardPaymentLedger.LoadAsync(cancellationToken);
-        var outputs = Outputs(book, cardBook, month);
+        var expenseBook = await expenseLedger.LoadAsync(cancellationToken);
+        var outputs = Outputs(book, cardBook, expenseBook, month);
         var outputTotals = outputs.Totals;
-        var previousOutputs = Outputs(book, cardBook, previous).Totals.TotalCents;
+        var previousOutputs = Outputs(book, cardBook, expenseBook, previous).Totals.TotalCents;
 
         return new MonthlyReportResponse(
             month.ToString(),
@@ -135,10 +150,10 @@ public sealed class GetMonthlyReportHandler(
     public const string CardPayments = "Card payments";
 
     /// <summary>
-    /// The month's outputs: loan payments and card payments, grouped by category (loan category, or one
-    /// Card payments group), account, loan and card.
+    /// The month's outputs: loan payments, card payments, bills and expenses, grouped by category (loan
+    /// category, one Card payments group, or expense category), account, loan and card.
     /// </summary>
-    private static ReportOutputsResponse Outputs(LoanBook book, CardPaymentBook cardBook, YearMonth month)
+    private static ReportOutputsResponse Outputs(LoanBook book, CardPaymentBook cardBook, ExpenseBook expenseBook, YearMonth month)
     {
         var loanPayments = book.PaymentsBetween(month.FirstDay, month.LastDay)
             .Select(p => new ReportOutput(p.IsPaid, p.Amount, p.AccountId, book.CategoryOf(p.LoanId), p.LoanId, null))
@@ -146,13 +161,17 @@ public sealed class GetMonthlyReportHandler(
         var cardPayments = cardBook.PaymentsBetween(month.FirstDay, month.LastDay)
             .Select(p => new ReportOutput(p.IsPaid, p.Amount, p.NeedsAccount ? null : p.AccountId, null, null, p.CardId))
             .ToList();
-        var all = loanPayments.Concat(cardPayments).ToList();
+        var billsAndExpenses = expenseBook.OutputsBetween(month.FirstDay, month.LastDay)
+            .Select(o => new ReportOutput(o.IsPaid, o.Amount, o.AccountId, null, null, null, o.CategoryId))
+            .ToList();
+        var all = loanPayments.Concat(cardPayments).Concat(billsAndExpenses).ToList();
         var byCategory = GroupOutputs(loanPayments, o => o.LoanCategoryId, id => book.Category(id!.Value).Name);
+        byCategory.AddRange(GroupOutputs(billsAndExpenses, o => o.ExpenseCategoryId, id => expenseBook.Category(id!.Value).Name));
         if (cardPayments.Count > 0)
         {
             byCategory = [.. byCategory, new ReportOutputGroupResponse(null, CardPayments, Totals(cardPayments))];
-            byCategory = Ordered(byCategory);
         }
+        byCategory = Ordered(byCategory);
         return new ReportOutputsResponse(
             Totals(all),
             byCategory,
@@ -186,8 +205,9 @@ public sealed class GetMonthlyReportHandler(
         return new LoanPaymentTotalsResponse(expected.Cents, paid.Cents, (expected + paid).Cents);
     }
 
-    /// <summary>One output of the report: a loan payment or a card payment.</summary>
-    private sealed record ReportOutput(bool IsPaid, Money Amount, Guid? AccountId, Guid? LoanCategoryId, Guid? LoanId, Guid? CardId);
+    /// <summary>One output of the report: a loan payment, a card payment, a bill or an expense.</summary>
+    private sealed record ReportOutput(
+        bool IsPaid, Money Amount, Guid? AccountId, Guid? LoanCategoryId, Guid? LoanId, Guid? CardId, Guid? ExpenseCategoryId = null);
 
     /// <summary>Groups with their totals, largest total first.</summary>
     private static List<ReportGroupResponse> Group(

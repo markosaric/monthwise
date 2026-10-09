@@ -1,5 +1,5 @@
 import { useMonthCardPayments } from '@/api/cardPurchases'
-import { PaymentTotals } from '@/components/loans/ExpensesSection'
+import { PaymentTotals } from '@/components/loans/LoanPaymentsSection'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { CardPaymentRow } from './CardPaymentRow'
 import { cardPurchaseTexts } from './texts'

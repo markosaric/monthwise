@@ -42,16 +42,6 @@ public static class CardPurchaseErrors
     public static readonly DomainError InstallmentReversed = new(
         "purchase.installment.reversed", "This installment is already reversed.", Kind: ErrorKind.Conflict);
 
-    public static readonly DomainError CategoryNameRequired = new("purchaseCategory.name.required", "Name is required.", "name");
-    public static readonly DomainError CategoryNameTooLong = new(
-        "purchaseCategory.name.tooLong", $"Name can be at most {PurchaseCategory.NameMaxLength} characters.", "name");
-    public static readonly DomainError CategoryNameInUse =
-        new("purchaseCategory.name.inUse", "Another category already has this name.", "name");
-    public static readonly DomainError CategoryInUse = new(
-        "purchaseCategory.inUse", "This category is used by purchases and cannot be deleted. Hide it instead.", Kind: ErrorKind.Conflict);
-    public static readonly DomainError CategoryNotFound =
-        new("purchaseCategory.notFound", "Category not found.", Kind: ErrorKind.NotFound);
-
     public static readonly DomainError PaymentNotFound =
         new("cardPayment.notFound", "This card payment does not exist.", Kind: ErrorKind.NotFound);
     public static readonly DomainError PaidBeforeStatement = new(

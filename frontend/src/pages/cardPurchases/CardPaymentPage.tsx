@@ -1,5 +1,5 @@
 import { Link, Navigate, useParams } from 'react-router'
-import { useCardPayment, type CardPaymentDetails } from '@/api/cardPurchases'
+import { useCardPayment, type CardPaymentDetails, type CardPaymentLine } from '@/api/cardPurchases'
 import { formatDate } from '@/components/cards/format'
 import { CardPaymentRow } from '@/components/cardPurchases/CardPaymentRow'
 import { cardPurchaseTexts } from '@/components/cardPurchases/texts'
@@ -12,7 +12,10 @@ import { PageHeader } from '@/pages/PageHeader'
 
 const t = cardPurchaseTexts
 
-/** The drill-down of a card payment: every purchase, installment and credit in it (installments FR-8). */
+/**
+ * The drill-down of a card payment: every purchase, installment, credit, and bill or expense paid with
+ * the card in it (installments FR-8; bills and expenses FR-6).
+ */
 export function CardPaymentPage() {
   const { cardId, month } = useParams()
   const valid = isYearMonth(month)
@@ -47,27 +50,26 @@ function CardPaymentView({ details }: { details: CardPaymentDetails }) {
             <ul className="flex flex-col divide-y">
               {lines.map((line) => (
                 <li
-                  key={`${line.purchaseId}-${line.kind}-${line.installmentNumber}`}
+                  key={`${line.sourceId}-${line.kind}-${line.installmentNumber}`}
                   className="flex items-start gap-3 py-3"
                 >
                   <div className="flex min-w-0 flex-1 flex-col gap-0.5">
                     <span className="flex flex-wrap items-center gap-2">
-                      <Link
-                        to={`/cards/purchases/${line.purchaseId}`}
-                        className="font-medium hover:underline"
-                      >
+                      <Link to={sourceLink(line)} className="font-medium hover:underline">
                         {line.description}
                       </Link>
-                      {line.kind === 'Credit' && (
-                        <Badge variant="outline">{t.lineKinds.Credit}</Badge>
+                      {(line.kind === 'Credit' ||
+                        line.kind === 'Bill' ||
+                        line.kind === 'Expense') && (
+                        <Badge variant="outline">{t.lineKinds[line.kind]}</Badge>
                       )}
                       {line.category && <Badge variant="secondary">{line.category.name}</Badge>}
                     </span>
                     <span className="text-sm text-muted-foreground">
-                      {formatDate(line.purchaseDate)} ·{' '}
-                      {line.kind === 'FullPurchase'
-                        ? t.lineKinds.FullPurchase
-                        : `${t.lineKinds.Installment} ${line.installmentNumber} ${t.purchase.of} ${line.installmentTotal}`}
+                      {formatDate(line.date)}
+                      {line.kind === 'FullPurchase' && ` · ${t.lineKinds.FullPurchase}`}
+                      {(line.kind === 'Installment' || line.kind === 'Credit') &&
+                        ` · ${t.lineKinds.Installment} ${line.installmentNumber} ${t.purchase.of} ${line.installmentTotal}`}
                     </span>
                   </div>
                   <span
@@ -95,4 +97,16 @@ function CardPaymentView({ details }: { details: CardPaymentDetails }) {
       </div>
     </>
   )
+}
+
+/** Where a line opens: its purchase, or the bill or expense paid with the card. */
+function sourceLink(line: CardPaymentLine): string {
+  switch (line.kind) {
+    case 'Bill':
+      return `/bills/${line.sourceId}/edit`
+    case 'Expense':
+      return `/expenses/${line.sourceId}/edit`
+    default:
+      return `/cards/purchases/${line.sourceId}`
+  }
 }
