@@ -36,7 +36,7 @@ never counted twice.
 | Issue date | The date the bill was issued (Croatian: *datum računa*). |
 | Due date | The date by which the bill should be paid (Croatian: *datum dospijeća*). |
 | Paid from | The account or credit card a bill or expense is paid with. |
-| Credit card | In this document, a card that has a statement date and a payment date, i.e. a card that allows monthly installments (see [credit-card-installments.md](credit-card-installments.md) FR-1). |
+| Credit card | In this document, a Credit or Charge card that has a statement date and a payment date (see [credit-card-installments.md](credit-card-installments.md) FR-1). A Debit card is always an account here, also when it allows monthly installments: a bill or expense paid with it is never paid in installments. |
 | Card payment, Billing period | As in [credit-card-installments.md](credit-card-installments.md). |
 | Output, Account, Primary account | As in [credit-card-settings.md](credit-card-settings.md), [input-cash-flow.md](input-cash-flow.md) and [loans-and-leases.md](loans-and-leases.md). |
 
