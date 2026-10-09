@@ -17,6 +17,7 @@ internal sealed class CardConfiguration : IEntityTypeConfiguration<Card>
             table.HasCheckConstraint("ck_card_debt_limit_not_negative", "debt_limit_cents >= 0");
             table.HasCheckConstraint("ck_card_primary_is_debit", "NOT is_primary OR type = 'Debit'");
             table.HasCheckConstraint("ck_card_number_last4", "card_number_last4 ~ '^[0-9]{4}$'");
+            table.HasCheckConstraint("ck_card_max_installments", "max_installments IS NULL OR max_installments IN (12, 24, 36)");
         });
 
         builder.HasKey(c => c.Id);
@@ -43,6 +44,15 @@ internal sealed class CardConfiguration : IEntityTypeConfiguration<Card>
         builder.Ignore(c => c.CardNumberMasked);
         builder.Ignore(c => c.IbanMasked);
         builder.Ignore(c => c.IsReadOnly);
+        builder.Ignore(c => c.HasBillingDetails);
+        builder.Ignore(c => c.NeedsBillingDetails);
+
+        builder.HasOne<Card>().WithMany().HasForeignKey(c => c.PayingAccountId)
+            .OnDelete(DeleteBehavior.Restrict).HasConstraintName("fk_card_card_paying_account_id");
+        builder.HasIndex(c => c.PayingAccountId).HasDatabaseName("ix_card_paying_account_id");
+        builder.HasMany(c => c.BillingTerms).WithOne().HasForeignKey(t => t.CardId)
+            .OnDelete(DeleteBehavior.Cascade).HasConstraintName("fk_card_billing_terms_card_card_id");
+        builder.Navigation(c => c.BillingTerms).HasField("_billingTerms").UsePropertyAccessMode(PropertyAccessMode.Field).AutoInclude();
         // Name uniqueness ignoring case is a unique index on lower(name), created in the migration.
     }
 }

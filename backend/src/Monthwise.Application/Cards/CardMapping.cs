@@ -53,7 +53,26 @@ internal sealed class CardMapping(
             card.ExpiryReason,
             card.ArchivedOn,
             card.ReplacedByCardId is { } id && _cards.TryGetValue(id, out var replacement) ? new CardReference(id, replacement.Name) : null,
-            replaces is null ? null : new CardReference(replaces.Id, replaces.Name));
+            replaces is null ? null : new CardReference(replaces.Id, replaces.Name),
+            Billing(card),
+            card.NeedsBillingDetails);
+    }
+
+    private CardBillingResponse? Billing(Card card)
+    {
+        if (card.BillingFor(YearMonth.FromDate(today).Next()) is not { } billing)
+        {
+            return null;
+        }
+        var account = _cards.TryGetValue(billing.PayingAccountId, out var payingAccount)
+            ? new CardReference(payingAccount.Id, payingAccount.Name)
+            : new CardReference(billing.PayingAccountId, "Unknown");
+        var terms = card.BillingTerms
+            .Select(t => new BillingTermsResponse(
+                t.FromMonth == CardBillingTerms.Beginning ? null : t.FromMonth.ToString(), t.StatementDay, t.PaymentDay))
+            .ToList();
+        return new CardBillingResponse(
+            billing.StatementDay, billing.PaymentDay, account, billing.PaysFromAccountDirectly, billing.MaxInstallments, terms);
     }
 
     /// <summary>Primary accounts first, then by name.</summary>
@@ -75,5 +94,20 @@ internal sealed class CardMapping(
         request.Type,
         request.IsPrimary,
         request.DebtLimitCents is { } cents ? Money.FromCents(cents) : null,
-        request.AllowsInstallments);
+        request.AllowsInstallments,
+        ToBilling(request));
+
+    /// <summary>
+    /// The billing details, or null when none were entered. Missing values become invalid ones, so the
+    /// card rules report each missing field.
+    /// </summary>
+    private static CardBillingDetails? ToBilling(CardRequest request) =>
+        request.StatementDay is null && request.PaymentDay is null && request.PayingAccountId is null && request.MaxInstallments is null
+            ? null
+            : new CardBillingDetails(
+                request.StatementDay ?? 0,
+                request.PaymentDay ?? 0,
+                request.PayingAccountId ?? Guid.Empty,
+                request.PaysFromAccountDirectly,
+                request.MaxInstallments ?? 0);
 }

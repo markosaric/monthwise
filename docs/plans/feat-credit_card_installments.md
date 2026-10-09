@@ -1,7 +1,7 @@
 # Plan: Credit card installments
 
 - **Branch:** `feat/credit_card_installments`
-- **Status:** Approved (2026-10-08)
+- **Status:** In progress
 - **Date:** 2026-10-08
 - **Requirements:** [credit-card-installments.md](../feature-requirements/credit-card-installments.md) (approved), and
   [credit-card-settings.md, Appendix 2](../feature-requirements/credit-card-settings.md#appendix-2-billing-dates-and-paying-account)
@@ -297,3 +297,24 @@ FluentValidation validators and the same error mapping as before.
   - Change the statement day.
   - Check the Cards screen, the drill-down, the Month screen, the Dashboard balances, the chart and
     the report on desktop and phone width.
+
+## Changes during implementation
+- **API paths:** the Cards screen card is `GET /api/cards/{id}/installments`; its purchases,
+  card payments and drill-down are under `/api/cards/{id}/…` as planned. Purchases are listed
+  newest first without a filter.
+- **Unticking installments:** a card that has purchases must keep allowing installments; the edit
+  returns a field error on `allowsInstallments`.
+- **Automatic payments kept:** when a card's paying account or its connection changes, card
+  payments already paid automatically are stored as paid first, so they stay paid (the same as
+  loans).
+- **Credits:** a card payment can be negative when its credits are larger than its charges.
+- **Card response:** `billing` (days for next month, paying account, connection, max
+  installments and every version of the days) and `needsBillingDetails`.
+- **Report:** card payments are one **Card payments** group in `byCategory` (id `null`), count in
+  `byAccount` and the totals, and are listed in the new `byCard` group, which links to the
+  drill-down. The chart's loan category filter shows loan payments only, the new card filter card
+  payments only.
+- **Database:** `card_purchase.installment_count` is checked to be 1 to 36; `card.paying_account_id`
+  restricts deletes, so the test clean-up SQL clears it before deleting cards.
+- **Tests:** the card API tests create debit cards by default, and a primary paying account for
+  cards that allow installments. The API tests need PostgreSQL and run in CI.

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router'
+import { useInstallmentCards } from '@/api/cardPurchases'
 import { useCashFlowChart, useInputCategories, usePayers, type ChartQuery } from '@/api/cashFlow'
 import { useCards } from '@/api/cards'
 import { useLoanCategories } from '@/api/loans'
@@ -39,11 +40,13 @@ export function CashFlowPage() {
   const [payerId, setPayerId] = useState('')
   const [categoryId, setCategoryId] = useState('')
   const [loanCategoryId, setLoanCategoryId] = useState('')
+  const [cardId, setCardId] = useState('')
   const [asTable, setAsTable] = useState(false)
   const { data: cards = [] } = useCards('Default')
   const { data: payers = [] } = usePayers()
   const { data: categories = [] } = useInputCategories(true)
   const { data: loanCategories = [] } = useLoanCategories(true)
+  const { data: installmentCards = [] } = useInstallmentCards()
   const {
     data: chart,
     isPending,
@@ -54,13 +57,14 @@ export function CashFlowPage() {
     payerId,
     categoryId,
     loanCategoryId,
+    cardId,
   })
 
   return (
     <>
       <PageHeader title={t.title} description={t.description} />
       <div className="flex max-w-4xl flex-col gap-4">
-        <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-5">
+        <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-6">
           <Filter
             id="period"
             label={t.period}
@@ -120,6 +124,14 @@ export function CashFlowPage() {
           >
             <option value="">{t.allLoanCategories}</option>
             {loanCategories.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </Filter>
+          <Filter id="card" label={t.card} value={cardId} onChange={setCardId}>
+            <option value="">{t.allCardPayments}</option>
+            {installmentCards.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.name}
               </option>

@@ -59,8 +59,12 @@ card                 id, name, issuer_id, bank_id, card_number (encrypted)?, iba
                      card_number_last4, iban_country, iban_last4, valid_from?, valid_through,
                      type (Debit|Charge|Credit|Prepaid), is_primary, allows_installments (Debit only),
                      debt_limit_cents?,
-                     blocked_on?, expired_on?, archived_on?, replaced_by_card_id?
-                     (payment cards and current accounts; see docs/feature-requirements/credit-card-settings.md)
+                     blocked_on?, expired_on?, archived_on?, replaced_by_card_id?,
+                     paying_account_id → card?, pays_from_account_directly, max_installments? (12|24|36)
+                     (payment cards and current accounts; see docs/feature-requirements/credit-card-settings.md;
+                     billing details only for cards that allow installments)
+card_billing_terms   id, card_id, from_month, statement_day (1–30), payment_day (2–31, > statement_day)
+                     (every version of a card's billing days; a change applies from the next month)
 card_issuer          id, name, is_predefined   (Visa, Mastercard, … extendable by the user)
 bank                 id, name, is_predefined   (ZaBa, PBZ, … extendable by the user)
 payer                id, name, removed_on?   (saved automatically when an input names it)
@@ -74,7 +78,7 @@ recurring_input      id, payer_id, category_id, account_id → card, amount_cent
 skipped_occurrence   recurring_input_id, occurrence_date   (a deleted occurrence)
 balance_entry        id, account_id → card, kind (Starting|Correction), date, balance_cents, note?
                      (balance at the end of that date; account balance = latest entry + inputs received
-                     − loan payments paid after it)
+                     − loan and card payments paid after it)
 period               id, household_id, year, month, opening_carryover_cents, closed_at
 category             id, household_id, direction (in|out), group, name
                      group ∈ salary | salary_addon | shared_contribution | other_in |
@@ -85,9 +89,14 @@ recurring_item       id, category_id, name, default_amount_cents, due_day, share
 transaction          id, period_id, category_id, recurring_item_id?, account_id?, description,
                      amount_cents, due_date?, paid_date?, received/paid flag, share_pct
                      (expenses; income is cash_flow_input)
-installment_plan     id, card_id, merchant, purchase_date, total_amount_cents,
-                     installments_total, installment_amount_cents, first_period
-                     (current installment and remaining amount are CALCULATED, not entered)
+card_purchase        id, card_id, description, purchase_date, amount_cents, installment_count (1 = paid in full),
+                     postpone_first, category_id → purchase_category?, reversed_on?, reversal_reason?
+                     (installments, card payments and remaining amounts are CALCULATED, not stored;
+                     see docs/feature-requirements/credit-card-installments.md)
+card_purchase_reversal id, purchase_id, installment_number, reversed_on, reason?   (one reversed installment)
+purchase_category    id, name, hidden_on?   (optional, extendable by the user)
+card_payment         id, card_id, month, is_paid? (null = automatic), paid_date?, paid_account_id → card?
+                     (card payments are CALCULATED per billing period; one is stored only when ticked or unticked)
 loan                 id, name, category_id → loan_category, subcategory_id → loan_subcategory,
                      lender_id → bank, payment_method (StandingOrder|Bill), account_id → card (standing order only),
                      start_month, payment_day (1–31), monthly_payment_cents, payment_count, residual_value_cents?,
@@ -101,16 +110,16 @@ loan_payment         id, loan_id, month, kind (Regular|Residual), amount_cents?,
 loan_category        id, name, allows_residual_value, is_predefined, hidden_on?   (Bank loan, Lease, … extendable)
 loan_subcategory     id, category_id → loan_category, name, is_predefined, hidden_on?
                      (Mortgage, Cash loan, Car lease, … extendable)
-card_statement       id, card_id, period_id, calculated_cents, actual_cents  (difference = actual - calculated)
 balance_snapshot     id, account_id, date, balance_cents   (savings balances; card and current account
                      balances are balance_entry)
 user                 id, email, household_id, role
 ```
 
 Key rules:
-- **A month is generated** from `recurring_item` + active `installment_plan` and `loan` records; the user only confirms or corrects.
-- Installment `k` of `N` = number of months since `first_period` + 1; the plan is finished when `k > N`.
-- Calculated card statement = sum of active installments + one-off charges on that card in the period.
+- **A month is generated** from `recurring_item`, `card_purchase` and `loan` records; the user only confirms or corrects.
+- A card payment is the sum of the installments and purchases paid in full in the card's billing period (from the day
+  after the previous statement date up to and including the statement date), minus credits from reversed installments
+  that were already charged.
 - Available (calculated) = carryover + Σ income − Σ expenses; actual = entered account balance.
 - Closing a month carries the actual balance over as the next month's `opening_carryover`.
 

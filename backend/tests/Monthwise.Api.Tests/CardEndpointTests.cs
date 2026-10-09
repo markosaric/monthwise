@@ -105,9 +105,10 @@ public sealed class CardEndpointTests : IAsyncLifetime
     [Fact]
     public async Task Debit_cards_keep_the_installments_check_box_and_other_types_derive_it()
     {
-        var debit = await CreateCardAsync(Card("Tekući", cardNumber: Visa, type: "Debit", allowsInstallments: true));
+        var paying = await PayingAccountAsync();
+        var debit = await CreateCardAsync(Card("Tekući", cardNumber: Visa, type: "Debit", allowsInstallments: true, payingAccountId: paying));
         var plainDebit = await CreateCardAsync(Card("Plain debit", cardNumber: Mastercard, type: "Debit"));
-        var credit = await CreateCardAsync(Card("Credit", cardNumber: null, iban: GermanIban, type: "Credit"));
+        var credit = await CreateCardAsync(Card("Credit", cardNumber: null, iban: GermanIban, type: "Credit", payingAccountId: paying));
         var prepaid = await CreateCardAsync(Card("Prepaid", cardNumber: null, iban: CroatianIban, type: "Prepaid"));
 
         Assert.True(debit.GetProperty("allowsInstallments").GetBoolean());
@@ -116,7 +117,8 @@ public sealed class CardEndpointTests : IAsyncLifetime
         Assert.False(prepaid.GetProperty("allowsInstallments").GetBoolean());
 
         var id = plainDebit.GetProperty("id").GetGuid();
-        var update = await Client.PutAsJsonAsync($"/api/cards/{id}", Card("Plain debit", cardNumber: null, type: "Debit", allowsInstallments: true), Ct);
+        var update = await Client.PutAsJsonAsync(
+            $"/api/cards/{id}", Card("Plain debit", cardNumber: null, type: "Debit", allowsInstallments: true, payingAccountId: paying), Ct);
         Assert.Equal(HttpStatusCode.OK, update.StatusCode);
         Assert.True((await update.Content.ReadFromJsonAsync<JsonElement>(Ct)).GetProperty("allowsInstallments").GetBoolean());
     }
@@ -177,7 +179,7 @@ public sealed class CardEndpointTests : IAsyncLifetime
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         var errors = (await response.Content.ReadFromJsonAsync<JsonElement>(Ct)).GetProperty("errors");
         Assert.False(errors.TryGetProperty("cardNumber", out _), "A card needs no number.");
-        foreach (var field in new[] { "validThrough", "debtLimitCents", "isPrimary", "allowsInstallments" })
+        foreach (var field in new[] { "validThrough", "debtLimitCents", "isPrimary", "allowsInstallments", "statementDay" })
         {
             Assert.True(errors.TryGetProperty(field, out _), $"Expected an error for {field}.");
         }
@@ -318,7 +320,8 @@ public sealed class CardEndpointTests : IAsyncLifetime
     [Fact]
     public async Task Database_rejects_a_non_debit_primary_card()
     {
-        var id = (await CreateCardAsync(Card("Family Visa", cardNumber: Visa, type: "Credit"))).GetProperty("id").GetGuid();
+        var paying = await PayingAccountAsync();
+        var id = (await CreateCardAsync(Card("Family Visa", cardNumber: Visa, type: "Credit", payingAccountId: paying))).GetProperty("id").GetGuid();
 
         var error = await Assert.ThrowsAsync<PostgresException>(() =>
             ExecuteSqlAsync($"UPDATE card SET is_primary = true WHERE id = '{id}';"));
@@ -332,11 +335,35 @@ public sealed class CardEndpointTests : IAsyncLifetime
         string? iban = null,
         string? validFrom = "2025-01",
         string validThrough = "2029-12",
-        string type = "Credit",
+        string type = "Debit",
         bool isPrimary = false,
         long? debtLimitCents = null,
-        bool allowsInstallments = false) =>
-        new { name, issuerId = VisaIssuer, bankId = ZaBa, cardNumber, iban, validFrom, validThrough, type, isPrimary, debtLimitCents, allowsInstallments };
+        bool allowsInstallments = false,
+        Guid? payingAccountId = null) =>
+        new
+        {
+            name,
+            issuerId = VisaIssuer,
+            bankId = ZaBa,
+            cardNumber,
+            iban,
+            validFrom,
+            validThrough,
+            type,
+            isPrimary,
+            debtLimitCents,
+            allowsInstallments,
+            // A card that allows installments needs its billing details (installments FR-1).
+            statementDay = payingAccountId is null ? (int?)null : 5,
+            paymentDay = payingAccountId is null ? (int?)null : 20,
+            payingAccountId,
+            paysFromAccountDirectly = false,
+            maxInstallments = payingAccountId is null ? (int?)null : 36,
+        };
+
+    /// <summary>A primary account that cards allowing installments can pay from.</summary>
+    private async Task<Guid> PayingAccountAsync() =>
+        (await CreateCardAsync(Card("Paying account", cardNumber: null, iban: null, type: "Debit", isPrimary: true))).GetProperty("id").GetGuid();
 
     private async Task<JsonElement> CreateCardAsync(object card)
     {

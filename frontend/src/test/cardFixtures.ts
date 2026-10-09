@@ -26,6 +26,8 @@ export function aCard(overrides: Partial<Card> = {}): Card {
     archivedOn: null,
     replacedBy: null,
     replaces: null,
+    billing: null,
+    needsBillingDetails: false,
     ...overrides,
   }
 }

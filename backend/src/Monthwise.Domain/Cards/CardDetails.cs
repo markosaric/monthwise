@@ -12,4 +12,5 @@ public sealed record CardDetails(
     CardType Type,
     bool IsPrimary,
     Money? DebtLimit,
-    bool AllowsInstallments = false);
+    bool AllowsInstallments = false,
+    CardBillingDetails? Billing = null);

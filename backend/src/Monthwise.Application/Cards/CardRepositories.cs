@@ -32,8 +32,9 @@ public interface ICardListRepository<TEntry> where TEntry : CardListEntry
 }
 
 /// <summary>
-/// Which cards still have ongoing transactions (e.g. installment plans with installments left).
-/// No feature creates such transactions yet; the installments feature fills this in.
+/// Which cards still have ongoing transactions: accounts of standing order loans with expected
+/// payments, cards with installments left, and paying accounts of connected cards with expected card
+/// payments.
 /// </summary>
 public interface ICardActivityQuery
 {

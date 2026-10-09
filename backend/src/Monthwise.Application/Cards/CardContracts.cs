@@ -5,6 +5,8 @@ namespace Monthwise.Application.Cards;
 /// <summary>
 /// Add or edit a card. Months use the ISO form <c>yyyy-MM</c>. On edit, a <c>null</c>
 /// <see cref="CardNumber"/> or <see cref="Iban"/> keeps the stored value and an empty string removes it.
+/// The billing details (<see cref="StatementDay"/> to <see cref="MaxInstallments"/>) are required for
+/// a card that allows monthly installments and ignored for other cards (installments FR-1).
 /// </summary>
 public sealed record CardRequest(
     string Name,
@@ -17,7 +19,12 @@ public sealed record CardRequest(
     CardType Type,
     bool IsPrimary,
     long? DebtLimitCents,
-    bool AllowsInstallments);
+    bool AllowsInstallments,
+    int? StatementDay = null,
+    int? PaymentDay = null,
+    Guid? PayingAccountId = null,
+    bool PaysFromAccountDirectly = false,
+    int? MaxInstallments = null);
 
 public sealed record CardStateRequest(string? Reason);
 
@@ -28,6 +35,24 @@ public sealed record CardListEntryRequest(string Name);
 public sealed record CardListEntryResponse(Guid Id, string Name, bool IsPredefined);
 
 public sealed record CardReference(Guid Id, string Name);
+
+/// <summary>
+/// One version of a card's statement and payment day. <see cref="FromMonth"/> is null for the first
+/// version, which covers every earlier month (installments FR-2).
+/// </summary>
+public sealed record BillingTermsResponse(string? FromMonth, int StatementDay, int PaymentDay);
+
+/// <summary>
+/// The billing details of a card that allows installments (installments FR-1). The days are the ones
+/// from next month on, as the card form edits them; <see cref="Terms"/> lists every version.
+/// </summary>
+public sealed record CardBillingResponse(
+    int StatementDay,
+    int PaymentDay,
+    CardReference PayingAccount,
+    bool PaysFromAccountDirectly,
+    int MaxInstallments,
+    IReadOnlyList<BillingTermsResponse> Terms);
 
 /// <summary>A card as the UI shows it. Never contains a full card number or IBAN.</summary>
 public sealed record CardResponse(
@@ -51,7 +76,9 @@ public sealed record CardResponse(
     string? ExpiryReason,
     DateOnly? ArchivedOn,
     CardReference? ReplacedBy,
-    CardReference? Replaces);
+    CardReference? Replaces,
+    CardBillingResponse? Billing,
+    bool NeedsBillingDetails);
 
 /// <summary>
 /// The Dashboard widget: the cards shown, whether any card exists, and the balance of each shown

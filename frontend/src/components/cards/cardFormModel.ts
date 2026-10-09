@@ -7,9 +7,11 @@ import {
   normalizeIban,
 } from '@/lib/cardNumbers'
 import { parseEuroInput } from '@/lib/money'
+import { cardPurchaseTexts } from '@/components/cardPurchases/texts'
 import { cardTexts } from './texts'
 
 const t = cardTexts
+const billing = cardPurchaseTexts.billing
 
 /** keep: leave the stored number as is (edit only); remove: delete it (edit only); enter: type a number. */
 export type NumberMode = 'keep' | 'remove' | 'enter'
@@ -31,6 +33,11 @@ export const cardFormSchema = z
     isPrimary: z.boolean(),
     allowsInstallments: z.boolean(),
     debtLimit: z.string(),
+    statementDay: z.string(),
+    paymentDay: z.string(),
+    payingAccountId: z.string(),
+    paysFromAccountDirectly: z.boolean(),
+    maxInstallments: z.enum(['12', '24', '36']),
   })
   .superRefine((values, ctx) => {
     if (
@@ -53,7 +60,50 @@ export const cardFormSchema = z
     if (values.debtLimit.trim() !== '' && parseEuroInput(values.debtLimit) === null) {
       ctx.addIssue({ code: 'custom', path: ['debtLimit'], message: t.errors.debtLimitInvalid })
     }
+    if (allowsInstallments(values.type, values.allowsInstallments)) {
+      const statement = dayOf(values.statementDay, 1, 30)
+      const payment = dayOf(values.paymentDay, 2, 31)
+      if (statement === null) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['statementDay'],
+          message: billing.errors.statementDayInvalid,
+        })
+      }
+      if (payment === null) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['paymentDay'],
+          message: billing.errors.paymentDayInvalid,
+        })
+      } else if (statement !== null && payment <= statement) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['paymentDay'],
+          message: billing.errors.paymentNotAfterStatement,
+        })
+      }
+      if (values.payingAccountId === '') {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['payingAccountId'],
+          message: billing.errors.payingAccountRequired,
+        })
+      }
+    }
   })
+
+/** Credit and Charge cards always allow installments, Prepaid never, Debit by the check box (A11). */
+export function allowsInstallments(type: CardType, debitAllows: boolean): boolean {
+  return type === 'Credit' || type === 'Charge' || (type === 'Debit' && debitAllows)
+}
+
+/** A whole day number within the bounds, or null. */
+function dayOf(text: string, min: number, max: number): number | null {
+  if (!/^\d{1,2}$/.test(text.trim())) return null
+  const day = Number(text.trim())
+  return day >= min && day <= max ? day : null
+}
 
 export type CardFormValues = z.infer<typeof cardFormSchema>
 
@@ -73,6 +123,11 @@ export function emptyCardFormValues(prefill: Partial<CardFormValues> = {}): Card
     isPrimary: false,
     allowsInstallments: false,
     debtLimit: '',
+    statementDay: '',
+    paymentDay: '',
+    payingAccountId: '',
+    paysFromAccountDirectly: false,
+    maxInstallments: '36',
     ...prefill,
   }
 }
@@ -91,6 +146,7 @@ function numberForRequest(
 }
 
 export function toCardRequest(values: CardFormValues, editing: boolean): CardRequest {
+  const withBilling = allowsInstallments(values.type, values.allowsInstallments)
   return {
     name: values.name.trim(),
     issuerId: values.issuerId,
@@ -108,5 +164,10 @@ export function toCardRequest(values: CardFormValues, editing: boolean): CardReq
     isPrimary: values.type === 'Debit' && values.isPrimary,
     allowsInstallments: values.type === 'Debit' && values.allowsInstallments,
     debtLimitCents: values.debtLimit.trim() === '' ? null : parseEuroInput(values.debtLimit),
+    statementDay: withBilling ? Number(values.statementDay) : null,
+    paymentDay: withBilling ? Number(values.paymentDay) : null,
+    payingAccountId: withBilling ? values.payingAccountId : null,
+    paysFromAccountDirectly: withBilling && values.paysFromAccountDirectly,
+    maxInstallments: withBilling ? Number(values.maxInstallments) : null,
   }
 }

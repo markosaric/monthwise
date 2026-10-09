@@ -15,6 +15,8 @@ public sealed class Card
     /// <summary>A card is "expiring soon" when its last valid day is within this many months.</summary>
     public const int ExpiringSoonMonths = 2;
 
+    private readonly List<CardBillingTerms> _billingTerms = [];
+
     private Card()
     {
         Name = string.Empty;
@@ -48,6 +50,27 @@ public sealed class Card
     public string? IbanCountry { get; private set; }
     public string? IbanLast4 { get; private set; }
 
+    /// <summary>The primary account card payments are paid from (installments FR-1, B3).</summary>
+    public Guid? PayingAccountId { get; private set; }
+
+    /// <summary>Whether the bank charges card payments directly from the paying account (B4).</summary>
+    public bool PaysFromAccountDirectly { get; private set; }
+
+    /// <summary>The most installments one purchase on this card can have: 12, 24 or 36 (B5).</summary>
+    public int? MaxInstallments { get; private set; }
+
+    /// <summary>Every version of the statement and payment day, oldest first (installments FR-2).</summary>
+    public IReadOnlyList<CardBillingTerms> BillingTerms => _billingTerms.OrderBy(t => t.FromMonth).ToList();
+
+    /// <summary>
+    /// Whether purchases can be recorded on the card: it allows installments and has its billing details.
+    /// A card saved before the installments feature has none until the user edits it.
+    /// </summary>
+    public bool HasBillingDetails => AllowsInstallments && _billingTerms.Count > 0 && PayingAccountId is not null && MaxInstallments is not null;
+
+    /// <summary>A card that allows installments but has no billing details yet.</summary>
+    public bool NeedsBillingDetails => AllowsInstallments && !HasBillingDetails;
+
     public DateOnly? BlockedOn { get; private set; }
     public string? BlockReason { get; private set; }
 
@@ -69,6 +92,20 @@ public sealed class Card
     /// <summary>True while the user's state (blocked, expired, archived) prevents edits.</summary>
     public bool IsReadOnly => BlockedOn is not null || ExpiredOn is not null || ArchivedOn is not null;
 
+    /// <summary>The statement and payment dates of every payment month; null without billing details.</summary>
+    public CardBillingCalendar? BillingCalendar() => HasBillingDetails ? new CardBillingCalendar(_billingTerms) : null;
+
+    /// <summary>The billing details the user edits: the days that apply to <paramref name="month"/>.</summary>
+    public CardBillingDetails? BillingFor(YearMonth month)
+    {
+        if (BillingCalendar() is not { } calendar)
+        {
+            return null;
+        }
+        var terms = calendar.TermsFor(month);
+        return new CardBillingDetails(terms.StatementDay, terms.PaymentDay, PayingAccountId!.Value, PaysFromAccountDirectly, MaxInstallments!.Value);
+    }
+
     public static Result<Card> Create(CardDetails details, CardNumber? cardNumber, Iban? iban, DateTimeOffset now)
     {
         ArgumentNullException.ThrowIfNull(details);
@@ -86,11 +123,16 @@ public sealed class Card
             SensitiveData = new CardSensitiveData(id, cardNumber, iban),
         };
         card.Apply(details, cardNumber, iban, now);
+        card.ApplyBilling(details, nextMonth: CardBillingTerms.Beginning, now);
         return Result.Success(card);
     }
 
-    /// <summary>Changes all attributes. <paramref name="cardNumber"/> and <paramref name="iban"/> are the new full values.</summary>
-    public Result Update(CardDetails details, CardNumber? cardNumber, Iban? iban, DateTimeOffset now)
+    /// <summary>
+    /// Changes all attributes. <paramref name="cardNumber"/> and <paramref name="iban"/> are the new full
+    /// values. A change of the statement or payment day applies from the month after
+    /// <paramref name="today"/>'s month (installments FR-2).
+    /// </summary>
+    public Result Update(CardDetails details, CardNumber? cardNumber, Iban? iban, DateOnly today, DateTimeOffset now)
     {
         ArgumentNullException.ThrowIfNull(details);
         if (IsReadOnly)
@@ -110,6 +152,7 @@ public sealed class Card
 
         SensitiveData.Change(cardNumber, iban);
         Apply(details, cardNumber, iban, now);
+        ApplyBilling(details, YearMonth.FromDate(today).Next(), now);
         return Result.Success();
     }
 
@@ -298,7 +341,99 @@ public sealed class Card
         {
             errors.Add(CardErrors.InstallmentsNotDebit);
         }
+        if (AllowsInstallmentsFor(details))
+        {
+            ValidateBilling(details.Billing, errors);
+        }
         return errors;
+    }
+
+    /// <summary>Credit and Charge cards always allow installments, Prepaid never, Debit by the check box.</summary>
+    public static bool AllowsInstallmentsFor(CardDetails details)
+    {
+        ArgumentNullException.ThrowIfNull(details);
+        return details.Type switch
+        {
+            CardType.Credit or CardType.Charge => true,
+            CardType.Debit => details.AllowsInstallments,
+            _ => false,
+        };
+    }
+
+    private static void ValidateBilling(CardBillingDetails? billing, List<DomainError> errors)
+    {
+        if (billing is null)
+        {
+            errors.Add(CardErrors.BillingRequired);
+            return;
+        }
+        var statementValid = billing.StatementDay is >= CardBillingTerms.MinStatementDay and <= CardBillingTerms.MaxStatementDay;
+        if (!statementValid)
+        {
+            errors.Add(CardErrors.StatementDayInvalid);
+        }
+        if (billing.PaymentDay is < CardBillingTerms.MinPaymentDay or > CardBillingTerms.MaxPaymentDay)
+        {
+            errors.Add(CardErrors.PaymentDayInvalid);
+        }
+        else if (statementValid && billing.PaymentDay <= billing.StatementDay)
+        {
+            errors.Add(CardErrors.PaymentDayNotAfterStatement);
+        }
+        if (billing.PayingAccountId == Guid.Empty)
+        {
+            errors.Add(CardErrors.PayingAccountRequired);
+        }
+        if (!CardBillingDetails.MaxInstallmentsChoices.Contains(billing.MaxInstallments))
+        {
+            errors.Add(CardErrors.MaxInstallmentsInvalid);
+        }
+    }
+
+    /// <summary>
+    /// Sets the billing details, or clears them when the card no longer allows installments. Changed
+    /// days apply from <paramref name="nextMonth"/>: later versions are replaced and earlier months keep
+    /// theirs (installments FR-2).
+    /// </summary>
+    private void ApplyBilling(CardDetails details, YearMonth nextMonth, DateTimeOffset now)
+    {
+        if (!AllowsInstallmentsFor(details) || details.Billing is not { } billing)
+        {
+            _billingTerms.Clear();
+            PayingAccountId = null;
+            PaysFromAccountDirectly = false;
+            MaxInstallments = null;
+            return;
+        }
+
+        PayingAccountId = billing.PayingAccountId;
+        PaysFromAccountDirectly = billing.PaysFromAccountDirectly;
+        MaxInstallments = billing.MaxInstallments;
+        if (_billingTerms.Count == 0)
+        {
+            _billingTerms.Add(CardBillingTerms.Create(Id, CardBillingTerms.Beginning, billing.StatementDay, billing.PaymentDay, now));
+            return;
+        }
+
+        var current = new CardBillingCalendar(_billingTerms).TermsFor(nextMonth);
+        if (current.HasDays(billing.StatementDay, billing.PaymentDay))
+        {
+            return;
+        }
+        _billingTerms.RemoveAll(t => t.FromMonth > nextMonth);
+        var fromNextMonth = _billingTerms.Find(t => t.FromMonth == nextMonth);
+        if (fromNextMonth is not null)
+        {
+            fromNextMonth.ChangeDays(billing.StatementDay, billing.PaymentDay);
+            // Back to the days the month before had: that version alone is enough.
+            var before = _billingTerms.Where(t => t.FromMonth < nextMonth).OrderBy(t => t.FromMonth).LastOrDefault();
+            if (before is not null && before.HasDays(billing.StatementDay, billing.PaymentDay))
+            {
+                _billingTerms.Remove(fromNextMonth);
+            }
+            return;
+        }
+        _billingTerms.Add(CardBillingTerms.Create(Id, nextMonth, billing.StatementDay, billing.PaymentDay, now));
     }
 
     private void Apply(CardDetails details, CardNumber? cardNumber, Iban? iban, DateTimeOffset now)

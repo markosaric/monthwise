@@ -1,5 +1,6 @@
-import { ChevronRight, CreditCard, Landmark, Tags, Users } from 'lucide-react'
+import { ChevronRight, CreditCard, Landmark, ShoppingBag, Tags, Users } from 'lucide-react'
 import { Link } from 'react-router'
+import { cardPurchaseTexts } from '@/components/cardPurchases/texts'
 import { cardTexts } from '@/components/cards/texts'
 import { cashFlowTexts } from '@/components/cashflow/texts'
 import { loanTexts } from '@/components/loans/texts'
@@ -29,6 +30,12 @@ const sections = [
     icon: Landmark,
     title: loanTexts.categories.section,
     description: loanTexts.categories.description,
+  },
+  {
+    to: '/settings/purchase-categories',
+    icon: ShoppingBag,
+    title: cardPurchaseTexts.categories.section,
+    description: cardPurchaseTexts.categories.description,
   },
 ]
 

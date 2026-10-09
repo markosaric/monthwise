@@ -29,6 +29,30 @@ public static class CardErrors
         new("card.isPrimary.notDebit", "Only debit cards can be a primary account.", "isPrimary");
     public static readonly DomainError InstallmentsNotDebit = new(
         "card.allowsInstallments.notDebit", "Only debit cards have a monthly installments option.", "allowsInstallments");
+    public static readonly DomainError BillingRequired = new(
+        "card.billing.required", "A card that allows monthly installments needs its statement date and payment date.", "statementDay");
+    public static readonly DomainError StatementDayInvalid = new(
+        "card.statementDay.invalid",
+        $"Statement date must be a day between {CardBillingTerms.MinStatementDay} and {CardBillingTerms.MaxStatementDay}.",
+        "statementDay");
+    public static readonly DomainError PaymentDayInvalid = new(
+        "card.paymentDay.invalid",
+        $"Payment date must be a day between {CardBillingTerms.MinPaymentDay} and {CardBillingTerms.MaxPaymentDay}.",
+        "paymentDay");
+    public static readonly DomainError PaymentDayNotAfterStatement = new(
+        "card.paymentDay.notAfterStatement", "Payment date must be later than the statement date.", "paymentDay");
+    public static readonly DomainError PayingAccountRequired =
+        new("card.payingAccount.required", "Choose the primary account card payments are paid from.", "payingAccountId");
+    public static readonly DomainError PayingAccountUnknown =
+        new("card.payingAccount.unknown", "This account does not exist.", "payingAccountId");
+    public static readonly DomainError PayingAccountNotPrimary = new(
+        "card.payingAccount.notPrimary", "Choose a primary account that is not blocked, expired or archived.", "payingAccountId");
+    public static readonly DomainError MaxInstallmentsInvalid =
+        new("card.maxInstallments.invalid", "Max installments must be 12, 24 or 36.", "maxInstallments");
+    public static readonly DomainError InstallmentsInUse = new(
+        "card.allowsInstallments.inUse",
+        "This card has purchases, so it must keep allowing monthly installments.",
+        "allowsInstallments");
     public static readonly DomainError ReasonTooLong =
         new("card.reason.tooLong", $"Reason can be at most {Card.ReasonMaxLength} characters.", "reason");
     public static readonly DomainError ReplacementIsSameCard =

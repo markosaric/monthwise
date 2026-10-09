@@ -18,9 +18,17 @@ public class CardTests
         YearMonth? validThrough = null,
         Money? debtLimit = null,
         bool noValidFrom = false,
-        bool allowsInstallments = false) =>
+        bool allowsInstallments = false,
+        CardBillingDetails? billing = null,
+        bool noBilling = false) =>
         new(name, Guid.NewGuid(), Guid.NewGuid(), noValidFrom ? null : validFrom ?? new YearMonth(2025, 1),
-            validThrough ?? new YearMonth(2029, 12), type, isPrimary, debtLimit, allowsInstallments);
+            validThrough ?? new YearMonth(2029, 12), type, isPrimary, debtLimit, allowsInstallments,
+            noBilling ? null : billing ?? Billing());
+
+    private static readonly Guid PayingAccount = Guid.NewGuid();
+
+    private static CardBillingDetails Billing(int statementDay = 5, int paymentDay = 20, int maxInstallments = 36) =>
+        new(statementDay, paymentDay, PayingAccount, PaysFromAccountDirectly: false, maxInstallments);
 
     private static Card NewCard(CardDetails? details = null, CardNumber? number = null, Iban? iban = null) =>
         Card.Create(details ?? Details(), number ?? Visa, iban, Now).Value;
@@ -71,7 +79,7 @@ public class CardTests
     {
         var card = NewCard(number: Visa, iban: CroatianIban);
 
-        var result = card.Update(Details(noValidFrom: true), null, null, Now);
+        var result = card.Update(Details(noValidFrom: true), null, null, Today, Now);
 
         Assert.True(result.IsSuccess);
         Assert.Null(card.ValidFrom);
@@ -102,7 +110,7 @@ public class CardTests
     {
         var card = NewCard(Details(type: CardType.Debit));
 
-        Assert.True(card.Update(Details(type: CardType.Debit, allowsInstallments: true), Visa, null, Now).IsSuccess);
+        Assert.True(card.Update(Details(type: CardType.Debit, allowsInstallments: true), Visa, null, Today, Now).IsSuccess);
 
         Assert.True(card.AllowsInstallmentsFlag);
     }
@@ -118,7 +126,7 @@ public class CardTests
 
         Assert.True(result.IsFailure);
         Assert.Equal(
-            ["name", "issuerId", "bankId", "validThrough", "debtLimitCents", "isPrimary", "allowsInstallments"],
+            ["name", "issuerId", "bankId", "validThrough", "debtLimitCents", "isPrimary", "allowsInstallments", "statementDay"],
             result.Errors.Select(e => e.Field));
     }
 
@@ -161,7 +169,7 @@ public class CardTests
     {
         var card = NewCard();
 
-        var result = card.Update(Details(name: "Renamed", type: CardType.Debit), null, CroatianIban, Now.AddDays(1));
+        var result = card.Update(Details(name: "Renamed", type: CardType.Debit), null, CroatianIban, Today, Now.AddDays(1));
 
         Assert.True(result.IsSuccess);
         Assert.Equal("Renamed", card.Name);
@@ -183,7 +191,7 @@ public class CardTests
 
         foreach (var card in new[] { blocked, expired, archived })
         {
-            var result = card.Update(Details(), Visa, null, Now);
+            var result = card.Update(Details(), Visa, null, Today, Now);
             Assert.Equal(CardErrors.ReadOnly, Assert.Single(result.Errors));
         }
     }

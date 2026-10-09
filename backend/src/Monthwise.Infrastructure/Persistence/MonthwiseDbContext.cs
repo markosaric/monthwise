@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Monthwise.Application.Common;
+using Monthwise.Domain.CardPurchases;
 using Monthwise.Domain.Cards;
 using Monthwise.Domain.CashFlow;
 using Monthwise.Domain.Common;
@@ -28,6 +29,11 @@ public sealed class MonthwiseDbContext(DbContextOptions<MonthwiseDbContext> opti
     public DbSet<LoanPayment> LoanPayments => Set<LoanPayment>();
     public DbSet<LoanCategory> LoanCategories => Set<LoanCategory>();
     public DbSet<LoanSubcategory> LoanSubcategories => Set<LoanSubcategory>();
+    public DbSet<CardBillingTerms> BillingTerms => Set<CardBillingTerms>();
+    public DbSet<PurchaseCategory> PurchaseCategories => Set<PurchaseCategory>();
+    public DbSet<CardPurchase> CardPurchases => Set<CardPurchase>();
+    public DbSet<InstallmentReversal> InstallmentReversals => Set<InstallmentReversal>();
+    public DbSet<CardPayment> CardPayments => Set<CardPayment>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -48,6 +54,11 @@ public sealed class MonthwiseDbContext(DbContextOptions<MonthwiseDbContext> opti
         modelBuilder.ApplyConfiguration(new LoanPaymentConfiguration());
         modelBuilder.ApplyConfiguration(new LoanCategoryConfiguration());
         modelBuilder.ApplyConfiguration(new LoanSubcategoryConfiguration());
+        modelBuilder.ApplyConfiguration(new CardBillingTermsConfiguration());
+        modelBuilder.ApplyConfiguration(new PurchaseCategoryConfiguration());
+        modelBuilder.ApplyConfiguration(new CardPurchaseConfiguration());
+        modelBuilder.ApplyConfiguration(new InstallmentReversalConfiguration());
+        modelBuilder.ApplyConfiguration(new CardPaymentConfiguration());
     }
 
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)

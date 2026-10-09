@@ -1,4 +1,4 @@
-import { Navigate, useParams } from 'react-router'
+import { Link, Navigate, useParams } from 'react-router'
 import { useMonthlyReport, type InputTotals, type MonthlyReport } from '@/api/cashFlow'
 import type { LoanPaymentTotals } from '@/api/loans'
 import { formatDate } from '@/components/cards/format'
@@ -93,13 +93,22 @@ function Report({ report }: { report: MonthlyReport }) {
           </dl>
         </CardContent>
       </Card>
-      {outputs.totals.totalCents === 0 ? (
+      {outputs.byCategory.length === 0 ? (
         <p className="text-sm text-muted-foreground">{t.noOutputs}</p>
       ) : (
         <>
           <OutputGroups title={t.outputsByCategory} groups={outputs.byCategory} />
           <OutputGroups title={t.outputsByAccount} groups={outputs.byAccount} />
-          <OutputGroups title={t.outputsByLoan} groups={outputs.byLoan} />
+          {outputs.byLoan.length > 0 && (
+            <OutputGroups title={t.outputsByLoan} groups={outputs.byLoan} />
+          )}
+          {outputs.byCard.length > 0 && (
+            <OutputGroups
+              title={t.outputsByCard}
+              groups={outputs.byCard}
+              linkTo={(cardId) => `/cards/${cardId}/payments/${report.month}`}
+            />
+          )}
         </>
       )}
       <Card>
@@ -215,9 +224,12 @@ function OutputTotalsRow({ totals }: { totals: LoanPaymentTotals }) {
 function OutputGroups({
   title,
   groups,
+  linkTo,
 }: {
   title: string
   groups: MonthlyReport['outputs']['byCategory']
+  /** Where a group's name links to, e.g. the drill-down of a card payment (installments FR-8). */
+  linkTo?: (id: string) => string
 }) {
   return (
     <Card>
@@ -229,7 +241,13 @@ function OutputGroups({
           {groups.map((group) => (
             <li key={group.id ?? 'none'} className="flex flex-col gap-0.5 py-2">
               <div className="flex items-baseline gap-3">
-                <span className="min-w-0 flex-1 truncate">{group.name}</span>
+                {linkTo && group.id ? (
+                  <Link className="min-w-0 flex-1 truncate hover:underline" to={linkTo(group.id)}>
+                    {group.name}
+                  </Link>
+                ) : (
+                  <span className="min-w-0 flex-1 truncate">{group.name}</span>
+                )}
                 <span className="font-medium tabular-nums">
                   {formatCents(group.totals.totalCents)}
                 </span>

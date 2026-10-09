@@ -25,7 +25,7 @@ import { loanTexts } from './texts'
 const t = loanTexts
 
 /** A small dialog with fields, a save button and an error line. */
-function PaymentDialog({
+export function PaymentDialog({
   open,
   onOpenChange,
   title,

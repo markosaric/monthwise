@@ -22,6 +22,192 @@ namespace Monthwise.Infrastructure.Persistence.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("Monthwise.Domain.CardPurchases.CardPayment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("CardId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("card_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<bool?>("IsPaid")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_paid");
+
+                    b.Property<DateOnly>("Month")
+                        .HasColumnType("date")
+                        .HasColumnName("month");
+
+                    b.Property<Guid?>("PaidAccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("paid_account_id");
+
+                    b.Property<DateOnly?>("PaidDate")
+                        .HasColumnType("date")
+                        .HasColumnName("paid_date");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id")
+                        .HasName("pk_card_payment");
+
+                    b.HasIndex("PaidAccountId")
+                        .HasDatabaseName("ix_card_payment_paid_account_id");
+
+                    b.HasIndex("CardId", "Month")
+                        .IsUnique()
+                        .HasDatabaseName("ux_card_payment_card_id_month");
+
+                    b.ToTable("card_payment", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_card_payment_paid", "(is_paid IS TRUE) = (paid_date IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_card_payment_paid_account", "(is_paid IS TRUE) = (paid_account_id IS NOT NULL)");
+                        });
+                });
+
+            modelBuilder.Entity("Monthwise.Domain.CardPurchases.CardPurchase", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<long>("Amount")
+                        .HasColumnType("bigint")
+                        .HasColumnName("amount_cents");
+
+                    b.Property<Guid>("CardId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("card_id");
+
+                    b.Property<Guid?>("CategoryId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("category_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("description");
+
+                    b.Property<int>("InstallmentCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("installment_count");
+
+                    b.Property<bool>("PostponeFirst")
+                        .HasColumnType("boolean")
+                        .HasColumnName("postpone_first");
+
+                    b.Property<DateOnly>("PurchaseDate")
+                        .HasColumnType("date")
+                        .HasColumnName("purchase_date");
+
+                    b.Property<string>("ReversalReason")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("reversal_reason");
+
+                    b.Property<DateOnly?>("ReversedOn")
+                        .HasColumnType("date")
+                        .HasColumnName("reversed_on");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id")
+                        .HasName("pk_card_purchase");
+
+                    b.HasIndex("CategoryId")
+                        .HasDatabaseName("ix_card_purchase_category_id");
+
+                    b.HasIndex("CardId", "PurchaseDate")
+                        .HasDatabaseName("ix_card_purchase_card_id_purchase_date");
+
+                    b.ToTable("card_purchase", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_card_purchase_amount_positive", "amount_cents > 0");
+
+                            t.HasCheckConstraint("ck_card_purchase_installment_count", "installment_count BETWEEN 1 AND 36");
+
+                            t.HasCheckConstraint("ck_card_purchase_postpone_installments", "NOT postpone_first OR installment_count > 1");
+                        });
+                });
+
+            modelBuilder.Entity("Monthwise.Domain.CardPurchases.InstallmentReversal", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<int>("InstallmentNumber")
+                        .HasColumnType("integer")
+                        .HasColumnName("installment_number");
+
+                    b.Property<Guid>("PurchaseId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("purchase_id");
+
+                    b.Property<string>("Reason")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("reason");
+
+                    b.Property<DateOnly>("ReversedOn")
+                        .HasColumnType("date")
+                        .HasColumnName("reversed_on");
+
+                    b.HasKey("Id")
+                        .HasName("pk_card_purchase_reversal");
+
+                    b.HasIndex("PurchaseId", "InstallmentNumber")
+                        .IsUnique()
+                        .HasDatabaseName("ux_card_purchase_reversal_purchase_id_installment_number");
+
+                    b.ToTable("card_purchase_reversal", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_card_purchase_reversal_installment_number", "installment_number >= 1");
+                        });
+                });
+
+            modelBuilder.Entity("Monthwise.Domain.CardPurchases.PurchaseCategory", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateOnly?>("HiddenOn")
+                        .HasColumnType("date")
+                        .HasColumnName("hidden_on");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("name");
+
+                    b.HasKey("Id")
+                        .HasName("pk_purchase_category");
+
+                    b.ToTable("purchase_category", (string)null);
+                });
+
             modelBuilder.Entity("Monthwise.Domain.Cards.Bank", b =>
                 {
                     b.Property<Guid>("Id")
@@ -152,11 +338,23 @@ namespace Monthwise.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("issuer_id");
 
+                    b.Property<int?>("MaxInstallments")
+                        .HasColumnType("integer")
+                        .HasColumnName("max_installments");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)")
                         .HasColumnName("name");
+
+                    b.Property<Guid?>("PayingAccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("paying_account_id");
+
+                    b.Property<bool>("PaysFromAccountDirectly")
+                        .HasColumnType("boolean")
+                        .HasColumnName("pays_from_account_directly");
 
                     b.Property<Guid?>("ReplacedByCardId")
                         .HasColumnType("uuid")
@@ -189,6 +387,9 @@ namespace Monthwise.Infrastructure.Persistence.Migrations
                     b.HasIndex("IssuerId")
                         .HasDatabaseName("ix_card_issuer_id");
 
+                    b.HasIndex("PayingAccountId")
+                        .HasDatabaseName("ix_card_paying_account_id");
+
                     b.HasIndex("ReplacedByCardId")
                         .HasDatabaseName("ix_card_replaced_by_card_id");
 
@@ -198,11 +399,56 @@ namespace Monthwise.Infrastructure.Persistence.Migrations
 
                             t.HasCheckConstraint("ck_card_installments_debit", "NOT allows_installments OR type = 'Debit'");
 
+                            t.HasCheckConstraint("ck_card_max_installments", "max_installments IS NULL OR max_installments IN (12, 24, 36)");
+
                             t.HasCheckConstraint("ck_card_number_last4", "card_number_last4 ~ '^[0-9]{4}$'");
 
                             t.HasCheckConstraint("ck_card_primary_is_debit", "NOT is_primary OR type = 'Debit'");
 
                             t.HasCheckConstraint("ck_card_validity_order", "valid_from IS NULL OR valid_through >= valid_from");
+                        });
+                });
+
+            modelBuilder.Entity("Monthwise.Domain.Cards.CardBillingTerms", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("CardId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("card_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateOnly>("FromMonth")
+                        .HasColumnType("date")
+                        .HasColumnName("from_month");
+
+                    b.Property<int>("PaymentDay")
+                        .HasColumnType("integer")
+                        .HasColumnName("payment_day");
+
+                    b.Property<int>("StatementDay")
+                        .HasColumnType("integer")
+                        .HasColumnName("statement_day");
+
+                    b.HasKey("Id")
+                        .HasName("pk_card_billing_terms");
+
+                    b.HasIndex("CardId", "FromMonth")
+                        .IsUnique()
+                        .HasDatabaseName("ux_card_billing_terms_card_id_from_month");
+
+                    b.ToTable("card_billing_terms", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_card_billing_terms_payment_after_statement", "payment_day > statement_day");
+
+                            t.HasCheckConstraint("ck_card_billing_terms_payment_day", "payment_day BETWEEN 2 AND 31");
+
+                            t.HasCheckConstraint("ck_card_billing_terms_statement_day", "statement_day BETWEEN 1 AND 30");
                         });
                 });
 
@@ -970,6 +1216,48 @@ namespace Monthwise.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Monthwise.Domain.CardPurchases.CardPayment", b =>
+                {
+                    b.HasOne("Monthwise.Domain.Cards.Card", null)
+                        .WithMany()
+                        .HasForeignKey("CardId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_card_payment_card_card_id");
+
+                    b.HasOne("Monthwise.Domain.Cards.Card", null)
+                        .WithMany()
+                        .HasForeignKey("PaidAccountId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_card_payment_card_paid_account_id");
+                });
+
+            modelBuilder.Entity("Monthwise.Domain.CardPurchases.CardPurchase", b =>
+                {
+                    b.HasOne("Monthwise.Domain.Cards.Card", null)
+                        .WithMany()
+                        .HasForeignKey("CardId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_card_purchase_card_card_id");
+
+                    b.HasOne("Monthwise.Domain.CardPurchases.PurchaseCategory", null)
+                        .WithMany()
+                        .HasForeignKey("CategoryId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_card_purchase_purchase_category_category_id");
+                });
+
+            modelBuilder.Entity("Monthwise.Domain.CardPurchases.InstallmentReversal", b =>
+                {
+                    b.HasOne("Monthwise.Domain.CardPurchases.CardPurchase", null)
+                        .WithMany("Reversals")
+                        .HasForeignKey("PurchaseId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_card_purchase_reversal_card_purchase_purchase_id");
+                });
+
             modelBuilder.Entity("Monthwise.Domain.Cards.Card", b =>
                 {
                     b.HasOne("Monthwise.Domain.Cards.Bank", null)
@@ -988,9 +1276,25 @@ namespace Monthwise.Infrastructure.Persistence.Migrations
 
                     b.HasOne("Monthwise.Domain.Cards.Card", null)
                         .WithMany()
+                        .HasForeignKey("PayingAccountId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_card_card_paying_account_id");
+
+                    b.HasOne("Monthwise.Domain.Cards.Card", null)
+                        .WithMany()
                         .HasForeignKey("ReplacedByCardId")
                         .OnDelete(DeleteBehavior.SetNull)
                         .HasConstraintName("fk_card_card_replaced_by_card_id");
+                });
+
+            modelBuilder.Entity("Monthwise.Domain.Cards.CardBillingTerms", b =>
+                {
+                    b.HasOne("Monthwise.Domain.Cards.Card", null)
+                        .WithMany("BillingTerms")
+                        .HasForeignKey("CardId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_card_billing_terms_card_card_id");
                 });
 
             modelBuilder.Entity("Monthwise.Domain.Cards.CardSensitiveData", b =>
@@ -1143,8 +1447,15 @@ namespace Monthwise.Infrastructure.Persistence.Migrations
                         .HasConstraintName("fk_loan_payment_change_loan_loan_id");
                 });
 
+            modelBuilder.Entity("Monthwise.Domain.CardPurchases.CardPurchase", b =>
+                {
+                    b.Navigation("Reversals");
+                });
+
             modelBuilder.Entity("Monthwise.Domain.Cards.Card", b =>
                 {
+                    b.Navigation("BillingTerms");
+
                     b.Navigation("SensitiveData")
                         .IsRequired();
                 });

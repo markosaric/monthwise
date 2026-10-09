@@ -71,6 +71,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/card-purchases/cards": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Cards that allow monthly installments, with their billing details, next card payment and remaining installments. */
+        get: operations["GetInstallmentCards"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/card-payments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Card payments of a month (yyyy-MM), one per card, with totals. */
+        get: operations["GetMonthCardPayments"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/cards": {
         parameters: {
             query?: never;
@@ -482,7 +516,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Received and expected inputs, and paid and expected loan payments, per day or month between two dates. */
+        /** Received and expected inputs, and paid and expected loan and card payments, per day or month between two dates. */
         get: operations["GetCashFlowChart"];
         put?: never;
         post?: never;
@@ -782,6 +816,227 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/cards/{id}/installments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One card of the Cards screen: billing details, next card payment and remaining installments. */
+        get: operations["GetInstallmentCard"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cards/{id}/purchases": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The purchases of a card, newest first. */
+        get: operations["GetCardPurchases"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cards/{id}/card-payments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The card payments of a card by month, newest first. */
+        get: operations["GetCardPayments"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cards/{id}/card-payments/{month}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One card payment (yyyy-MM) with every purchase, installment and credit in it. */
+        get: operations["GetCardPayment"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cards/{id}/card-payments/{month}/paid": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Ticks Paid. The paid date defaults to today and the account to the card's paying account. */
+        post: operations["MarkCardPaymentPaid"];
+        /** Unticks Paid, also for a card payment paid automatically. */
+        delete: operations["MarkCardPaymentUnpaid"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/card-purchases/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A purchase with its installments and the card payments they are in. */
+        get: operations["GetCardPurchase"];
+        /** Edits a purchase that is not reversed; its installments are recalculated. */
+        put: operations["UpdateCardPurchase"];
+        post?: never;
+        /** Deletes a purchase with all its installments. */
+        delete: operations["DeleteCardPurchase"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/card-purchases": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Records a purchase, paid in full or in monthly installments. */
+        post: operations["CreateCardPurchase"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/card-purchases/{id}/reverse": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reverses the whole purchase today: charged installments are credited, the others removed. */
+        post: operations["ReverseCardPurchase"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/card-purchases/{id}/installments/{number}/reverse": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reverses one installment today: credited when already charged, removed otherwise. */
+        post: operations["ReverseCardInstallment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/purchase-categories": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetPurchaseCategories"];
+        put?: never;
+        post: operations["CreatePurchaseCategory"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/purchase-categories/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["RenamePurchaseCategory"];
+        post?: never;
+        /** Deletes an unused category; a used one returns 409 and can only be hidden. */
+        delete: operations["DeletePurchaseCategory"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/purchase-categories/{id}/hide": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["HidePurchaseCategory"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/purchase-categories/{id}/show": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ShowPurchaseCategory"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -823,6 +1078,24 @@ export interface components {
             differenceCents: number;
             note: null | string;
         };
+        BillingTermsResponse: {
+            fromMonth: null | string;
+            /** Format: int32 */
+            statementDay: number;
+            /** Format: int32 */
+            paymentDay: number;
+        };
+        CardBillingResponse: {
+            /** Format: int32 */
+            statementDay: number;
+            /** Format: int32 */
+            paymentDay: number;
+            payingAccount: components["schemas"]["CardReference"];
+            paysFromAccountDirectly: boolean;
+            /** Format: int32 */
+            maxInstallments: number;
+            terms: components["schemas"]["BillingTermsResponse"][];
+        };
         CardListEntryRequest: {
             name: string;
         };
@@ -834,6 +1107,102 @@ export interface components {
         };
         /** @enum {unknown} */
         CardListFilter: "Default" | "Expired" | "Archived" | null;
+        CardPaymentDetailsResponse: {
+            payment: components["schemas"]["CardPaymentResponse"];
+            lines: components["schemas"]["CardPaymentLineResponse"][];
+        };
+        /** @enum {unknown} */
+        CardPaymentLineKind: "FullPurchase" | "Installment" | "Credit";
+        CardPaymentLineResponse: {
+            /** Format: uuid */
+            purchaseId: string;
+            description: string;
+            /** Format: date */
+            purchaseDate: string;
+            kind: components["schemas"]["CardPaymentLineKind"];
+            /** Format: int32 */
+            installmentNumber: number;
+            /** Format: int32 */
+            installmentTotal: number;
+            category: null | components["schemas"]["NamedReference"];
+            /** Format: int64 */
+            amountCents: number;
+        };
+        CardPaymentPaidRequest: {
+            /** Format: date */
+            paidDate: null | string;
+            /** Format: uuid */
+            accountId: null | string;
+        };
+        CardPaymentResponse: {
+            /** Format: uuid */
+            cardId: string;
+            cardName: string;
+            month: string;
+            /** Format: date */
+            periodFrom: string;
+            /** Format: date */
+            statementDate: string;
+            /** Format: date */
+            paymentDate: string;
+            /** Format: int64 */
+            amountCents: number;
+            /** Format: int32 */
+            lineCount: number;
+            isPaid: boolean;
+            /** Format: date */
+            paidDate: null | string;
+            account: null | components["schemas"]["NamedReference"];
+            paysFromAccountDirectly: boolean;
+            isOverdue: boolean;
+            needsAccount: boolean;
+        };
+        CardPurchaseDetailsResponse: {
+            purchase: components["schemas"]["CardPurchaseResponse"];
+            installments: components["schemas"]["InstallmentResponse"][];
+        };
+        CardPurchaseRequest: {
+            /** Format: uuid */
+            cardId: string;
+            description: string;
+            /** Format: date */
+            purchaseDate: string;
+            /** Format: int64 */
+            amountCents: number;
+            inInstallments: boolean;
+            /** Format: int32 */
+            installmentCount: null | number;
+            postponeFirst: boolean;
+            /** Format: uuid */
+            categoryId: null | string;
+        };
+        CardPurchaseResponse: {
+            /** Format: uuid */
+            id: string;
+            card: components["schemas"]["NamedReference"];
+            description: string;
+            /** Format: date */
+            purchaseDate: string;
+            /** Format: int64 */
+            amountCents: number;
+            inInstallments: boolean;
+            /** Format: int32 */
+            installmentCount: number;
+            postponeFirst: boolean;
+            category: null | components["schemas"]["NamedReference"];
+            /** Format: date */
+            reversedOn: null | string;
+            reversalReason: null | string;
+            /** Format: int32 */
+            installmentsCharged: number;
+            /** Format: int32 */
+            installmentsLeft: number;
+            /** Format: int64 */
+            chargedCents: number;
+            /** Format: int64 */
+            remainingCents: number;
+            hasChargedInstallments: boolean;
+        };
         CardReference: {
             /** Format: uuid */
             id: string;
@@ -854,6 +1223,16 @@ export interface components {
             /** Format: int64 */
             debtLimitCents: null | number;
             allowsInstallments: boolean;
+            /** Format: int32 */
+            statementDay?: null | number;
+            /** Format: int32 */
+            paymentDay?: null | number;
+            /** Format: uuid */
+            payingAccountId?: null | string;
+            /** @default false */
+            paysFromAccountDirectly: boolean;
+            /** Format: int32 */
+            maxInstallments?: null | number;
         };
         CardResponse: {
             /** Format: uuid */
@@ -882,6 +1261,8 @@ export interface components {
             archivedOn: null | string;
             replacedBy: null | components["schemas"]["CardReference"];
             replaces: null | components["schemas"]["CardReference"];
+            billing: null | components["schemas"]["CardBillingResponse"];
+            needsBillingDetails: boolean;
         };
         CardStateRequest: {
             reason: null | string;
@@ -993,6 +1374,49 @@ export interface components {
             receivedCents: number;
             /** Format: int64 */
             totalCents: number;
+        };
+        InstallmentCardResponse: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            cardNumberMasked: null | string;
+            type: components["schemas"]["CardType"];
+            status: components["schemas"]["CardStatus"];
+            canBeUsed: boolean;
+            needsBillingDetails: boolean;
+            /** Format: int32 */
+            statementDay: null | number;
+            /** Format: int32 */
+            paymentDay: null | number;
+            payingAccount: null | components["schemas"]["NamedReference"];
+            paysFromAccountDirectly: boolean;
+            /** Format: int32 */
+            maxInstallments: null | number;
+            needsAccount: boolean;
+            nextPayment: null | components["schemas"]["CardPaymentResponse"];
+            /** Format: int64 */
+            remainingCents: number;
+            /** Format: int32 */
+            purchasesWithInstallmentsLeft: number;
+        };
+        InstallmentResponse: {
+            /** Format: int32 */
+            number: number;
+            /** Format: int32 */
+            total: number;
+            /** Format: int64 */
+            amountCents: number;
+            paymentMonth: string;
+            /** Format: date */
+            statementDate: string;
+            /** Format: date */
+            paymentDate: string;
+            isCharged: boolean;
+            /** Format: date */
+            reversedOn: null | string;
+            reversalReason: null | string;
+            reversedWithPurchase: boolean;
+            creditMonth: null | string;
         };
         LoanCategoryRequest: {
             name: string;
@@ -1145,6 +1569,11 @@ export interface components {
             isPredefined: boolean;
             isHidden: boolean;
         };
+        MonthCardPaymentsResponse: {
+            month: string;
+            payments: components["schemas"]["CardPaymentResponse"][];
+            totals: components["schemas"]["LoanPaymentTotalsResponse"];
+        };
         MonthInputsResponse: {
             month: string;
             inputs: components["schemas"]["InputEntryResponse"][];
@@ -1218,6 +1647,12 @@ export interface components {
             detail?: null | string;
             instance?: null | string;
         };
+        PurchaseCategoryResponse: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            isHidden: boolean;
+        };
         /** @enum {unknown} */
         RecurrenceFrequency: "Weekly" | "Monthly" | "Quarterly" | "Yearly" | null;
         RecurrenceRequest: {
@@ -1288,9 +1723,13 @@ export interface components {
             byCategory: components["schemas"]["ReportOutputGroupResponse"][];
             byAccount: components["schemas"]["ReportOutputGroupResponse"][];
             byLoan: components["schemas"]["ReportOutputGroupResponse"][];
+            byCard: components["schemas"]["ReportOutputGroupResponse"][];
         };
         RevealedNumberResponse: {
             value: string;
+        };
+        ReversalRequest: {
+            reason: null | string;
         };
         /** @enum {unknown} */
         SensitiveNumberKind: "CardNumber" | "Iban";
@@ -1443,6 +1882,57 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MonthLoanPaymentsResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+        };
+    };
+    GetInstallmentCards: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InstallmentCardResponse"][];
+                };
+            };
+        };
+    };
+    GetMonthCardPayments: {
+        parameters: {
+            query: {
+                month: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MonthCardPaymentsResponse"];
                 };
             };
             /** @description Bad Request */
@@ -2932,6 +3422,7 @@ export interface operations {
                 payerId?: string;
                 categoryId?: string;
                 loanCategoryId?: string;
+                cardId?: string;
             };
             header?: never;
             path?: never;
@@ -3973,6 +4464,750 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LoanSubcategoryResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetInstallmentCard: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InstallmentCardResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetCardPurchases: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CardPurchaseResponse"][];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetCardPayments: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CardPaymentResponse"][];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetCardPayment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                month: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CardPaymentDetailsResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    MarkCardPaymentPaid: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                month: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CardPaymentPaidRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CardPaymentResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    MarkCardPaymentUnpaid: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                month: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CardPaymentResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetCardPurchase: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CardPurchaseDetailsResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    UpdateCardPurchase: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CardPurchaseRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CardPurchaseDetailsResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    DeleteCardPurchase: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    CreateCardPurchase: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CardPurchaseRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CardPurchaseDetailsResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+        };
+    };
+    ReverseCardPurchase: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReversalRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CardPurchaseDetailsResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ReverseCardInstallment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                number: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReversalRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CardPurchaseDetailsResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetPurchaseCategories: {
+        parameters: {
+            query?: {
+                includeHidden?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PurchaseCategoryResponse"][];
+                };
+            };
+        };
+    };
+    CreatePurchaseCategory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NameRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PurchaseCategoryResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+        };
+    };
+    RenamePurchaseCategory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NameRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PurchaseCategoryResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    DeletePurchaseCategory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    HidePurchaseCategory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PurchaseCategoryResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ShowPurchaseCategory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PurchaseCategoryResponse"];
                 };
             };
             /** @description Bad Request */

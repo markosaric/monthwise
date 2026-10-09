@@ -1,13 +1,17 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Controller, useForm, useWatch } from 'react-hook-form'
-import { ApiError, cardTypes, type CardRequest } from '@/api/cards'
+import { maxInstallmentsChoices } from '@/api/cardPurchases'
+import { ApiError, cardTypes, useCards, type CardRequest } from '@/api/cards'
+import { cardPurchaseTexts } from '@/components/cardPurchases/texts'
+import { onlyPrimaryAccountId, payingAccounts } from '@/components/loans/loanFormModel'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { NativeSelect } from '@/components/ui/native-select'
 import { Switch } from '@/components/ui/switch'
 import {
+  allowsInstallments,
   cardFormSchema,
   emptyCardFormValues,
   toCardRequest,
@@ -18,6 +22,7 @@ import { ListSelectWithAdd } from './ListSelectWithAdd'
 import { cardTexts } from './texts'
 
 const t = cardTexts
+const b = cardPurchaseTexts.billing
 
 /** API field names that differ from form field names. */
 const apiFieldToFormField: Record<string, keyof CardFormValues> = { debtLimitCents: 'debtLimit' }
@@ -48,10 +53,21 @@ export function CardForm({
     formState: { errors, isSubmitting },
   } = useForm<CardFormValues>({ resolver: zodResolver(cardFormSchema), defaultValues })
 
-  const [type, cardNumberMode, ibanMode] = useWatch({
+  const [type, cardNumberMode, ibanMode, debitAllowsInstallments, payingAccountId] = useWatch({
     control,
-    name: ['type', 'cardNumberMode', 'ibanMode'],
+    name: ['type', 'cardNumberMode', 'ibanMode', 'allowsInstallments', 'payingAccountId'],
   })
+  const withBilling = allowsInstallments(type, debitAllowsInstallments)
+  const { data: cards = [], isPending: cardsPending } = useCards('Default')
+  const accountOptions = payingAccounts(cards).filter((c) => c.isPrimary)
+  const onlyPrimary = onlyPrimaryAccountId(cards)
+
+  // The paying account is prefilled only when exactly one account is primary (installments B3).
+  useEffect(() => {
+    if (withBilling && payingAccountId === '' && onlyPrimary !== '') {
+      setValue('payingAccountId', onlyPrimary)
+    }
+  }, [withBilling, payingAccountId, onlyPrimary, setValue])
 
   async function submit(values: CardFormValues) {
     setFormError(null)
@@ -224,6 +240,100 @@ export function CardForm({
           </div>
           <p className="text-xs text-muted-foreground">{t.hints.allowsInstallments}</p>
         </div>
+      )}
+
+      {errors.allowsInstallments?.message && (
+        <p className="text-sm text-destructive">{errors.allowsInstallments.message}</p>
+      )}
+
+      {withBilling && (
+        <fieldset className="flex flex-col gap-4 rounded-lg border p-3">
+          <legend className="px-1 text-sm font-medium">{b.title}</legend>
+          {editing && <p className="text-xs text-muted-foreground">{b.changeHint}</p>}
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field
+              id="statementDay"
+              label={b.statementDay}
+              hint={b.statementHint}
+              error={errors.statementDay?.message}
+            >
+              <Input
+                id="statementDay"
+                inputMode="numeric"
+                maxLength={2}
+                aria-invalid={!!errors.statementDay}
+                {...register('statementDay')}
+              />
+            </Field>
+            <Field
+              id="paymentDay"
+              label={b.paymentDay}
+              hint={b.paymentHint}
+              error={errors.paymentDay?.message}
+            >
+              <Input
+                id="paymentDay"
+                inputMode="numeric"
+                maxLength={2}
+                aria-invalid={!!errors.paymentDay}
+                {...register('paymentDay')}
+              />
+            </Field>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field
+              id="payingAccountId"
+              label={b.payingAccount}
+              error={errors.payingAccountId?.message}
+            >
+              <NativeSelect
+                id="payingAccountId"
+                aria-invalid={!!errors.payingAccountId}
+                {...register('payingAccountId')}
+              >
+                <option value="">Choose…</option>
+                {accountOptions.map((account) => (
+                  <option key={account.id} value={account.id}>
+                    {account.name}
+                  </option>
+                ))}
+              </NativeSelect>
+              {!cardsPending && accountOptions.length === 0 && (
+                <p className="text-xs text-muted-foreground">{b.noPrimaryAccount}</p>
+              )}
+            </Field>
+            <Field
+              id="maxInstallments"
+              label={b.maxInstallments}
+              error={errors.maxInstallments?.message}
+            >
+              <NativeSelect id="maxInstallments" {...register('maxInstallments')}>
+                {maxInstallmentsChoices.map((value) => (
+                  <option key={value} value={String(value)}>
+                    {value}
+                  </option>
+                ))}
+              </NativeSelect>
+            </Field>
+          </div>
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center gap-3">
+              <Controller
+                control={control}
+                name="paysFromAccountDirectly"
+                render={({ field }) => (
+                  <Switch
+                    id="paysFromAccountDirectly"
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                  />
+                )}
+              />
+              <Label htmlFor="paysFromAccountDirectly">{b.paysFromAccountDirectly}</Label>
+            </div>
+            <p className="text-xs text-muted-foreground">{b.directHint}</p>
+          </div>
+        </fieldset>
       )}
 
       {formError && (
