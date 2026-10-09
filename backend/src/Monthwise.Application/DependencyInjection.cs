@@ -1,5 +1,6 @@
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
+using Monthwise.Application.CardPurchases;
 using Monthwise.Application.Cards;
 using Monthwise.Application.CashFlow;
 using Monthwise.Application.Loans;
@@ -64,6 +65,19 @@ public static class DependencyInjection
         services.AddScoped<PaymentChangeHandler>();
         services.AddScoped<LoanPaymentHandler>();
         services.AddScoped<LoanCategoryHandler>();
+
+        services.AddScoped<CardPaymentLedger>();
+        services.AddScoped<CardPurchaseInputChecker>();
+        services.AddScoped<GetInstallmentCardsHandler>();
+        services.AddScoped<GetInstallmentCardHandler>();
+        services.AddScoped<GetMonthCardPaymentsHandler>();
+        services.AddScoped<GetCardPurchaseHandler>();
+        services.AddScoped<CreateCardPurchaseHandler>();
+        services.AddScoped<UpdateCardPurchaseHandler>();
+        services.AddScoped<DeleteCardPurchaseHandler>();
+        services.AddScoped<ReverseCardPurchaseHandler>();
+        services.AddScoped<CardPaymentHandler>();
+        services.AddScoped<PurchaseCategoryHandler>();
         return services;
     }
 }

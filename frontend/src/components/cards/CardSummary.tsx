@@ -1,6 +1,7 @@
 import { Link } from 'react-router'
 import type { AccountBalance } from '@/api/cashFlow'
 import type { Card } from '@/api/cards'
+import { cardPurchaseTexts } from '@/components/cardPurchases/texts'
 import { Badge } from '@/components/ui/badge'
 import { cashFlowTexts } from '@/components/cashflow/texts'
 import { formatCents } from '@/lib/money'
@@ -50,6 +51,16 @@ export function CardSummary({
             </span>
             {card.debtLimitCents !== null && <span>Limit {formatCents(card.debtLimitCents)}</span>}
           </div>
+          {card.billing && (
+            <div className="text-sm text-muted-foreground">
+              {cardPurchaseTexts.payment.statement} {card.billing.statementDay}. ·{' '}
+              {cardPurchaseTexts.payment.due} {card.billing.paymentDay}. ·{' '}
+              {card.billing.payingAccount.name}
+            </div>
+          )}
+          {card.needsBillingDetails && (
+            <div className="text-sm text-destructive">{cardPurchaseTexts.needsBillingDetails}</div>
+          )}
         </>
       )}
       {balance && <BalanceLine balance={balance} />}

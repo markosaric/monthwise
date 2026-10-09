@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Monthwise.Application.CardPurchases;
 using Monthwise.Application.Cards;
 using Monthwise.Application.Loans;
 using Monthwise.Domain.Cards;
@@ -70,11 +71,16 @@ internal sealed class CardListRepository<TEntry>(MonthwiseDbContext db) : ICardL
 }
 
 /// <summary>
-/// Ongoing transactions are standing order loans with expected payments (loans FR-3). The
-/// installments feature adds its installment plans here.
+/// Ongoing transactions are standing order loans with expected payments (loans FR-3), cards with
+/// installments left, and the paying accounts of connected cards with expected card payments
+/// (installments, card settings Appendix 2).
 /// </summary>
-internal sealed class CardActivityQuery(LoanLedger loans) : ICardActivityQuery
+internal sealed class CardActivityQuery(LoanLedger loans, CardPaymentLedger cardPayments) : ICardActivityQuery
 {
-    public Task<IReadOnlySet<Guid>> CardsWithOngoingTransactionsAsync(CancellationToken cancellationToken) =>
-        loans.AccountsWithOngoingStandingOrdersAsync(cancellationToken);
+    public async Task<IReadOnlySet<Guid>> CardsWithOngoingTransactionsAsync(CancellationToken cancellationToken)
+    {
+        var standingOrders = await loans.AccountsWithOngoingStandingOrdersAsync(cancellationToken);
+        var cards = await cardPayments.CardsWithOngoingTransactionsAsync(cancellationToken);
+        return standingOrders.Concat(cards).ToHashSet();
+    }
 }

@@ -1,6 +1,8 @@
 using FluentValidation;
+using Monthwise.Application.Common;
 using Monthwise.Domain.Cards;
 using Monthwise.Domain.Common;
+using Monthwise.Domain.Loans;
 
 namespace Monthwise.Application.Cards;
 
@@ -12,7 +14,8 @@ public sealed class CardInputChecker(
     IValidator<CardRequest> validator,
     ICardRepository cards,
     ICardListRepository<CardIssuer> issuers,
-    ICardListRepository<Bank> banks)
+    ICardListRepository<Bank> banks,
+    TimeProvider timeProvider)
 {
     /// <param name="existing">The card being edited (loaded with its sensitive data), or null when adding.</param>
     public async Task<Result<CardInput>> CheckAsync(CardRequest request, Card? existing, CancellationToken cancellationToken)
@@ -48,6 +51,22 @@ public sealed class CardInputChecker(
         if (iban is not null && await cards.IbanInUseAsync(iban, existing?.Id, cancellationToken))
         {
             errors.Add(CardErrors.IbanInUse);
+        }
+        // The paying account must be a usable primary account; one the card already has stays allowed.
+        if (Card.AllowsInstallmentsFor(details)
+            && details.Billing?.PayingAccountId is { } payingAccountId
+            && payingAccountId != Guid.Empty
+            && payingAccountId != existing?.PayingAccountId)
+        {
+            var account = await cards.GetAsync(payingAccountId, includeSensitiveData: false, cancellationToken);
+            if (account is null)
+            {
+                errors.Add(CardErrors.PayingAccountUnknown);
+            }
+            else if (!LoanAccount.CanBeChosen(account, timeProvider.Today()))
+            {
+                errors.Add(CardErrors.PayingAccountNotPrimary);
+            }
         }
 
         return errors.Count > 0

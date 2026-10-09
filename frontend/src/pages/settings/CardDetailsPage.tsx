@@ -7,6 +7,7 @@ import { CardStatusBadge } from '@/components/cards/CardStatusBadge'
 import { BalanceEntries } from '@/components/cashflow/BalanceEntries'
 import { formatDate, formatMonth } from '@/components/cards/format'
 import { RevealableNumber } from '@/components/cards/RevealableNumber'
+import { cardPurchaseTexts } from '@/components/cardPurchases/texts'
 import { cardTexts } from '@/components/cards/texts'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -17,6 +18,7 @@ import { PageHeader } from '@/pages/PageHeader'
 
 type Dialog = 'block' | 'unblock' | 'expire' | 'archive' | null
 const t = cardTexts
+const b = cardPurchaseTexts.billing
 
 /**
  * Card details with reveal, status history and the block/unblock/expire/archive actions (FR-3, FR-5,
@@ -78,6 +80,39 @@ function CardDetails({ card }: { card: Card }) {
               : `until ${formatMonth(card.validThrough)}`}
           </Row>
           <Row label={t.fields.allowsInstallments}>{card.allowsInstallments ? 'Yes' : 'No'}</Row>
+          {card.billing && (
+            <>
+              <Row label={b.terms}>
+                <ul className="flex flex-col">
+                  {card.billing.terms.map((terms) => (
+                    <li key={terms.fromMonth ?? 'start'}>
+                      {b.statementDay}: {b.day(terms.statementDay)} · {b.paymentDay}:{' '}
+                      {b.day(terms.paymentDay)}{' '}
+                      <span className="text-muted-foreground">
+                        (
+                        {terms.fromMonth
+                          ? `${b.from} ${formatMonth(terms.fromMonth)}`
+                          : b.fromStart}
+                        )
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </Row>
+              <Row label={b.payingAccount}>
+                <Link className="underline" to={`/settings/cards/${card.billing.payingAccount.id}`}>
+                  {card.billing.payingAccount.name}
+                </Link>
+                {card.billing.paysFromAccountDirectly && ` · ${b.paysFromAccountDirectly}`}
+              </Row>
+              <Row label={b.maxInstallments}>{card.billing.maxInstallments}</Row>
+            </>
+          )}
+          {card.needsBillingDetails && (
+            <Row label={b.title}>
+              <span className="text-destructive">{cardPurchaseTexts.needsBillingDetails}</span>
+            </Row>
+          )}
           <Row label="Max debt limit">
             {card.debtLimitCents === null ? '—' : formatCents(card.debtLimitCents)}
           </Row>
@@ -115,6 +150,11 @@ function CardDetails({ card }: { card: Card }) {
             {!readOnly && (
               <Button asChild>
                 <Link to={`/settings/cards/${card.id}/edit`}>{t.editCard}</Link>
+              </Button>
+            )}
+            {card.allowsInstallments && (
+              <Button asChild variant="outline">
+                <Link to={`/cards/${card.id}`}>{cardPurchaseTexts.card.purchases}</Link>
               </Button>
             )}
             {blocked ? (

@@ -59,6 +59,7 @@ api.MapHealthEndpoints();
 api.MapCardEndpoints();
 api.MapCashFlowEndpoints();
 api.MapLoanEndpoints();
+api.MapCardPurchaseEndpoints();
 
 await app.RunAsync();
 

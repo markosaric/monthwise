@@ -325,6 +325,13 @@ describe('Cash flow dashboard and report', () => {
               },
             ],
             byLoan: [],
+            byCard: [
+              {
+                id: 'card-1',
+                name: 'Family Visa',
+                totals: { expectedCents: 0, paidCents: 12000, totalCents: 12000 },
+              },
+            ],
           },
           monthResultCents: 125000,
           previousMonthOutputsCents: 80000,
@@ -341,5 +348,9 @@ describe('Cash flow dashboard and report', () => {
     expect(screen.getByText('1.250,00 €')).toBeInTheDocument()
     expect(screen.getByText('Lease')).toBeInTheDocument()
     expect(screen.getByText('No account yet')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Family Visa' })).toHaveAttribute(
+      'href',
+      '/cards/card-1/payments/2026-10',
+    )
   })
 })

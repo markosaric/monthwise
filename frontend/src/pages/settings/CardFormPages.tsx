@@ -16,6 +16,17 @@ function detailsOf(card: Card): Partial<CardFormValues> {
     isPrimary: card.isPrimary,
     allowsInstallments: card.type === 'Debit' && card.allowsInstallments,
     debtLimit: card.debtLimitCents === null ? '' : centsToEuroInput(card.debtLimitCents),
+    ...(card.billing
+      ? {
+          statementDay: String(card.billing.statementDay),
+          paymentDay: String(card.billing.paymentDay),
+          payingAccountId: card.billing.payingAccount.id,
+          paysFromAccountDirectly: card.billing.paysFromAccountDirectly,
+          maxInstallments: String(
+            card.billing.maxInstallments,
+          ) as CardFormValues['maxInstallments'],
+        }
+      : {}),
   }
 }
 

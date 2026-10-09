@@ -1,6 +1,10 @@
 import type { RouteObject } from 'react-router'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { CardsPage } from '@/pages/CardsPage'
+import { CardPaymentPage } from '@/pages/cardPurchases/CardPaymentPage'
+import { InstallmentCardPage } from '@/pages/cardPurchases/InstallmentCardPage'
+import { PurchaseDetailsPage } from '@/pages/cardPurchases/PurchaseDetailsPage'
+import { PurchaseEditPage, PurchaseNewPage } from '@/pages/cardPurchases/PurchaseFormPages'
 import { DashboardPage } from '@/pages/DashboardPage'
 import { LoansPage } from '@/pages/LoansPage'
 import { MonthPage } from '@/pages/MonthPage'
@@ -23,6 +27,7 @@ import { LoanEditPage, LoanNewPage } from '@/pages/loans/LoanFormPages'
 import { InputCategoriesSettingsPage } from '@/pages/settings/InputCategoriesSettingsPage'
 import { LoanCategoriesSettingsPage } from '@/pages/settings/LoanCategoriesSettingsPage'
 import { PayersSettingsPage } from '@/pages/settings/PayersSettingsPage'
+import { PurchaseCategoriesSettingsPage } from '@/pages/settings/PurchaseCategoriesSettingsPage'
 
 export const routes: RouteObject[] = [
   {
@@ -41,6 +46,11 @@ export const routes: RouteObject[] = [
       { path: 'cash-flow', element: <CashFlowPage /> },
       { path: 'cash-flow/:yearMonth', element: <MonthlyReportPage /> },
       { path: 'cards', element: <CardsPage /> },
+      { path: 'cards/purchases/new', element: <PurchaseNewPage /> },
+      { path: 'cards/purchases/:id', element: <PurchaseDetailsPage /> },
+      { path: 'cards/purchases/:id/edit', element: <PurchaseEditPage /> },
+      { path: 'cards/:cardId', element: <InstallmentCardPage /> },
+      { path: 'cards/:cardId/payments/:month', element: <CardPaymentPage /> },
       { path: 'loans', element: <LoansPage /> },
       { path: 'loans/new', element: <LoanNewPage /> },
       { path: 'loans/:id', element: <LoanDetailsPage /> },
@@ -54,6 +64,7 @@ export const routes: RouteObject[] = [
       { path: 'settings/payers', element: <PayersSettingsPage /> },
       { path: 'settings/input-categories', element: <InputCategoriesSettingsPage /> },
       { path: 'settings/loan-categories', element: <LoanCategoriesSettingsPage /> },
+      { path: 'settings/purchase-categories', element: <PurchaseCategoriesSettingsPage /> },
       { path: '*', element: <NotFoundPage /> },
     ],
   },

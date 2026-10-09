@@ -252,3 +252,21 @@ Dashboard**. They stay visible in the Settings list and on the card details.
 The other rules of FR-9 (which cards appear, primary accounts first, selecting an entry opens the
 card's details) are unchanged.
 
+
+## Appendix 2: Billing dates and paying account
+
+- **Date:** 2026-10-08
+- **Branch:** `feat/credit_card_installments`
+- **Changes:** section 3 (card attributes), FR-2 and FR-4 (add and edit), FR-1 and FR-3 (list and
+  details)
+
+Cards that allow monthly installments (A11) get five new attributes: **Statement date** and
+**Payment date** (days of the month), which define the card's billing period, the **Paying
+account** (a primary account, prefilled when exactly one is primary), **Connected to the paying
+account** (whether the bank charges card payments directly from it), and **Max installments**
+(12, 24 or 36 installments per purchase). They are set in the
+Add and Edit card forms and shown in the Settings list and on the card details. Their rules are
+described in [credit-card-installments.md](credit-card-installments.md) FR-1 and FR-2.
+
+**Why:** card purchases and installments are collected per billing period and paid in one card
+payment from an account on a known date, so each card needs these attributes.

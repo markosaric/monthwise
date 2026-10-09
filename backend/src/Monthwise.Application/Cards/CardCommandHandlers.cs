@@ -1,3 +1,4 @@
+using Monthwise.Application.CardPurchases;
 using Monthwise.Application.Common;
 using Monthwise.Domain.Cards;
 using Monthwise.Domain.Common;
@@ -49,10 +50,17 @@ public sealed class CreateCardHandler(
     }
 }
 
-/// <summary>Edits a card (FR-4).</summary>
+/// <summary>
+/// Edits a card (FR-4). A card with purchases keeps allowing installments. When its paying account or
+/// connection changes, card payments already paid automatically are stored first, so they stay paid
+/// (installments FR-8).
+/// </summary>
 public sealed class UpdateCardHandler(
     ICardRepository cards,
     CardInputChecker checker,
+    ICardPurchaseRepository purchases,
+    ICardPaymentRepository cardPayments,
+    CardPaymentLedger cardPaymentLedger,
     IUnitOfWork unitOfWork,
     GetCardHandler getCard,
     TimeProvider timeProvider)
@@ -76,7 +84,26 @@ public sealed class UpdateCardHandler(
             return Result.Failure<CardResponse>(input.Errors);
         }
 
-        var updated = card.Update(input.Value.Details, input.Value.CardNumber, input.Value.Iban, timeProvider.GetUtcNow());
+        var details = input.Value.Details;
+        if (card.AllowsInstallments && !Card.AllowsInstallmentsFor(details) && await purchases.AnyForCardAsync(card.Id, cancellationToken))
+        {
+            return Result.Failure<CardResponse>(CardErrors.InstallmentsInUse);
+        }
+
+        var today = timeProvider.Today();
+        var now = timeProvider.GetUtcNow();
+        if (card.PaysFromAccountDirectly
+            && (details.Billing?.PaysFromAccountDirectly != true || details.Billing.PayingAccountId != card.PayingAccountId))
+        {
+            // Before the card changes, while the schedule still pays from the old account.
+            var book = await cardPaymentLedger.LoadAsync(cancellationToken);
+            if (book.Schedule(card.Id) is { } schedule)
+            {
+                await CardPaymentLedger.KeepAutomaticPaymentsAsync(cardPayments, schedule, today, now, cancellationToken);
+            }
+        }
+
+        var updated = card.Update(details, input.Value.CardNumber, input.Value.Iban, today, now);
         if (updated.IsFailure)
         {
             return Result.Failure<CardResponse>(updated.Errors);

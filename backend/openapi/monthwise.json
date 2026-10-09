@@ -200,6 +200,71 @@
         }
       }
     },
+    "/api/card-purchases/cards": {
+      "get": {
+        "tags": [
+          "Card purchases"
+        ],
+        "summary": "Cards that allow monthly installments, with their billing details, next card payment and remaining installments.",
+        "operationId": "GetInstallmentCards",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/InstallmentCardResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/card-payments": {
+      "get": {
+        "tags": [
+          "Card purchases"
+        ],
+        "summary": "Card payments of a month (yyyy-MM), one per card, with totals.",
+        "operationId": "GetMonthCardPayments",
+        "parameters": [
+          {
+            "name": "month",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MonthCardPaymentsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/cards": {
       "get": {
         "tags": [
@@ -2105,7 +2170,7 @@
         "tags": [
           "Cash flow"
         ],
-        "summary": "Received and expected inputs, and paid and expected loan payments, per day or month between two dates.",
+        "summary": "Received and expected inputs, and paid and expected loan and card payments, per day or month between two dates.",
         "operationId": "GetCashFlowChart",
         "parameters": [
           {
@@ -2159,6 +2224,14 @@
           },
           {
             "name": "loanCategoryId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "cardId",
             "in": "query",
             "schema": {
               "type": "string",
@@ -3579,6 +3652,1001 @@
           }
         }
       }
+    },
+    "/api/cards/{id}/installments": {
+      "get": {
+        "tags": [
+          "Card purchases"
+        ],
+        "summary": "One card of the Cards screen: billing details, next card payment and remaining installments.",
+        "operationId": "GetInstallmentCard",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InstallmentCardResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cards/{id}/purchases": {
+      "get": {
+        "tags": [
+          "Card purchases"
+        ],
+        "summary": "The purchases of a card, newest first.",
+        "operationId": "GetCardPurchases",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CardPurchaseResponse"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cards/{id}/card-payments": {
+      "get": {
+        "tags": [
+          "Card purchases"
+        ],
+        "summary": "The card payments of a card by month, newest first.",
+        "operationId": "GetCardPayments",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CardPaymentResponse"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cards/{id}/card-payments/{month}": {
+      "get": {
+        "tags": [
+          "Card purchases"
+        ],
+        "summary": "One card payment (yyyy-MM) with every purchase, installment and credit in it.",
+        "operationId": "GetCardPayment",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "month",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CardPaymentDetailsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cards/{id}/card-payments/{month}/paid": {
+      "post": {
+        "tags": [
+          "Card purchases"
+        ],
+        "summary": "Ticks Paid. The paid date defaults to today and the account to the card's paying account.",
+        "operationId": "MarkCardPaymentPaid",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "month",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CardPaymentPaidRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CardPaymentResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Card purchases"
+        ],
+        "summary": "Unticks Paid, also for a card payment paid automatically.",
+        "operationId": "MarkCardPaymentUnpaid",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "month",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CardPaymentResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/card-purchases/{id}": {
+      "get": {
+        "tags": [
+          "Card purchases"
+        ],
+        "summary": "A purchase with its installments and the card payments they are in.",
+        "operationId": "GetCardPurchase",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CardPurchaseDetailsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Card purchases"
+        ],
+        "summary": "Edits a purchase that is not reversed; its installments are recalculated.",
+        "operationId": "UpdateCardPurchase",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CardPurchaseRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CardPurchaseDetailsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Card purchases"
+        ],
+        "summary": "Deletes a purchase with all its installments.",
+        "operationId": "DeleteCardPurchase",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/card-purchases": {
+      "post": {
+        "tags": [
+          "Card purchases"
+        ],
+        "summary": "Records a purchase, paid in full or in monthly installments.",
+        "operationId": "CreateCardPurchase",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CardPurchaseRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CardPurchaseDetailsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/card-purchases/{id}/reverse": {
+      "post": {
+        "tags": [
+          "Card purchases"
+        ],
+        "summary": "Reverses the whole purchase today: charged installments are credited, the others removed.",
+        "operationId": "ReverseCardPurchase",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReversalRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CardPurchaseDetailsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/card-purchases/{id}/installments/{number}/reverse": {
+      "post": {
+        "tags": [
+          "Card purchases"
+        ],
+        "summary": "Reverses one installment today: credited when already charged, removed otherwise.",
+        "operationId": "ReverseCardInstallment",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "number",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReversalRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CardPurchaseDetailsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/purchase-categories": {
+      "get": {
+        "tags": [
+          "Card purchases"
+        ],
+        "operationId": "GetPurchaseCategories",
+        "parameters": [
+          {
+            "name": "includeHidden",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PurchaseCategoryResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Card purchases"
+        ],
+        "operationId": "CreatePurchaseCategory",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NameRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PurchaseCategoryResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/purchase-categories/{id}": {
+      "put": {
+        "tags": [
+          "Card purchases"
+        ],
+        "operationId": "RenamePurchaseCategory",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NameRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PurchaseCategoryResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Card purchases"
+        ],
+        "summary": "Deletes an unused category; a used one returns 409 and can only be hidden.",
+        "operationId": "DeletePurchaseCategory",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/purchase-categories/{id}/hide": {
+      "post": {
+        "tags": [
+          "Card purchases"
+        ],
+        "operationId": "HidePurchaseCategory",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PurchaseCategoryResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/purchase-categories/{id}/show": {
+      "post": {
+        "tags": [
+          "Card purchases"
+        ],
+        "operationId": "ShowPurchaseCategory",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PurchaseCategoryResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -3704,6 +4772,67 @@
           }
         }
       },
+      "BillingTermsResponse": {
+        "required": [
+          "fromMonth",
+          "statementDay",
+          "paymentDay"
+        ],
+        "type": "object",
+        "properties": {
+          "fromMonth": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "statementDay": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "paymentDay": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "CardBillingResponse": {
+        "required": [
+          "statementDay",
+          "paymentDay",
+          "payingAccount",
+          "paysFromAccountDirectly",
+          "maxInstallments",
+          "terms"
+        ],
+        "type": "object",
+        "properties": {
+          "statementDay": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "paymentDay": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "payingAccount": {
+            "$ref": "#/components/schemas/CardReference"
+          },
+          "paysFromAccountDirectly": {
+            "type": "boolean"
+          },
+          "maxInstallments": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "terms": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BillingTermsResponse"
+            }
+          }
+        }
+      },
       "CardListEntryRequest": {
         "required": [
           "name"
@@ -3742,6 +4871,346 @@
           "Archived",
           null
         ]
+      },
+      "CardPaymentDetailsResponse": {
+        "required": [
+          "payment",
+          "lines"
+        ],
+        "type": "object",
+        "properties": {
+          "payment": {
+            "$ref": "#/components/schemas/CardPaymentResponse"
+          },
+          "lines": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CardPaymentLineResponse"
+            }
+          }
+        }
+      },
+      "CardPaymentLineKind": {
+        "enum": [
+          "FullPurchase",
+          "Installment",
+          "Credit"
+        ]
+      },
+      "CardPaymentLineResponse": {
+        "required": [
+          "purchaseId",
+          "description",
+          "purchaseDate",
+          "kind",
+          "installmentNumber",
+          "installmentTotal",
+          "category",
+          "amountCents"
+        ],
+        "type": "object",
+        "properties": {
+          "purchaseId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "description": {
+            "type": "string"
+          },
+          "purchaseDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/CardPaymentLineKind"
+          },
+          "installmentNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "installmentTotal": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "category": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NamedReference"
+              }
+            ]
+          },
+          "amountCents": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "CardPaymentPaidRequest": {
+        "required": [
+          "paidDate",
+          "accountId"
+        ],
+        "type": "object",
+        "properties": {
+          "paidDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "accountId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          }
+        }
+      },
+      "CardPaymentResponse": {
+        "required": [
+          "cardId",
+          "cardName",
+          "month",
+          "periodFrom",
+          "statementDate",
+          "paymentDate",
+          "amountCents",
+          "lineCount",
+          "isPaid",
+          "paidDate",
+          "account",
+          "paysFromAccountDirectly",
+          "isOverdue",
+          "needsAccount"
+        ],
+        "type": "object",
+        "properties": {
+          "cardId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "cardName": {
+            "type": "string"
+          },
+          "month": {
+            "type": "string"
+          },
+          "periodFrom": {
+            "type": "string",
+            "format": "date"
+          },
+          "statementDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "paymentDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "amountCents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "lineCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "isPaid": {
+            "type": "boolean"
+          },
+          "paidDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "account": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NamedReference"
+              }
+            ]
+          },
+          "paysFromAccountDirectly": {
+            "type": "boolean"
+          },
+          "isOverdue": {
+            "type": "boolean"
+          },
+          "needsAccount": {
+            "type": "boolean"
+          }
+        }
+      },
+      "CardPurchaseDetailsResponse": {
+        "required": [
+          "purchase",
+          "installments"
+        ],
+        "type": "object",
+        "properties": {
+          "purchase": {
+            "$ref": "#/components/schemas/CardPurchaseResponse"
+          },
+          "installments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/InstallmentResponse"
+            }
+          }
+        }
+      },
+      "CardPurchaseRequest": {
+        "required": [
+          "cardId",
+          "description",
+          "purchaseDate",
+          "amountCents",
+          "inInstallments",
+          "installmentCount",
+          "postponeFirst",
+          "categoryId"
+        ],
+        "type": "object",
+        "properties": {
+          "cardId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "description": {
+            "type": "string"
+          },
+          "purchaseDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "amountCents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "inInstallments": {
+            "type": "boolean"
+          },
+          "installmentCount": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "postponeFirst": {
+            "type": "boolean"
+          },
+          "categoryId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          }
+        }
+      },
+      "CardPurchaseResponse": {
+        "required": [
+          "id",
+          "card",
+          "description",
+          "purchaseDate",
+          "amountCents",
+          "inInstallments",
+          "installmentCount",
+          "postponeFirst",
+          "category",
+          "reversedOn",
+          "reversalReason",
+          "installmentsCharged",
+          "installmentsLeft",
+          "chargedCents",
+          "remainingCents",
+          "hasChargedInstallments"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "card": {
+            "$ref": "#/components/schemas/NamedReference"
+          },
+          "description": {
+            "type": "string"
+          },
+          "purchaseDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "amountCents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "inInstallments": {
+            "type": "boolean"
+          },
+          "installmentCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "postponeFirst": {
+            "type": "boolean"
+          },
+          "category": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NamedReference"
+              }
+            ]
+          },
+          "reversedOn": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "reversalReason": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "installmentsCharged": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "installmentsLeft": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "chargedCents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "remainingCents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "hasChargedInstallments": {
+            "type": "boolean"
+          }
+        }
       },
       "CardReference": {
         "required": [
@@ -3822,6 +5291,38 @@
           },
           "allowsInstallments": {
             "type": "boolean"
+          },
+          "statementDay": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "paymentDay": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "payingAccountId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "paysFromAccountDirectly": {
+            "type": "boolean",
+            "default": false
+          },
+          "maxInstallments": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
           }
         }
       },
@@ -3847,7 +5348,9 @@
           "expiryReason",
           "archivedOn",
           "replacedBy",
-          "replaces"
+          "replaces",
+          "billing",
+          "needsBillingDetails"
         ],
         "type": "object",
         "properties": {
@@ -3959,6 +5462,19 @@
                 "$ref": "#/components/schemas/CardReference"
               }
             ]
+          },
+          "billing": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/CardBillingResponse"
+              }
+            ]
+          },
+          "needsBillingDetails": {
+            "type": "boolean"
           }
         }
       },
@@ -4371,6 +5887,175 @@
           "totalCents": {
             "type": "integer",
             "format": "int64"
+          }
+        }
+      },
+      "InstallmentCardResponse": {
+        "required": [
+          "id",
+          "name",
+          "cardNumberMasked",
+          "type",
+          "status",
+          "canBeUsed",
+          "needsBillingDetails",
+          "statementDay",
+          "paymentDay",
+          "payingAccount",
+          "paysFromAccountDirectly",
+          "maxInstallments",
+          "needsAccount",
+          "nextPayment",
+          "remainingCents",
+          "purchasesWithInstallmentsLeft"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "cardNumberMasked": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "type": {
+            "$ref": "#/components/schemas/CardType"
+          },
+          "status": {
+            "$ref": "#/components/schemas/CardStatus"
+          },
+          "canBeUsed": {
+            "type": "boolean"
+          },
+          "needsBillingDetails": {
+            "type": "boolean"
+          },
+          "statementDay": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "paymentDay": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "payingAccount": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NamedReference"
+              }
+            ]
+          },
+          "paysFromAccountDirectly": {
+            "type": "boolean"
+          },
+          "maxInstallments": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "needsAccount": {
+            "type": "boolean"
+          },
+          "nextPayment": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/CardPaymentResponse"
+              }
+            ]
+          },
+          "remainingCents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "purchasesWithInstallmentsLeft": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "InstallmentResponse": {
+        "required": [
+          "number",
+          "total",
+          "amountCents",
+          "paymentMonth",
+          "statementDate",
+          "paymentDate",
+          "isCharged",
+          "reversedOn",
+          "reversalReason",
+          "reversedWithPurchase",
+          "creditMonth"
+        ],
+        "type": "object",
+        "properties": {
+          "number": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "amountCents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "paymentMonth": {
+            "type": "string"
+          },
+          "statementDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "paymentDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "isCharged": {
+            "type": "boolean"
+          },
+          "reversedOn": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "reversalReason": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "reversedWithPurchase": {
+            "type": "boolean"
+          },
+          "creditMonth": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -4905,6 +6590,28 @@
           }
         }
       },
+      "MonthCardPaymentsResponse": {
+        "required": [
+          "month",
+          "payments",
+          "totals"
+        ],
+        "type": "object",
+        "properties": {
+          "month": {
+            "type": "string"
+          },
+          "payments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CardPaymentResponse"
+            }
+          },
+          "totals": {
+            "$ref": "#/components/schemas/LoanPaymentTotalsResponse"
+          }
+        }
+      },
       "MonthInputsResponse": {
         "required": [
           "month",
@@ -5191,6 +6898,26 @@
           }
         }
       },
+      "PurchaseCategoryResponse": {
+        "required": [
+          "id",
+          "name",
+          "isHidden"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "isHidden": {
+            "type": "boolean"
+          }
+        }
+      },
       "RecurrenceFrequency": {
         "enum": [
           "Weekly",
@@ -5421,7 +7148,8 @@
           "totals",
           "byCategory",
           "byAccount",
-          "byLoan"
+          "byLoan",
+          "byCard"
         ],
         "type": "object",
         "properties": {
@@ -5445,6 +7173,12 @@
             "items": {
               "$ref": "#/components/schemas/ReportOutputGroupResponse"
             }
+          },
+          "byCard": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReportOutputGroupResponse"
+            }
           }
         }
       },
@@ -5456,6 +7190,20 @@
         "properties": {
           "value": {
             "type": "string"
+          }
+        }
+      },
+      "ReversalRequest": {
+        "required": [
+          "reason"
+        ],
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },
@@ -5476,6 +7224,9 @@
     },
     {
       "name": "Loans"
+    },
+    {
+      "name": "Card purchases"
     },
     {
       "name": "Cards"

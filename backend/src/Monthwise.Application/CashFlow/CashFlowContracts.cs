@@ -108,7 +108,7 @@ public enum ChartGranularity
 
 /// <summary>
 /// Sums of one day or month of the chart (FR-12, Appendix 1): received and expected inputs, and
-/// paid and expected outputs (loan payments).
+/// paid and expected outputs (loan and card payments).
 /// </summary>
 public sealed record ChartBucketResponse(
     DateOnly Start,
@@ -133,15 +133,23 @@ public sealed record ReportBalanceEntryResponse(
     long DifferenceCents,
     string? Note);
 
-/// <summary>A group of outputs in the report; <see cref="Id"/> is null for bills without an account yet.</summary>
+/// <summary>
+/// A group of outputs in the report; <see cref="Id"/> is null for bills without an account yet, and for
+/// the Card payments category.
+/// </summary>
 public sealed record ReportOutputGroupResponse(Guid? Id, string Name, LoanPaymentTotalsResponse Totals);
 
-/// <summary>The month's outputs (loan payments) grouped by loan category, account and loan (Appendix 1).</summary>
+/// <summary>
+/// The month's outputs (loan and card payments) grouped by category, account, loan and card (Appendix 1,
+/// installments FR-8). Card payments are one group named "Card payments" in <see cref="ByCategory"/>,
+/// with a null id.
+/// </summary>
 public sealed record ReportOutputsResponse(
     LoanPaymentTotalsResponse Totals,
     IReadOnlyList<ReportOutputGroupResponse> ByCategory,
     IReadOnlyList<ReportOutputGroupResponse> ByAccount,
-    IReadOnlyList<ReportOutputGroupResponse> ByLoan);
+    IReadOnlyList<ReportOutputGroupResponse> ByLoan,
+    IReadOnlyList<ReportOutputGroupResponse> ByCard);
 
 /// <summary>
 /// The monthly cash flow report (FR-13, Appendix 1). <see cref="MonthResultCents"/> is all inputs

@@ -6,11 +6,23 @@ import { renderRoute } from '@/test/renderRoute'
 import { healthy, json, stubApi } from '@/test/stubApi'
 import { CardStatusBadge } from './CardStatusBadge'
 import { RevealableNumber } from './RevealableNumber'
+import { cardPurchaseTexts } from '@/components/cardPurchases/texts'
 import { cardTexts } from './texts'
+
+const billing = cardPurchaseTexts.billing
+
+const primaryAccount = aCard({
+  id: 'account-1',
+  name: 'Tekući račun',
+  type: 'Debit',
+  isPrimary: true,
+  allowsInstallments: false,
+})
 
 const lists = {
   'GET /api/card-issuers': () => json([visaIssuer]),
   'GET /api/banks': () => json([zaba]),
+  'GET /api/cards': () => json([primaryAccount]),
 }
 
 describe('Dashboard cards widget', () => {
@@ -119,6 +131,12 @@ describe('Card form', () => {
     await userEvent.type(screen.getByLabelText(cardTexts.fields.validThrough), '2029-12')
     await userEvent.selectOptions(screen.getByLabelText(cardTexts.fields.type), 'Debit')
     await userEvent.click(screen.getByLabelText(cardTexts.fields.allowsInstallments))
+    await userEvent.type(screen.getByLabelText(billing.statementDay), '5')
+    await userEvent.type(screen.getByLabelText(billing.paymentDay), '20')
+    // The only primary account is prefilled as the paying account (installments B3).
+    await waitFor(() =>
+      expect(screen.getByLabelText(billing.payingAccount)).toHaveValue('account-1'),
+    )
     await userEvent.click(screen.getByRole('button', { name: cardTexts.addCard }))
 
     await waitFor(() => expect(posted).not.toBeNull())
@@ -130,7 +148,35 @@ describe('Card form', () => {
       validThrough: '2029-12',
       type: 'Debit',
       allowsInstallments: true,
+      statementDay: 5,
+      paymentDay: 20,
+      payingAccountId: 'account-1',
+      paysFromAccountDirectly: false,
+      maxInstallments: 36,
     })
+  })
+
+  it('asks for a payment date later than the statement date', async () => {
+    const fetchMock = stubApi(lists)
+    renderRoute('/settings/cards/new')
+
+    await userEvent.type(await screen.findByLabelText(billing.statementDay), '20')
+    await userEvent.type(screen.getByLabelText(billing.paymentDay), '20')
+    await userEvent.click(screen.getByRole('button', { name: cardTexts.addCard }))
+
+    expect(await screen.findByText(billing.errors.paymentNotAfterStatement)).toBeInTheDocument()
+    expect(fetchMock.mock.calls.some(([request]) => (request as Request).method === 'POST')).toBe(
+      false,
+    )
+  })
+
+  it('has no billing fields for a debit card without installments', async () => {
+    stubApi(lists)
+    renderRoute('/settings/cards/new')
+
+    await userEvent.selectOptions(await screen.findByLabelText(cardTexts.fields.type), 'Debit')
+
+    expect(screen.queryByLabelText(billing.statementDay)).not.toBeInTheDocument()
   })
 
   it('checks a given card number before sending', async () => {
@@ -168,6 +214,8 @@ describe('Card form', () => {
     await userEvent.type(screen.getByLabelText(cardTexts.fields.cardNumber), '4111 1111 1111 1111')
     await userEvent.type(screen.getByLabelText(cardTexts.fields.validFrom), '2025-01')
     await userEvent.type(screen.getByLabelText(cardTexts.fields.validThrough), '2029-12')
+    await userEvent.type(screen.getByLabelText(billing.statementDay), '5')
+    await userEvent.type(screen.getByLabelText(billing.paymentDay), '20')
     await userEvent.click(screen.getByRole('button', { name: cardTexts.addCard }))
 
     expect(await screen.findByText('Another card already has this name.')).toBeInTheDocument()

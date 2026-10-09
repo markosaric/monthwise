@@ -51,7 +51,7 @@ const series = [
 ] as const
 
 /**
- * Legend: inputs in one hue and outputs (loan payments) in another; received and paid strong,
+ * Legend: inputs in one hue and outputs (loan and card payments) in another; received and paid strong,
  * expected lighter.
  */
 export function ChartLegend() {
