@@ -1,6 +1,7 @@
 using Monthwise.Application.CardPurchases;
 using Monthwise.Application.Cards;
 using Monthwise.Application.Common;
+using Monthwise.Application.Expenses;
 using Monthwise.Application.Loans;
 using Monthwise.Domain.Cards;
 using Monthwise.Domain.CashFlow;
@@ -9,8 +10,8 @@ using Monthwise.Domain.Common;
 namespace Monthwise.Application.CashFlow;
 
 /// <summary>
-/// Calculates account balances from balance entries, inputs, loan payments and card payments (FR-10,
-/// Appendix 1; installments FR-9).
+/// Calculates account balances from balance entries, inputs, loan payments, card payments, bills and
+/// expenses (FR-10, Appendix 1; installments FR-9; bills and expenses FR-10).
 /// </summary>
 public sealed class AccountBalanceQuery(
     IBalanceEntryRepository balanceEntries,
@@ -18,6 +19,7 @@ public sealed class AccountBalanceQuery(
     InputLedger ledger,
     LoanLedger loanLedger,
     CardPaymentLedger cardPaymentLedger,
+    ExpenseLedger expenseLedger,
     TimeProvider timeProvider)
 {
     /// <summary>Balances of the given accounts: current (today) and expected at the end of this month.</summary>
@@ -39,6 +41,10 @@ public sealed class AccountBalanceQuery(
         expectedPayments.AddRange((await cardPaymentLedger.LoadAsync(cancellationToken)).Payments()
             .Where(p => !p.IsPaid && !p.NeedsAccount && p.AccountId is not null && p.PaymentDate <= monthEnd)
             .Select(p => (AccountId: p.AccountId!.Value, p.Amount)));
+        // Expected bills due by the end of the month on the account they will be paid from (bills FR-10).
+        expectedPayments.AddRange((await expenseLedger.LoadAsync(cancellationToken)).Outputs()
+            .Where(o => !o.IsPaid && o.AccountId is not null && o.Date <= monthEnd)
+            .Select(o => (AccountId: o.AccountId!.Value, o.Amount)));
 
         return accountIds.Distinct().ToDictionary(id => id, id =>
         {
@@ -52,8 +58,9 @@ public sealed class AccountBalanceQuery(
     }
 
     /// <summary>
-    /// One calculator per account that has entries, received inputs, or paid loan or card payments:
-    /// inputs received and payments paid on or before <paramref name="movementsUpTo"/> are counted.
+    /// One calculator per account that has entries, received inputs, paid loan or card payments, or paid
+    /// bills and expenses: inputs received and outputs paid on or before <paramref name="movementsUpTo"/>
+    /// are counted. Bills and expenses paid with a credit card count through its card payment.
     /// </summary>
     public async Task<IReadOnlyDictionary<Guid, AccountBalance>> CalculatorsAsync(DateOnly movementsUpTo, CancellationToken cancellationToken)
     {
@@ -66,7 +73,10 @@ public sealed class AccountBalanceQuery(
         var cardPayments = (await cardPaymentLedger.LoadAsync(cancellationToken)).Payments()
             .Where(p => p.IsPaid && p.AccountId is not null && p.PaidDate is { } date && date <= movementsUpTo)
             .Select(p => (AccountId: p.AccountId!.Value, Movement: new BalanceMovement(p.PaidDate!.Value, -p.Amount)));
-        var movements = received.Concat(paid).Concat(cardPayments).ToList();
+        var billsAndExpenses = (await expenseLedger.LoadAsync(cancellationToken)).Outputs()
+            .Where(o => o.IsPaid && o.AccountId is not null && o.Date <= movementsUpTo)
+            .Select(o => (AccountId: o.AccountId!.Value, Movement: new BalanceMovement(o.Date, -o.Amount)));
+        var movements = received.Concat(paid).Concat(cardPayments).Concat(billsAndExpenses).ToList();
         var accountIds = entries.Select(e => e.AccountId).Concat(movements.Select(m => m.AccountId)).Distinct();
         return accountIds.ToDictionary(id => id, id => new AccountBalance(
             entries.Where(e => e.AccountId == id).Select(ToCheckpoint),

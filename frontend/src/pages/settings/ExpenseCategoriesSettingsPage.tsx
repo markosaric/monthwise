@@ -1,12 +1,12 @@
 import { useState } from 'react'
 import { toast } from 'sonner'
 import {
-  useChangePurchaseCategory,
-  usePurchaseCategories,
-  type PurchaseCategory,
-  type PurchaseCategoryChange,
-} from '@/api/cardPurchases'
-import { cardPurchaseTexts } from '@/components/cardPurchases/texts'
+  useChangeExpenseCategory,
+  useExpenseCategories,
+  type ExpenseCategory,
+  type ExpenseCategoryChange,
+} from '@/api/expenses'
+import { expenseTexts } from '@/components/expenses/texts'
 import { messageOf } from '@/components/loans/messageOf'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -14,12 +14,15 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { PageHeader } from '@/pages/PageHeader'
 
-const t = cardPurchaseTexts.categories
+const t = expenseTexts.categories
 
-/** Settings → Purchase categories: add, rename, hide, show and delete unused ones (installments FR-10). */
-export function PurchaseCategoriesSettingsPage() {
-  const { data: categories, isPending, isError } = usePurchaseCategories(true)
-  const change = useChangePurchaseCategory()
+/**
+ * Settings → Expense categories: one list for bills, expenses and card purchases (bills and expenses
+ * FR-1). Add, rename, hide, show and delete unused ones; Cash withdrawal is fixed.
+ */
+export function ExpenseCategoriesSettingsPage() {
+  const { data: categories, isPending, isError } = useExpenseCategories(true)
+  const change = useChangeExpenseCategory()
   const [name, setName] = useState('')
   const [error, setError] = useState<string | null>(null)
 
@@ -40,10 +43,10 @@ export function PurchaseCategoriesSettingsPage() {
       <PageHeader title={t.section} description={t.description} />
       <div className="flex max-w-2xl flex-col gap-4">
         <form onSubmit={add} className="flex flex-col gap-1.5">
-          <Label htmlFor="new-purchase-category">{t.newName}</Label>
+          <Label htmlFor="new-expense-category">{t.newName}</Label>
           <div className="flex gap-2">
             <Input
-              id="new-purchase-category"
+              id="new-expense-category"
               value={name}
               maxLength={50}
               onChange={(e) => setName(e.target.value)}
@@ -67,13 +70,13 @@ export function PurchaseCategoriesSettingsPage() {
   )
 }
 
-function CategoryRow({ category }: { category: PurchaseCategory }) {
-  const change = useChangePurchaseCategory()
+function CategoryRow({ category }: { category: ExpenseCategory }) {
+  const change = useChangeExpenseCategory()
   const [editing, setEditing] = useState(false)
   const [name, setName] = useState(category.name)
   const [error, setError] = useState<string | null>(null)
 
-  async function run(action: PurchaseCategoryChange, done?: () => void) {
+  async function run(action: ExpenseCategoryChange, done?: () => void) {
     setError(null)
     try {
       await change.mutateAsync(action)
@@ -102,10 +105,10 @@ function CategoryRow({ category }: { category: PurchaseCategory }) {
               run({ action: 'rename', id: category.id, name }, () => setEditing(false))
             }
           >
-            {cardPurchaseTexts.actions.save}
+            {expenseTexts.actions.save}
           </Button>
           <Button size="sm" variant="ghost" onClick={() => setEditing(false)}>
-            {cardPurchaseTexts.actions.cancel}
+            {expenseTexts.actions.cancel}
           </Button>
         </div>
       ) : (
@@ -114,27 +117,32 @@ function CategoryRow({ category }: { category: PurchaseCategory }) {
             {category.name}
           </span>
           {category.isHidden && <Badge variant="outline">{t.hidden}</Badge>}
-          <span className="ml-auto flex flex-wrap gap-1">
-            <Button size="sm" variant="ghost" onClick={() => setEditing(true)}>
-              {t.rename}
-            </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              disabled={change.isPending}
-              onClick={() => run({ action: category.isHidden ? 'show' : 'hide', id: category.id })}
-            >
-              {category.isHidden ? t.show : t.hide}
-            </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              disabled={change.isPending}
-              onClick={() => run({ action: 'delete', id: category.id })}
-            >
-              {t.delete}
-            </Button>
-          </span>
+          {category.isFixed && <Badge variant="secondary">{t.fixed}</Badge>}
+          {category.isFixed ? null : (
+            <span className="ml-auto flex flex-wrap gap-1">
+              <Button size="sm" variant="ghost" onClick={() => setEditing(true)}>
+                {t.rename}
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                disabled={change.isPending}
+                onClick={() =>
+                  run({ action: category.isHidden ? 'show' : 'hide', id: category.id })
+                }
+              >
+                {category.isHidden ? t.show : t.hide}
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                disabled={change.isPending}
+                onClick={() => run({ action: 'delete', id: category.id })}
+              >
+                {t.delete}
+              </Button>
+            </span>
+          )}
         </div>
       )}
       {error && <p className="text-sm text-destructive">{error}</p>}

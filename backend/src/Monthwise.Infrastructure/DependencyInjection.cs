@@ -5,6 +5,7 @@ using Monthwise.Application.CardPurchases;
 using Monthwise.Application.Cards;
 using Monthwise.Application.CashFlow;
 using Monthwise.Application.Common;
+using Monthwise.Application.Expenses;
 using Monthwise.Application.Loans;
 using Monthwise.Infrastructure.Persistence;
 using Monthwise.Infrastructure.Persistence.Repositories;
@@ -49,7 +50,10 @@ public static class DependencyInjection
         services.AddScoped<ILoanSubcategoryRepository, LoanSubcategoryRepository>();
         services.AddScoped<ICardPurchaseRepository, CardPurchaseRepository>();
         services.AddScoped<ICardPaymentRepository, CardPaymentRepository>();
-        services.AddScoped<IPurchaseCategoryRepository, PurchaseCategoryRepository>();
+        services.AddScoped<IExpenseCategoryRepository, ExpenseCategoryRepository>();
+        services.AddScoped<IRecurringBillRepository, RecurringBillRepository>();
+        services.AddScoped<IBillRepository, BillRepository>();
+        services.AddScoped<IExpenseRepository, ExpenseRepository>();
 
         services.AddHealthChecks()
             .AddDbContextCheck<MonthwiseDbContext>(DatabaseHealthCheckName);

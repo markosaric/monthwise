@@ -14,11 +14,33 @@ public enum CardPaymentLineKind
 
     /// <summary>A reversed installment that was already charged, credited back (negative).</summary>
     Credit,
+
+    /// <summary>A bill paid with the card (bills and expenses FR-6).</summary>
+    Bill,
+
+    /// <summary>An expense paid with the card (bills and expenses FR-7).</summary>
+    Expense,
 }
 
-/// <summary>One line of a card payment: a purchase, an installment, or a credit from a reversal (FR-8).</summary>
+/// <summary>What a card charge is: a bill or an expense paid with a credit card.</summary>
+public enum CardChargeKind
+{
+    Bill,
+    Expense,
+}
+
+/// <summary>
+/// A bill or an expense paid with a credit card (bills and expenses FR-6, FR-7). It is a line of the
+/// card payment of the billing period that contains <see cref="Date"/>, like a purchase paid in full.
+/// </summary>
+public sealed record CardCharge(Guid SourceId, Guid CardId, CardChargeKind Kind, DateOnly Date, Money Amount);
+
+/// <summary>
+/// One line of a card payment (FR-8): a purchase, an installment, a credit from a reversal, or a bill or
+/// expense paid with the card. <see cref="SourceId"/> is the purchase, bill or expense.
+/// </summary>
 public sealed record CardPaymentLine(
-    Guid PurchaseId,
+    Guid SourceId,
     YearMonth PaymentMonth,
     CardPaymentLineKind Kind,
     int InstallmentNumber,
@@ -62,7 +84,8 @@ public sealed record PurchaseSummary(int InstallmentsCharged, int InstallmentsLe
 
 /// <summary>
 /// Calculates the card payments of one card (FR-4, FR-5, FR-8): the lines of every payment month from
-/// its purchases, installments and reversals, and the paid state of each card payment.
+/// its purchases, installments, reversals and charges (bills and expenses paid with the card), and the
+/// paid state of each card payment.
 /// <list type="bullet">
 /// <item>An installment that is not reversed is a line in its payment month.</item>
 /// <item>A reversed installment whose payment date is on or after the reversal date is removed.</item>
@@ -78,12 +101,17 @@ public sealed class CardPaymentSchedule
     private readonly Card _card;
     private readonly CardBillingCalendar? _calendar;
     private readonly List<CardPurchase> _purchases;
+    private readonly List<CardCharge> _charges;
     private readonly Dictionary<YearMonth, CardPayment> _stored;
     private readonly DateOnly? _chargesStopOn;
     private readonly List<CardPaymentLine> _lines;
 
     public CardPaymentSchedule(
-        Card card, IEnumerable<CardPurchase> purchases, IEnumerable<CardPayment> storedPayments, DateOnly? chargesStopOn = null)
+        Card card,
+        IEnumerable<CardPurchase> purchases,
+        IEnumerable<CardPayment> storedPayments,
+        DateOnly? chargesStopOn = null,
+        IEnumerable<CardCharge>? charges = null)
     {
         ArgumentNullException.ThrowIfNull(card);
         ArgumentNullException.ThrowIfNull(purchases);
@@ -91,9 +119,12 @@ public sealed class CardPaymentSchedule
         _card = card;
         _calendar = card.BillingCalendar();
         _purchases = purchases.Where(p => p.CardId == card.Id).ToList();
+        _charges = (charges ?? []).Where(c => c.CardId == card.Id).ToList();
         _stored = storedPayments.Where(p => p.CardId == card.Id).ToDictionary(p => p.Month);
         _chargesStopOn = chargesStopOn;
-        _lines = _calendar is null ? [] : _purchases.SelectMany(p => LinesOf(p, _calendar)).ToList();
+        _lines = _calendar is null
+            ? []
+            : _purchases.SelectMany(p => LinesOf(p, _calendar)).Concat(_charges.Select(c => LineOf(c, _calendar))).ToList();
     }
 
     public Card Card => _card;
@@ -102,6 +133,9 @@ public sealed class CardPaymentSchedule
     public CardBillingCalendar? Calendar => _calendar;
 
     public IReadOnlyList<CardPurchase> Purchases => _purchases;
+
+    /// <summary>Bills and expenses paid with the card.</summary>
+    public IReadOnlyList<CardCharge> Charges => _charges;
 
     /// <summary>True when the paying account is no longer a usable primary account (FR-9).</summary>
     public bool NeedsAccount => _calendar is not null && _chargesStopOn is not null;
@@ -166,6 +200,22 @@ public sealed class CardPaymentSchedule
     /// <summary>Whether any installment of the purchase is in a card payment whose payment date has passed (FR-6).</summary>
     public bool HasChargedInstallments(CardPurchase purchase, DateOnly today) =>
         InstallmentsOf(purchase, today).Any(i => i.IsCharged);
+
+    /// <summary>
+    /// Whether the card payment a charge dated <paramref name="date"/> belongs to is already due (its
+    /// payment date passed), so changing the charge changes a past card payment (FR-6).
+    /// </summary>
+    public bool IsChargedBy(DateOnly date, DateOnly today) =>
+        _calendar is { } calendar && calendar.PaymentDate(calendar.PaymentMonthOf(date)) < today;
+
+    private static CardPaymentLine LineOf(CardCharge charge, CardBillingCalendar calendar) =>
+        new(
+            charge.SourceId,
+            calendar.PaymentMonthOf(charge.Date),
+            charge.Kind == CardChargeKind.Bill ? CardPaymentLineKind.Bill : CardPaymentLineKind.Expense,
+            1,
+            1,
+            charge.Amount);
 
     private static IEnumerable<CardPaymentLine> LinesOf(CardPurchase purchase, CardBillingCalendar calendar)
     {

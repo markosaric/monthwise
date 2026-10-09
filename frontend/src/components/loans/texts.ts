@@ -153,7 +153,7 @@ export const loanTexts = {
     paid: 'Paid',
   },
   expenses: {
-    title: 'Expenses',
+    title: 'Loan payments',
     empty: 'No loan payments in this month.',
     totals: { expected: 'Expected', paid: 'Paid', total: 'All payments' },
   },

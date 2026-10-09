@@ -88,7 +88,7 @@ export const cardPurchaseTexts = {
     account: 'Paid from account',
     saved: 'Card payment saved.',
     details: 'Card payment',
-    lines: 'Purchases, installments and credits',
+    lines: 'Purchases, installments, bills, expenses and credits',
     noLines: 'Nothing in this card payment.',
     total: 'Total',
   },
@@ -96,6 +96,8 @@ export const cardPurchaseTexts = {
     FullPurchase: 'Paid in full',
     Installment: 'Installment',
     Credit: 'Credit',
+    Bill: 'Bill',
+    Expense: 'Expense',
   } satisfies Record<CardPaymentLineKind, string>,
   purchase: {
     of: 'of',
@@ -143,18 +145,5 @@ export const cardPurchaseTexts = {
   labels: {
     overdue: 'Overdue',
     needsAccount: 'Choose an account',
-  },
-  categories: {
-    section: 'Purchase categories',
-    description: 'Optional categories for card purchases, e.g. Home or Car.',
-    newName: 'New category',
-    add: 'Add',
-    rename: 'Rename',
-    hide: 'Hide',
-    show: 'Show',
-    delete: 'Delete',
-    hidden: 'Hidden',
-    usedHint: 'A category used by purchases cannot be deleted; hide it instead.',
-    saved: 'Category saved.',
   },
 } as const

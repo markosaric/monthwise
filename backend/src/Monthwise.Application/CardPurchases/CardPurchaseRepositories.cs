@@ -28,17 +28,3 @@ public interface ICardPaymentRepository
     void Add(CardPayment payment);
     void Remove(CardPayment payment);
 }
-
-public interface IPurchaseCategoryRepository
-{
-    Task<IReadOnlyList<PurchaseCategory>> ListAsync(CancellationToken cancellationToken);
-    Task<PurchaseCategory?> GetAsync(Guid id, CancellationToken cancellationToken);
-
-    /// <summary>Case-insensitive.</summary>
-    Task<bool> NameInUseAsync(string name, Guid? exceptId, CancellationToken cancellationToken);
-
-    /// <summary>Whether any purchase uses the category.</summary>
-    Task<bool> IsUsedAsync(Guid id, CancellationToken cancellationToken);
-    void Add(PurchaseCategory category);
-    void Remove(PurchaseCategory category);
-}

@@ -52,9 +52,9 @@ export function aCardPaymentDetails(): CardPaymentDetails {
     payment: aCardPayment(),
     lines: [
       {
-        purchaseId: 'purchase-1',
+        sourceId: 'purchase-1',
         description: 'Washing machine',
-        purchaseDate: '2026-09-10',
+        date: '2026-09-10',
         kind: 'Installment',
         installmentNumber: 1,
         installmentTotal: 3,
@@ -62,9 +62,9 @@ export function aCardPaymentDetails(): CardPaymentDetails {
         amountCents: 10000,
       },
       {
-        purchaseId: 'purchase-2',
+        sourceId: 'purchase-2',
         description: 'Groceries',
-        purchaseDate: '2026-10-01',
+        date: '2026-10-01',
         kind: 'FullPurchase',
         installmentNumber: 1,
         installmentTotal: 1,
@@ -72,9 +72,9 @@ export function aCardPaymentDetails(): CardPaymentDetails {
         amountCents: 3000,
       },
       {
-        purchaseId: 'purchase-3',
+        sourceId: 'purchase-3',
         description: 'Shoes',
-        purchaseDate: '2026-08-01',
+        date: '2026-08-01',
         kind: 'Credit',
         installmentNumber: 2,
         installmentTotal: 2,

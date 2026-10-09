@@ -4,6 +4,7 @@ using Monthwise.Domain.CardPurchases;
 using Monthwise.Domain.Cards;
 using Monthwise.Domain.CashFlow;
 using Monthwise.Domain.Common;
+using Monthwise.Domain.Expenses;
 using Monthwise.Domain.Loans;
 using Monthwise.Infrastructure.Persistence.Configurations;
 using Monthwise.Infrastructure.Persistence.Converters;
@@ -30,10 +31,13 @@ public sealed class MonthwiseDbContext(DbContextOptions<MonthwiseDbContext> opti
     public DbSet<LoanCategory> LoanCategories => Set<LoanCategory>();
     public DbSet<LoanSubcategory> LoanSubcategories => Set<LoanSubcategory>();
     public DbSet<CardBillingTerms> BillingTerms => Set<CardBillingTerms>();
-    public DbSet<PurchaseCategory> PurchaseCategories => Set<PurchaseCategory>();
+    public DbSet<ExpenseCategory> ExpenseCategories => Set<ExpenseCategory>();
     public DbSet<CardPurchase> CardPurchases => Set<CardPurchase>();
     public DbSet<InstallmentReversal> InstallmentReversals => Set<InstallmentReversal>();
     public DbSet<CardPayment> CardPayments => Set<CardPayment>();
+    public DbSet<RecurringBill> RecurringBills => Set<RecurringBill>();
+    public DbSet<Bill> Bills => Set<Bill>();
+    public DbSet<Expense> Expenses => Set<Expense>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -55,10 +59,13 @@ public sealed class MonthwiseDbContext(DbContextOptions<MonthwiseDbContext> opti
         modelBuilder.ApplyConfiguration(new LoanCategoryConfiguration());
         modelBuilder.ApplyConfiguration(new LoanSubcategoryConfiguration());
         modelBuilder.ApplyConfiguration(new CardBillingTermsConfiguration());
-        modelBuilder.ApplyConfiguration(new PurchaseCategoryConfiguration());
+        modelBuilder.ApplyConfiguration(new ExpenseCategoryConfiguration());
         modelBuilder.ApplyConfiguration(new CardPurchaseConfiguration());
         modelBuilder.ApplyConfiguration(new InstallmentReversalConfiguration());
         modelBuilder.ApplyConfiguration(new CardPaymentConfiguration());
+        modelBuilder.ApplyConfiguration(new RecurringBillConfiguration());
+        modelBuilder.ApplyConfiguration(new BillConfiguration());
+        modelBuilder.ApplyConfiguration(new ExpenseConfiguration());
     }
 
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)

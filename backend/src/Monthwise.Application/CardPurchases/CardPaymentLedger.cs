@@ -1,39 +1,52 @@
 using Monthwise.Application.Cards;
 using Monthwise.Application.CashFlow;
 using Monthwise.Application.Common;
+using Monthwise.Application.Expenses;
 using Monthwise.Application.Loans;
 using Monthwise.Domain.CardPurchases;
 using Monthwise.Domain.Cards;
 using Monthwise.Domain.Common;
+using Monthwise.Domain.Expenses;
 using Monthwise.Domain.Loans;
 
 namespace Monthwise.Application.CardPurchases;
 
 /// <summary>
-/// All cards with their purchases and calculated card payments on one day, and the names to show them.
-/// The card equivalent of <see cref="LoanBook"/>.
+/// A bill or an expense paid with a credit card, with what the drill-down shows of it (bills and
+/// expenses FR-6, FR-7).
+/// </summary>
+public sealed record CardChargeSource(CardCharge Charge, string Description, Guid CategoryId);
+
+/// <summary>
+/// All cards with their purchases, charges (bills and expenses paid with them) and calculated card
+/// payments on one day, and the names to show them. The card equivalent of <see cref="LoanBook"/>.
 /// </summary>
 public sealed class CardPaymentBook
 {
     private readonly Dictionary<Guid, Card> _cards;
     private readonly Dictionary<Guid, CardPaymentSchedule> _schedules;
-    private readonly Dictionary<Guid, PurchaseCategory> _categories;
+    private readonly Dictionary<Guid, ExpenseCategory> _categories;
+    private readonly Dictionary<Guid, CardChargeSource> _charges;
 
     internal CardPaymentBook(
         DateOnly today,
         IReadOnlyList<Card> cards,
         IReadOnlyList<CardPurchase> purchases,
         IReadOnlyList<CardPayment> stored,
-        IReadOnlyList<PurchaseCategory> categories)
+        IReadOnlyList<ExpenseCategory> categories,
+        IReadOnlyList<CardChargeSource> charges)
     {
         Today = today;
         _cards = cards.ToDictionary(c => c.Id);
         _categories = categories.ToDictionary(c => c.Id);
+        _charges = charges.ToDictionary(c => c.Charge.SourceId);
         var purchasesByCard = purchases.ToLookup(p => p.CardId);
         var storedByCard = stored.ToLookup(p => p.CardId);
+        var chargesByCard = charges.Select(c => c.Charge).ToLookup(c => c.CardId);
         _schedules = cards
             .Where(c => c.AllowsInstallments || purchasesByCard[c.Id].Any())
-            .ToDictionary(c => c.Id, c => new CardPaymentSchedule(c, purchasesByCard[c.Id], storedByCard[c.Id], ChargesStopOn(c)));
+            .ToDictionary(c => c.Id, c => new CardPaymentSchedule(
+                c, purchasesByCard[c.Id], storedByCard[c.Id], ChargesStopOn(c), chargesByCard[c.Id]));
     }
 
     public DateOnly Today { get; }
@@ -141,7 +154,14 @@ public sealed class CardPaymentBook
         return new CardPurchaseDetailsResponse(ToResponse(purchase), installments);
     }
 
-    /// <summary>The drill-down of one card payment (FR-8): its lines, purchases first by date, credits last.</summary>
+    /// <summary>Whether a bill or expense paid with <paramref name="cardId"/> on <paramref name="date"/> is in a card payment that is already due (FR-6).</summary>
+    public bool IsCharged(Guid cardId, DateOnly date) =>
+        _schedules.TryGetValue(cardId, out var schedule) && schedule.IsChargedBy(date, Today);
+
+    /// <summary>
+    /// The drill-down of one card payment (FR-8): its lines, purchases, bills and expenses first by date,
+    /// credits last.
+    /// </summary>
     public CardPaymentDetailsResponse PaymentDetails(ScheduledCardPayment payment)
     {
         ArgumentNullException.ThrowIfNull(payment);
@@ -150,7 +170,19 @@ public sealed class CardPaymentBook
         var lines = schedule.LinesOf(payment.Month)
             .Select(l =>
             {
-                var purchase = purchases[l.PurchaseId];
+                if (_charges.TryGetValue(l.SourceId, out var charge))
+                {
+                    return new CardPaymentLineResponse(
+                        l.SourceId,
+                        charge.Description,
+                        charge.Charge.Date,
+                        l.Kind,
+                        l.InstallmentNumber,
+                        l.InstallmentTotal,
+                        Category(charge.CategoryId),
+                        l.Amount.Cents);
+                }
+                var purchase = purchases[l.SourceId];
                 return new CardPaymentLineResponse(
                     purchase.Id,
                     purchase.Description,
@@ -162,7 +194,7 @@ public sealed class CardPaymentBook
                     l.Amount.Cents);
             })
             .OrderBy(l => l.Kind == CardPaymentLineKind.Credit)
-            .ThenBy(l => l.PurchaseDate)
+            .ThenBy(l => l.Date)
             .ThenBy(l => l.Description, StringComparer.CurrentCultureIgnoreCase)
             .ToList();
         return new CardPaymentDetailsResponse(ToResponse(payment), lines);
@@ -215,16 +247,47 @@ public sealed class CardPaymentLedger(
     ICardRepository cards,
     ICardPurchaseRepository purchases,
     ICardPaymentRepository payments,
-    IPurchaseCategoryRepository categories,
+    IExpenseCategoryRepository categories,
+    IBillRepository bills,
+    IExpenseRepository expenses,
     TimeProvider timeProvider)
 {
-    public async Task<CardPaymentBook> LoadAsync(CancellationToken cancellationToken) =>
-        new(
+    public async Task<CardPaymentBook> LoadAsync(CancellationToken cancellationToken)
+    {
+        var allCards = await cards.ListAsync(cancellationToken);
+        var allCategories = await categories.ListAsync(cancellationToken);
+        var charges = ChargesOf(
+            allCards, allCategories, await bills.ListAsync(cancellationToken), await expenses.ListAsync(cancellationToken));
+        return new(
             timeProvider.Today(),
-            await cards.ListAsync(cancellationToken),
+            allCards,
             await purchases.ListAsync(null, cancellationToken),
             await payments.ListAsync(null, cancellationToken),
-            await categories.ListAsync(cancellationToken));
+            allCategories,
+            charges);
+    }
+
+    /// <summary>
+    /// Bills paid with a credit card and expenses paid with one: lines of that card's card payments
+    /// (bills and expenses FR-6, FR-7). An expense without a description shows its category.
+    /// </summary>
+    public static IReadOnlyList<CardChargeSource> ChargesOf(
+        IReadOnlyList<Card> cards, IReadOnlyList<ExpenseCategory> categories, IEnumerable<Bill> bills, IEnumerable<Expense> expenses)
+    {
+        var creditCards = cards.Where(PaidFromRules.IsCreditCard).Select(c => c.Id).ToHashSet();
+        var categoryNames = categories.ToDictionary(c => c.Id, c => c.Name);
+        var fromBills = bills
+            .Where(b => b.IsPaid && b.PaidFromId is { } id && creditCards.Contains(id))
+            .Select(b => new CardChargeSource(
+                new CardCharge(b.Id, b.PaidFromId!.Value, CardChargeKind.Bill, b.PaidDate!.Value, b.Amount), b.Name, b.CategoryId));
+        var fromExpenses = expenses
+            .Where(e => creditCards.Contains(e.PaidFromId))
+            .Select(e => new CardChargeSource(
+                new CardCharge(e.Id, e.PaidFromId, CardChargeKind.Expense, e.Date, e.Amount),
+                e.Description ?? categoryNames.GetValueOrDefault(e.CategoryId, "Expense"),
+                e.CategoryId));
+        return fromBills.Concat(fromExpenses).ToList();
+    }
 
     /// <summary>
     /// Cards with ongoing transactions (card settings, Appendix 2): cards with installments left, and

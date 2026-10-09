@@ -178,18 +178,18 @@ public sealed class CardPurchaseEndpointTests : IAsyncLifetime
     [Fact]
     public async Task Categories_can_be_added_hidden_and_only_unused_ones_deleted()
     {
-        var category = await SendAsync(HttpMethod.Post, "/api/purchase-categories", new { name = "Home" });
+        var category = await SendAsync(HttpMethod.Post, "/api/expense-categories", new { name = "Home" });
         var id = category.GetProperty("id").GetGuid();
-        var duplicate = await Client.PostAsJsonAsync("/api/purchase-categories", new { name = "HOME" }, Ct);
+        var duplicate = await Client.PostAsJsonAsync("/api/expense-categories", new { name = "HOME" }, Ct);
         Assert.Equal(HttpStatusCode.BadRequest, duplicate.StatusCode);
 
         await SendAsync(HttpMethod.Post, "/api/card-purchases", Purchase("Sofa", 90_000, installments: 12, categoryId: id));
-        var delete = await Client.DeleteAsync(new Uri($"/api/purchase-categories/{id}", UriKind.Relative), Ct);
+        var delete = await Client.DeleteAsync(new Uri($"/api/expense-categories/{id}", UriKind.Relative), Ct);
         Assert.Equal(HttpStatusCode.Conflict, delete.StatusCode);
 
-        var hidden = await SendAsync(HttpMethod.Post, $"/api/purchase-categories/{id}/hide");
+        var hidden = await SendAsync(HttpMethod.Post, $"/api/expense-categories/{id}/hide");
         Assert.True(hidden.GetProperty("isHidden").GetBoolean());
-        Assert.Equal(0, (await GetAsync("/api/purchase-categories")).GetArrayLength());
+        Assert.DoesNotContain((await GetAsync("/api/expense-categories")).EnumerateArray(), c => c.GetProperty("id").GetGuid() == id);
     }
 
     [Fact]

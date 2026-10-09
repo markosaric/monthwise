@@ -1,4 +1,4 @@
-import type { RouteObject } from 'react-router'
+import { Navigate, type RouteObject } from 'react-router'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { CardsPage } from '@/pages/CardsPage'
 import { CardPaymentPage } from '@/pages/cardPurchases/CardPaymentPage'
@@ -6,6 +6,13 @@ import { InstallmentCardPage } from '@/pages/cardPurchases/InstallmentCardPage'
 import { PurchaseDetailsPage } from '@/pages/cardPurchases/PurchaseDetailsPage'
 import { PurchaseEditPage, PurchaseNewPage } from '@/pages/cardPurchases/PurchaseFormPages'
 import { DashboardPage } from '@/pages/DashboardPage'
+import { BillEditPage, BillNewPage } from '@/pages/expenses/BillFormPages'
+import { ExpenseEditPage, ExpenseNewPage } from '@/pages/expenses/ExpenseFormPages'
+import {
+  RecurringBillEditPage,
+  RecurringBillNewPage,
+  RecurringBillsPage,
+} from '@/pages/expenses/RecurringBillsPages'
 import { LoansPage } from '@/pages/LoansPage'
 import { MonthPage } from '@/pages/MonthPage'
 import { NotFoundPage } from '@/pages/NotFoundPage'
@@ -27,7 +34,7 @@ import { LoanEditPage, LoanNewPage } from '@/pages/loans/LoanFormPages'
 import { InputCategoriesSettingsPage } from '@/pages/settings/InputCategoriesSettingsPage'
 import { LoanCategoriesSettingsPage } from '@/pages/settings/LoanCategoriesSettingsPage'
 import { PayersSettingsPage } from '@/pages/settings/PayersSettingsPage'
-import { PurchaseCategoriesSettingsPage } from '@/pages/settings/PurchaseCategoriesSettingsPage'
+import { ExpenseCategoriesSettingsPage } from '@/pages/settings/ExpenseCategoriesSettingsPage'
 
 export const routes: RouteObject[] = [
   {
@@ -43,6 +50,13 @@ export const routes: RouteObject[] = [
         element: <OccurrenceEditPage />,
       },
       { path: 'month/:yearMonth/recurring-inputs/:id/edit', element: <RecurringInputEditPage /> },
+      { path: 'month/:yearMonth/bills/new', element: <BillNewPage /> },
+      { path: 'month/:yearMonth/expenses/new', element: <ExpenseNewPage /> },
+      { path: 'bills/:id/edit', element: <BillEditPage /> },
+      { path: 'expenses/:id/edit', element: <ExpenseEditPage /> },
+      { path: 'recurring-bills', element: <RecurringBillsPage /> },
+      { path: 'recurring-bills/new', element: <RecurringBillNewPage /> },
+      { path: 'recurring-bills/:id/edit', element: <RecurringBillEditPage /> },
       { path: 'cash-flow', element: <CashFlowPage /> },
       { path: 'cash-flow/:yearMonth', element: <MonthlyReportPage /> },
       { path: 'cards', element: <CardsPage /> },
@@ -64,7 +78,11 @@ export const routes: RouteObject[] = [
       { path: 'settings/payers', element: <PayersSettingsPage /> },
       { path: 'settings/input-categories', element: <InputCategoriesSettingsPage /> },
       { path: 'settings/loan-categories', element: <LoanCategoriesSettingsPage /> },
-      { path: 'settings/purchase-categories', element: <PurchaseCategoriesSettingsPage /> },
+      { path: 'settings/expense-categories', element: <ExpenseCategoriesSettingsPage /> },
+      {
+        path: 'settings/purchase-categories',
+        element: <Navigate to="/settings/expense-categories" replace />,
+      },
       { path: '*', element: <NotFoundPage /> },
     ],
   },
