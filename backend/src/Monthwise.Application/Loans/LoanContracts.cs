@@ -1,4 +1,5 @@
 using Monthwise.Application.CashFlow;
+using Monthwise.Application.SharedCosts;
 using Monthwise.Domain.Loans;
 
 namespace Monthwise.Application.Loans;
@@ -6,7 +7,8 @@ namespace Monthwise.Application.Loans;
 /// <summary>
 /// Add or edit a loan. Months use the ISO form <c>yyyy-MM</c>. Either <see cref="PaymentCount"/> or
 /// <see cref="EndMonth"/> is needed; the other is calculated (A10, A11). <see cref="AccountId"/> is
-/// for a standing order only.
+/// for a standing order only. <see cref="Share"/> shares the loan (shared bills FR-3); when expected
+/// payments have a share changed by hand, <see cref="KeepChangedPaymentShares"/> says whether they keep it.
 /// </summary>
 public sealed record LoanRequest(
     string Name,
@@ -21,7 +23,9 @@ public sealed record LoanRequest(
     int? PaymentCount,
     string? EndMonth,
     long? ResidualValueCents,
-    string? Description);
+    string? Description,
+    ShareRequest? Share = null,
+    bool KeepChangedPaymentShares = true);
 
 public enum LoanListFilter
 {
@@ -56,7 +60,8 @@ public sealed record LoanResponse(
     long PaidAmountCents,
     long RemainingAmountCents,
     bool HasOverduePayment,
-    bool NeedsAccount);
+    bool NeedsAccount,
+    ShareResponse? Share = null);
 
 /// <summary>One payment change; <see cref="CanChange"/> is false once a payment it applies to is paid (FR-7).</summary>
 public sealed record PaymentChangeResponse(
@@ -86,7 +91,9 @@ public sealed record PaymentChangeRequest(
 
 /// <summary>
 /// One payment of a loan. It is identified by <see cref="LoanId"/>, its scheduled <see cref="Month"/>
-/// and <see cref="Kind"/>. <see cref="Number"/> is 0 for the residual value.
+/// and <see cref="Kind"/>. <see cref="Number"/> is 0 for the residual value. A shared payment has its
+/// <see cref="Share"/>, the household's <see cref="OwnPartCents"/> and its <see cref="Contribution"/>
+/// (shared bills FR-5, FR-7); <see cref="IsShareChanged"/> marks a share set on this payment by hand.
 /// </summary>
 public sealed record LoanPaymentResponse(
     Guid LoanId,
@@ -106,15 +113,26 @@ public sealed record LoanPaymentResponse(
     bool IsPaid,
     bool IsChanged,
     bool IsOverdue,
-    bool NeedsAccount);
+    bool NeedsAccount,
+    ShareResponse? Share = null,
+    long? OwnPartCents = null,
+    bool IsShareChanged = false,
+    ContributionResponse? Contribution = null);
 
 public sealed record LoanPaymentTotalsResponse(long ExpectedCents, long PaidCents, long TotalCents);
 
-/// <summary>The loan payments of a month (<c>yyyy-MM</c>) and their totals (FR-4).</summary>
+/// <summary>
+/// The loan payments of a month (<c>yyyy-MM</c>) and their totals (FR-4). <see cref="OwnPartCents"/> is
+/// what the household pays itself: the total minus the participants' parts (shared bills FR-7).
+/// </summary>
 public sealed record MonthLoanPaymentsResponse(
     string Month,
     IReadOnlyList<LoanPaymentResponse> Payments,
-    LoanPaymentTotalsResponse Totals);
+    LoanPaymentTotalsResponse Totals,
+    long OwnPartCents);
+
+/// <summary>Shares one payment, changes its share or stops sharing it (<see cref="Share"/> null), whatever the loan's share is (shared bills FR-3).</summary>
+public sealed record LoanPaymentShareRequest(ShareRequest? Share);
 
 /// <summary>Changes one expected payment (FR-4).</summary>
 public sealed record LoanPaymentChangeRequest(long AmountCents, DateOnly DueDate);

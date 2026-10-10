@@ -81,7 +81,13 @@ function LoanEditor({
       <LoanForm
         editing
         defaultValues={loanFormValuesOf(loan, allowsResidualValue)}
-        current={{ category: loan.category, subcategory: loan.subcategory, account: loan.account }}
+        current={{
+          category: loan.category,
+          subcategory: loan.subcategory,
+          account: loan.account,
+          share: loan.share,
+        }}
+        payments={details.payments}
         submitLabel={t.actions.save}
         onCancel={() => navigate(-1)}
         onSubmit={async (values) => {

@@ -3,9 +3,11 @@ using Monthwise.Application.Cards;
 using Monthwise.Application.CashFlow;
 using Monthwise.Application.Common;
 using Monthwise.Application.Loans;
+using Monthwise.Application.SharedCosts;
 using Monthwise.Domain.Cards;
 using Monthwise.Domain.Common;
 using Monthwise.Domain.Expenses;
+using Monthwise.Domain.SharedCosts;
 
 namespace Monthwise.Application.Expenses;
 
@@ -30,8 +32,10 @@ public sealed class ExpenseBook
         IReadOnlyList<ExpenseCategory> categories,
         IReadOnlyList<Bill> bills,
         IReadOnlyList<Expense> expenses,
-        CardPaymentBook cardBook)
+        CardPaymentBook cardBook,
+        SharedCostBook shared)
     {
+        Shared = shared;
         Today = today;
         _cards = cards.ToDictionary(c => c.Id);
         _categories = categories.ToDictionary(c => c.Id);
@@ -42,6 +46,10 @@ public sealed class ExpenseBook
     }
 
     public DateOnly Today { get; }
+
+    /// <summary>The shared bills and loan payments with their contributions (shared bills FR-5).</summary>
+    public SharedCostBook Shared { get; }
+
     public IReadOnlyList<Bill> Bills { get; }
     public IReadOnlyList<Expense> Expenses { get; }
 
@@ -106,8 +114,16 @@ public sealed class ExpenseBook
             bill.IsOverdue(Today),
             DueDateHint(bill),
             withCard,
-            withCard && _cardBook.IsCharged(bill.PaidFromId!.Value, bill.PaidDate!.Value));
+            withCard && _cardBook.IsCharged(bill.PaidFromId!.Value, bill.PaidDate!.Value),
+            Shared.ToResponse(bill.Share),
+            bill.Share is { } share && bill.IsIssued ? share.OwnPartOf(bill.Amount).Cents : null,
+            bill.IsShareChanged,
+            bill.Share is null ? null : Shared.ContributionOf(ContributionSource.ForBill(bill.Id)));
     }
+
+    /// <summary>What the household pays itself of the counted bills (FR-9): their total minus the participants' parts.</summary>
+    public Money OwnPart(IEnumerable<Bill> bills) =>
+        Money.Sum(bills.Where(b => b.IsIssued && !IsPaidWithCard(b)).Select(b => b.Share?.OwnPartOf(b.Amount) ?? b.Amount));
 
     public ExpenseResponse ToResponse(Expense expense)
     {
@@ -183,6 +199,7 @@ public sealed class ExpenseLedger(
     IBillRepository bills,
     IExpenseRepository expenses,
     CardPaymentLedger cardPaymentLedger,
+    LoanLedger loanLedger,
     TimeProvider timeProvider)
 {
     public async Task<ExpenseBook> LoadAsync(CancellationToken cancellationToken) =>
@@ -192,7 +209,8 @@ public sealed class ExpenseLedger(
             await categories.ListAsync(cancellationToken),
             await bills.ListAsync(cancellationToken),
             await expenses.ListAsync(cancellationToken),
-            await cardPaymentLedger.LoadAsync(cancellationToken));
+            await cardPaymentLedger.LoadAsync(cancellationToken),
+            (await loanLedger.LoadAsync(cancellationToken)).Shared);
 }
 
 /// <summary>

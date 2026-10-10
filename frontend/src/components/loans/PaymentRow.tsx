@@ -5,6 +5,9 @@ import { paymentRef, usePaymentAction, type LoanPayment } from '@/api/loans'
 import { formatDate } from '@/components/cards/format'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { PaymentShareDialog } from '@/components/sharedCosts/PaymentShareDialog'
+import { OwnPart, ShareBadges } from '@/components/sharedCosts/SharedMarkers'
+import { sharedCostTexts } from '@/components/sharedCosts/texts'
 import { formatCents } from '@/lib/money'
 import { cn } from '@/lib/utils'
 import { messageOf } from './messageOf'
@@ -15,7 +18,9 @@ const t = loanTexts
 
 /**
  * One loan payment with its Paid check box, dates and markers (FR-4, FR-5). Ticking asks for the
- * paid date and account; unticking makes it expected again. Expected payments are dimmed.
+ * paid date and account; unticking makes it expected again. Expected payments are dimmed. A shared
+ * payment shows its participant and own part, and any payment can be shared on its own (shared bills
+ * FR-3, FR-7).
  */
 export function PaymentRow({
   payment,
@@ -28,7 +33,7 @@ export function PaymentRow({
   readOnly?: boolean
 }) {
   const action = usePaymentAction()
-  const [dialog, setDialog] = useState<'paid' | 'change' | null>(null)
+  const [dialog, setDialog] = useState<'paid' | 'change' | 'share' | null>(null)
   const residual = payment.kind === 'Residual'
   const paidOnOtherDay = payment.paidDate !== null && payment.paidDate !== payment.dueDate
   const close = (open: boolean) => !open && setDialog(null)
@@ -82,6 +87,7 @@ export function PaymentRow({
           {payment.isChanged && <Badge variant="outline">{t.labels.changed}</Badge>}
           {payment.isOverdue && <Badge variant="destructive">{t.labels.overdue}</Badge>}
           {payment.needsAccount && <Badge variant="destructive">{t.labels.needsAccount}</Badge>}
+          <ShareBadges share={payment.share} isShareChanged={payment.isShareChanged} />
         </span>
         <span className="text-sm">
           {showLoan && `${payment.category.name} · ${payment.subcategory.name} · `}
@@ -113,13 +119,18 @@ export function PaymentRow({
                 {t.actions.correctPaid}
               </Button>
             )}
+            <Button size="xs" variant="ghost" onClick={() => setDialog('share')}>
+              {sharedCostTexts.payment.title}
+            </Button>
           </span>
         )}
       </div>
       <span className={cn('font-medium tabular-nums', payment.isPaid && 'text-foreground')}>
         {formatCents(payment.amountCents)}
+        <OwnPart cents={payment.ownPartCents} />
       </span>
       {dialog === 'paid' && <PaidDialog payment={payment} open onOpenChange={close} />}
+      {dialog === 'share' && <PaymentShareDialog payment={payment} onOpenChange={close} />}
       {dialog === 'change' && <ChangePaymentDialog payment={payment} open onOpenChange={close} />}
     </li>
   )

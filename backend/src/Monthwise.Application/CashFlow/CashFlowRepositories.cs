@@ -1,4 +1,5 @@
 using Monthwise.Domain.CashFlow;
+using Monthwise.Domain.SharedCosts;
 
 namespace Monthwise.Application.CashFlow;
 
@@ -25,6 +26,12 @@ public interface ICashFlowInputRepository
 
     /// <summary>Keys of all stored occurrences, so they are not calculated a second time.</summary>
     Task<IReadOnlySet<OccurrenceKey>> ListOccurrenceKeysAsync(CancellationToken cancellationToken);
+
+    /// <summary>All stored contributions of shared bills and loan payments (shared bills FR-5).</summary>
+    Task<IReadOnlyList<CashFlowInput>> ListContributionsAsync(CancellationToken cancellationToken);
+
+    /// <summary>The stored contribution of one shared bill or loan payment.</summary>
+    Task<CashFlowInput?> GetContributionAsync(ContributionSource source, CancellationToken cancellationToken);
 
     void Add(CashFlowInput input);
     void Remove(CashFlowInput input);

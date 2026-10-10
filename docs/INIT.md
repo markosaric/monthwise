@@ -70,8 +70,11 @@ bank                 id, name, is_predefined   (ZaBa, PBZ, … extendable by the
 payer                id, name, removed_on?   (saved automatically when an input names it)
 input_category       id, name, is_predefined, hidden_on?   (Salary, Salary add-ons, … extendable)
 cash_flow_input      id, payer_id, category_id, account_id → card, amount_cents, issue_date,
-                     expected_date, received_date?, description?, recurring_input_id?, occurrence_date?
-                     (incoming cash flow; see docs/feature-requirements/input-cash-flow.md)
+                     expected_date, received_date?, description?, recurring_input_id?, occurrence_date?,
+                     contribution_bill_id → bill?, contribution_loan_id → loan?, contribution_month?,
+                     contribution_payment_kind?, is_edited
+                     (incoming cash flow; see docs/feature-requirements/input-cash-flow.md; a contribution of a
+                     shared bill or loan payment is CALCULATED and stored only when received or edited)
 recurring_input      id, payer_id, category_id, account_id → card, amount_cents, description?,
                      frequency (Weekly|Monthly|Quarterly|Yearly), issue_anchor, expected_anchor, end_date?
                      (occurrences are CALCULATED; one is stored as cash_flow_input only when changed or received)
@@ -84,10 +87,11 @@ expense_category     id, name, is_predefined, is_fixed, hidden_on?
                      (one list for card purchases, bills and expenses: Electricity, Groceries, … extendable;
                      Cash withdrawal is fixed; see docs/feature-requirements/monthly-bills-and-expenses.md)
 recurring_bill       id, name, category_id → expense_category, payee?, paid_from_id → card?, description?,
-                     stopped_on?   (a monthly bill without dates or amount)
+                     stopped_on?, share columns   (a monthly bill without dates or amount)
 bill                 id, recurring_bill_id?, month, name, category_id → expense_category, payee?, amount_cents
                      (0 while not issued), issue_date?, due_date?, is_paid, paid_date?, paid_from_id → card?,
-                     description?   (paid with a Credit or Charge card it is a line of that card's card payment)
+                     description?, share columns, is_share_changed
+                     (paid with a Credit or Charge card it is a line of that card's card payment)
 expense              id, date, amount_cents, category_id → expense_category, paid_from_id → card, description?
                      (one-time and always paid; Cash withdrawal from a primary account; paid with a Credit or
                      Charge card it is a line of that card's card payment)
@@ -102,16 +106,22 @@ card_payment         id, card_id, month, is_paid? (null = automatic), paid_date?
 loan                 id, name, category_id → loan_category, subcategory_id → loan_subcategory,
                      lender_id → bank, payment_method (StandingOrder|Bill), account_id → card (standing order only),
                      start_month, payment_day (1–31), monthly_payment_cents, payment_count, residual_value_cents?,
-                     description?, closed_on?
+                     description?, closed_on?, share columns
                      (bank loans and leases; see docs/feature-requirements/loans-and-leases.md)
 loan_payment_change  id, loan_id, from_month, monthly_payment_cents?, payment_day?, note?
                      (the newest change that applies to a month decides its amount and payment day)
 loan_payment         id, loan_id, month, kind (Regular|Residual), amount_cents?, due_date?, is_changed,
-                     is_paid? (null = automatic), paid_date?, paid_account_id → card?
-                     (payments are CALCULATED; one is stored only when changed or paid)
+                     is_paid? (null = automatic), paid_date?, paid_account_id → card?, has_own_share,
+                     is_share_changed, share columns
+                     (payments are CALCULATED; one is stored only when changed, paid or shared on its own)
 loan_category        id, name, allows_residual_value, is_predefined, hidden_on?   (Bank loan, Lease, … extendable)
 loan_subcategory     id, category_id → loan_category, name, is_predefined, hidden_on?
                      (Mortgage, Cash loan, Car lease, … extendable)
+participant          id, name, payer_id → payer, description?, archived_on?
+                     (a person outside the household who shares bills and loans; see
+                     docs/feature-requirements/shared-bills.md)
+share columns        share_participant_id → participant?, share_count? (2–4), participant_share_count?
+                     (1 … share_count − 1), contribution_account_id → card?   (all set for a shared cost)
 balance_snapshot     id, account_id, date, balance_cents   (savings balances; card and current account
                      balances are balance_entry)
 user                 id, email, household_id, role

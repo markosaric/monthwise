@@ -7,6 +7,7 @@ using Monthwise.Application.CashFlow;
 using Monthwise.Application.Common;
 using Monthwise.Application.Expenses;
 using Monthwise.Application.Loans;
+using Monthwise.Application.SharedCosts;
 using Monthwise.Infrastructure.Persistence;
 using Monthwise.Infrastructure.Persistence.Repositories;
 using Monthwise.Infrastructure.Security;
@@ -54,6 +55,7 @@ public static class DependencyInjection
         services.AddScoped<IRecurringBillRepository, RecurringBillRepository>();
         services.AddScoped<IBillRepository, BillRepository>();
         services.AddScoped<IExpenseRepository, ExpenseRepository>();
+        services.AddScoped<IParticipantRepository, ParticipantRepository>();
 
         services.AddHealthChecks()
             .AddDbContextCheck<MonthwiseDbContext>(DatabaseHealthCheckName);

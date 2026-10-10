@@ -287,3 +287,20 @@ General rules:
 16. Loan payments appear as outputs on the Cash flow dashboard and in the monthly cash flow report,
     paid and expected ones distinguished, and the report shows the month result (inputs minus
     outputs).
+
+## Appendix 1: Shared loans
+
+- **Date:** 2026-10-09
+- **Branch:** `feat/shared_bills`
+- **Changes:** section 5 (Out of scope)
+
+Sharing a loan payment with someone else is no longer out of scope. A loan, or a single loan
+payment, can now be shared with one participant, who pays back a part of each payment as an agreed
+contribution, as described in [shared-bills.md](shared-bills.md).
+
+- The out-of-scope item "Sharing a loan payment with someone else (e.g. 50 %)" no longer applies.
+- Loan payments themselves are unchanged: the household still pays the full amount, and it counts
+  in full in the cash flow and the account balance. The participant's part is a separate input.
+- The residual value bill of a shared lease is shared with the same shares as its payments.
+- The Month screen also shows the own part of a shared loan payment and of the loan payment totals
+  (see [shared-bills.md](shared-bills.md) FR-7).

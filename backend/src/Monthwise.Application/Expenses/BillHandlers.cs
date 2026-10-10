@@ -1,6 +1,9 @@
+using Monthwise.Application.CashFlow;
 using Monthwise.Application.Common;
+using Monthwise.Application.SharedCosts;
 using Monthwise.Domain.Common;
 using Monthwise.Domain.Expenses;
+using Monthwise.Domain.SharedCosts;
 
 namespace Monthwise.Application.Expenses;
 
@@ -16,7 +19,8 @@ public sealed class GetMonthBillsHandler(IBillRepository bills, ExpenseLedger le
             book.ToSortedResponses(monthBills),
             book.BillTotals(monthBills),
             Money.Sum(monthBills.Where(book.IsPaidWithCard).Select(b => b.Amount)).Cents,
-            monthBills.Count(b => !b.IsIssued));
+            monthBills.Count(b => !b.IsIssued),
+            book.OwnPart(monthBills).Cents);
     }
 }
 
@@ -52,10 +56,14 @@ public sealed class AddRecurringBillsHandler(
     }
 }
 
-/// <summary>Views, adds, edits, pays and deletes bills (FR-4, FR-5, FR-6).</summary>
+/// <summary>Views, adds, edits, pays and deletes bills (FR-4, FR-5, FR-6), and shares them (shared bills FR-3).</summary>
 public sealed class BillHandler(
     IBillRepository bills,
+    IRecurringBillRepository recurringBills,
+    ICashFlowInputRepository inputs,
     ExpenseInputChecker checker,
+    ShareResolver shareResolver,
+    ContributionCleaner contributionCleaner,
     ExpenseLedger ledger,
     IUnitOfWork unitOfWork,
     TimeProvider timeProvider)
@@ -73,13 +81,17 @@ public sealed class BillHandler(
     {
         ArgumentNullException.ThrowIfNull(request);
         var details = ToDetails(request);
-        var created = Bill.CreateOneOff(month, details, request.PaidDate, timeProvider.GetUtcNow());
+        var now = timeProvider.GetUtcNow();
+        var created = Bill.CreateOneOff(month, details, request.PaidDate, now);
         var errors = created.IsFailure ? created.Errors.ToList() : [];
         errors.AddRange(await CheckAsync(details, request.PaidDate, existing: null, cancellationToken));
+        var share = await shareResolver.ResolveAsync(request.Share, existing: null, cancellationToken);
+        errors.AddRange(share.Errors);
         if (errors.Count > 0)
         {
             return Result.Failure<BillResponse>(errors);
         }
+        created.Value.SetShare(share.Value, recurringShare: null, now);
         bills.Add(created.Value);
         await unitOfWork.SaveChangesAsync(cancellationToken);
         return Result.Success((await ledger.LoadAsync(cancellationToken)).ToResponse(created.Value));
@@ -95,14 +107,23 @@ public sealed class BillHandler(
             return Result.Failure<BillResponse>(ExpenseErrors.BillNotFound);
         }
         var details = ToDetails(request);
+        var now = timeProvider.GetUtcNow();
         var errors = await CheckAsync(details, request.PaidDate, bill, cancellationToken);
-        var updated = bill.Update(details, request.PaidDate, timeProvider.GetUtcNow());
+        var share = await shareResolver.ResolveAsync(request.Share, bill.Share, cancellationToken);
+        errors.AddRange(share.Errors);
+        var updated = bill.Update(details, request.PaidDate, now);
         errors.InsertRange(0, updated.Errors);
         if (errors.Count > 0)
         {
             return Result.Failure<BillResponse>(errors);
         }
+        var recurringShare = bill.RecurringBillId is { } recurringId
+            ? (await recurringBills.GetAsync(recurringId, cancellationToken))?.Share
+            : null;
+        bill.SetShare(share.Value, recurringShare, now);
         await unitOfWork.SaveChangesAsync(cancellationToken);
+        // A bill that is no longer shared or no longer issued has no contribution (shared bills FR-6).
+        await contributionCleaner.CleanUpAsync(cancellationToken);
         return Result.Success((await ledger.LoadAsync(cancellationToken)).ToResponse(bill));
     }
 
@@ -152,13 +173,20 @@ public sealed class BillHandler(
         return Result.Success((await ledger.LoadAsync(cancellationToken)).ToResponse(bill));
     }
 
-    /// <summary>Deletes a bill from its month; a recurring bill it came from stays (FR-4).</summary>
+    /// <summary>
+    /// Deletes a bill from its month; a recurring bill it came from stays (FR-4). Its expected
+    /// contribution goes with it, a received one stays as an ordinary input (shared bills FR-6).
+    /// </summary>
     public async Task<Result> DeleteAsync(Guid id, CancellationToken cancellationToken)
     {
         var bill = await bills.GetAsync(id, cancellationToken);
         if (bill is null)
         {
             return Result.Failure(ExpenseErrors.BillNotFound);
+        }
+        if (await inputs.GetContributionAsync(ContributionSource.ForBill(bill.Id), cancellationToken) is { } contribution)
+        {
+            ContributionCleaner.Release(inputs, contribution, timeProvider.GetUtcNow());
         }
         bills.Remove(bill);
         await unitOfWork.SaveChangesAsync(cancellationToken);

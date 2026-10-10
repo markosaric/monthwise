@@ -3,11 +3,16 @@ import { useMemo, useState } from 'react'
 import { Controller, useForm, useWatch } from 'react-hook-form'
 import { useCards } from '@/api/cards'
 import { useExpenseCategories, type BillRequest, type PaidFrom } from '@/api/expenses'
+import type { Contribution, Share } from '@/api/sharedCosts'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
+import { ContributionWarning } from '@/components/sharedCosts/ContributionWarning'
+import { ShareFields } from '@/components/sharedCosts/ShareFields'
+import { shareErrorFields } from '@/components/sharedCosts/shareModel'
+import { parseEuroInput } from '@/lib/money'
 import { billFormSchema, toBillRequest, type BillFormValues } from './billFormModel'
 import { applyApiErrors } from './formErrors'
 import { CategorySelect, Field } from './formParts'
@@ -19,7 +24,8 @@ const t = expenseTexts
 
 /**
  * Add a one-off bill, enter (issue) a bill added from a recurring bill, or edit a bill (FR-4, FR-5):
- * name, category, payee, amount, issue and due date, what it is paid with, and the paid state.
+ * name, category, payee, amount, issue and due date, what it is paid with, the paid state, and how it
+ * is shared (shared bills FR-3). A received contribution that would differ is pointed out (FR-6).
  */
 export function BillForm({
   defaultValues,
@@ -28,6 +34,8 @@ export function BillForm({
   dueDateHinted = false,
   submitLabel,
   warning,
+  currentShare,
+  contribution,
   onSubmit,
   onCancel,
 }: {
@@ -39,6 +47,10 @@ export function BillForm({
   dueDateHinted?: boolean
   submitLabel: string
   warning?: string
+  /** The bill's share, so an archived participant stays listed. */
+  currentShare?: Share | null
+  /** The bill's contribution, to point out a received one that would differ. */
+  contribution?: Contribution | null
   onSubmit: (request: BillRequest) => Promise<void>
   onCancel: () => void
 }) {
@@ -53,7 +65,11 @@ export function BillForm({
     setError,
     formState: { errors, isSubmitting },
   } = useForm<BillFormValues>({ resolver: zodResolver(schema), defaultValues })
-  const [paid, paidFromId] = useWatch({ control, name: ['paid', 'paidFromId'] })
+  const [paid, paidFromId, amount, share] = useWatch({
+    control,
+    name: ['paid', 'paidFromId', 'amount', 'share'],
+  })
+  const amountCents = parseEuroInput(amount)
   const withCard = cards.some((c) => c.id === paidFromId && isCreditCard(c))
 
   async function submit(values: BillFormValues) {
@@ -61,7 +77,12 @@ export function BillForm({
     try {
       await onSubmit(toBillRequest(values))
     } catch (error) {
-      setFormError(applyApiErrors(error, defaultValues, setError, { amountCents: 'amount' }))
+      setFormError(
+        applyApiErrors(error, defaultValues, setError, {
+          amountCents: 'amount',
+          ...shareErrorFields,
+        }),
+      )
     }
   }
 
@@ -160,6 +181,30 @@ export function BillForm({
       <Field id="description" label={t.fields.description} error={errors.description?.message}>
         <Textarea id="description" maxLength={200} rows={2} {...register('description')} />
       </Field>
+      <Controller
+        control={control}
+        name="share"
+        render={({ field }) => (
+          <ShareFields
+            id="share"
+            value={field.value}
+            onChange={field.onChange}
+            amountCents={amountCents}
+            cards={cards}
+            current={currentShare}
+            error={
+              errors.share?.message ??
+              errors.share?.participantId?.message ??
+              errors.share?.participantShares?.message
+            }
+          />
+        )}
+      />
+      <ContributionWarning
+        contributions={contribution ? [contribution] : []}
+        amountCents={amountCents}
+        share={share}
+      />
 
       {warning && <p className="text-sm font-medium">{warning}</p>}
       {formError && (

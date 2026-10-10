@@ -15,7 +15,7 @@ public sealed class CashFlowEndpointTests : IAsyncLifetime
 {
     /// <summary>Empties the loan, cash flow and card tables (loans and cash flow first, because of the foreign keys).</summary>
     public const string DeleteAllSql =
-        "DELETE FROM card_payment; DELETE FROM card_purchase_reversal; DELETE FROM card_purchase; "
+        "DELETE FROM cash_flow_input; DELETE FROM card_payment; DELETE FROM card_purchase_reversal; DELETE FROM card_purchase; "
         + "DELETE FROM expense; DELETE FROM bill; DELETE FROM recurring_bill; "
         + "DELETE FROM expense_category WHERE NOT is_predefined; UPDATE expense_category SET hidden_on = NULL; "
         + "DELETE FROM card_billing_terms; UPDATE card SET paying_account_id = NULL; "
@@ -23,7 +23,7 @@ public sealed class CashFlowEndpointTests : IAsyncLifetime
         + "DELETE FROM loan_subcategory WHERE NOT is_predefined; DELETE FROM loan_category WHERE NOT is_predefined; "
         + "UPDATE loan_category SET hidden_on = NULL; UPDATE loan_subcategory SET hidden_on = NULL; "
         + "DELETE FROM skipped_occurrence; DELETE FROM cash_flow_input; DELETE FROM recurring_input; DELETE FROM balance_entry; "
-        + "DELETE FROM payer; DELETE FROM input_category WHERE NOT is_predefined; UPDATE input_category SET hidden_on = NULL; "
+        + "DELETE FROM participant; DELETE FROM payer; DELETE FROM input_category WHERE NOT is_predefined; UPDATE input_category SET hidden_on = NULL; "
         + "DELETE FROM card;";
 
     private static readonly Guid VisaIssuer = new("0199b0c0-0000-7000-8000-000000000001");

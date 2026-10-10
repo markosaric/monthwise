@@ -7,6 +7,7 @@ import { formatDate } from '@/components/cards/format'
 import { messageOf } from '@/components/loans/messageOf'
 import { PaymentDialog } from '@/components/loans/PaymentDialogs'
 import { PaymentTotals } from '@/components/loans/LoanPaymentsSection'
+import { OwnPart, OwnPartTotal, ShareBadges } from '@/components/sharedCosts/SharedMarkers'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -53,6 +54,7 @@ export function BillsSection({ month }: { month: string }) {
               ))}
             </ul>
             <PaymentTotals totals={data.totals} />
+            <OwnPartTotal cents={data.ownPartCents} shown={data.bills.some((b) => b.share)} />
             {(data.withCardCents !== 0 || data.notIssuedCount > 0) && (
               <p className="text-xs text-muted-foreground">
                 {data.notIssuedCount > 0 && t.bills.notIssuedCount(data.notIssuedCount)}
@@ -74,7 +76,8 @@ export function BillsSection({ month }: { month: string }) {
 
 /**
  * One bill (FR-4): Not issued bills are dimmed and cannot be ticked, expected ones are dimmed, overdue
- * ones highlighted, and bills paid with a credit card are marked as part of the card payment.
+ * ones highlighted, and bills paid with a credit card are marked as part of the card payment. A shared
+ * bill shows its participant and the household's own part (shared bills FR-7).
  */
 export function BillRow({ bill }: { bill: Bill }) {
   const change = useChangeBill()
@@ -115,6 +118,7 @@ export function BillRow({ bill }: { bill: Bill }) {
           {notIssued && <Badge variant="outline">{t.states.NotIssued}</Badge>}
           {bill.isOverdue && <Badge variant="destructive">{t.labels.overdue}</Badge>}
           {bill.paidWithCard && <Badge variant="secondary">{t.labels.withCard}</Badge>}
+          <ShareBadges share={bill.share} isShareChanged={bill.isShareChanged} />
         </span>
         <span className="text-sm">
           {bill.category.name}
@@ -148,6 +152,7 @@ export function BillRow({ bill }: { bill: Bill }) {
       </div>
       <span className={cn('font-medium tabular-nums', paid && 'text-foreground')}>
         {notIssued ? '–' : formatCents(bill.amountCents)}
+        <OwnPart cents={bill.ownPartCents} />
       </span>
       {paidOpen && (
         <BillPaidDialog bill={bill} onOpenChange={(open) => !open && setPaidOpen(false)} />

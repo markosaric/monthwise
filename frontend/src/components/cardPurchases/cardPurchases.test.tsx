@@ -163,7 +163,8 @@ describe('Card payments', () => {
     expect(screen.getByText(/Installment 1 of 3/)).toBeInTheDocument()
     expect(screen.getByText(/Paid in full/)).toBeInTheDocument()
     expect(screen.getByText('-10,00 €')).toBeInTheDocument()
-    expect(screen.getByText('Home')).toBeInTheDocument()
+    // The category, not the Home item of the phone navigation.
+    expect(within(screen.getByRole('main')).getByText('Home')).toBeInTheDocument()
   })
 })
 

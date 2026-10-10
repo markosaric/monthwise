@@ -1,4 +1,6 @@
 using Monthwise.Domain.Common;
+using Monthwise.Domain.Loans;
+using Monthwise.Domain.SharedCosts;
 
 namespace Monthwise.Domain.CashFlow;
 
@@ -26,6 +28,19 @@ public sealed class CashFlowInput
     public string? Description { get; private set; }
     public Guid? RecurringInputId { get; private set; }
     public DateOnly? OccurrenceDate { get; private set; }
+
+    /// <summary>The shared bill of a stored contribution (shared bills FR-5).</summary>
+    public Guid? ContributionBillId { get; private set; }
+
+    /// <summary>The loan, scheduled month and kind of the shared loan payment of a stored contribution.</summary>
+    public Guid? ContributionLoanId { get; private set; }
+
+    public YearMonth? ContributionMonth { get; private set; }
+    public LoanPaymentKind? ContributionPaymentKind { get; private set; }
+
+    /// <summary>A contribution the user edited: it keeps its values until reset to the part (shared bills FR-6).</summary>
+    public bool IsEdited { get; private set; }
+
     public DateTimeOffset CreatedAt { get; private set; }
     public DateTimeOffset UpdatedAt { get; private set; }
 
@@ -36,6 +51,14 @@ public sealed class CashFlowInput
 
     public YearMonth Month => YearMonth.FromDate(MonthDate);
 
+    /// <summary>The shared cost of a stored contribution; null for any other input.</summary>
+    public ContributionSource? Contribution =>
+        ContributionBillId is { } billId
+            ? ContributionSource.ForBill(billId)
+            : ContributionLoanId is { } loanId && ContributionMonth is { } month && ContributionPaymentKind is { } kind
+                ? ContributionSource.ForLoanPayment(loanId, month, kind)
+                : null;
+
     public static Result<CashFlowInput> Create(InputDetails details, DateTimeOffset now) =>
         Create(details, recurringInputId: null, occurrenceDate: null, now);
 
@@ -43,6 +66,49 @@ public sealed class CashFlowInput
     public static Result<CashFlowInput> CreateOccurrence(
         InputDetails details, Guid recurringInputId, DateOnly occurrenceDate, DateTimeOffset now) =>
         Create(details, recurringInputId, occurrenceDate, now);
+
+    /// <summary>Stores a contribution, e.g. when it is received or edited (shared bills FR-6).</summary>
+    public static Result<CashFlowInput> CreateContribution(InputDetails details, ContributionSource source, bool isEdited, DateTimeOffset now)
+    {
+        ArgumentNullException.ThrowIfNull(source);
+        var created = Create(details, recurringInputId: null, occurrenceDate: null, now);
+        if (created.IsSuccess)
+        {
+            var input = created.Value;
+            input.ContributionBillId = source.BillId;
+            input.ContributionLoanId = source.LoanId;
+            input.ContributionMonth = source.Month;
+            input.ContributionPaymentKind = source.PaymentKind;
+            input.IsEdited = isEdited;
+        }
+        return created;
+    }
+
+    /// <summary>Marks a stored contribution as edited, or as following its part again.</summary>
+    public void SetEdited(bool isEdited, DateTimeOffset now)
+    {
+        IsEdited = isEdited;
+        UpdatedAt = now;
+    }
+
+    /// <summary>Gives a received contribution the current part again (Reset to part, shared bills FR-6).</summary>
+    public void ResetAmount(Money part, DateTimeOffset now)
+    {
+        Amount = part;
+        IsEdited = false;
+        UpdatedAt = now;
+    }
+
+    /// <summary>Unlinks a contribution from its shared cost, e.g. when the bill is deleted: it stays as an ordinary input.</summary>
+    public void Detach(DateTimeOffset now)
+    {
+        ContributionBillId = null;
+        ContributionLoanId = null;
+        ContributionMonth = null;
+        ContributionPaymentKind = null;
+        IsEdited = false;
+        UpdatedAt = now;
+    }
 
     public Result Update(InputDetails details, DateTimeOffset now)
     {

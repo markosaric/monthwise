@@ -13,13 +13,17 @@ import { formatDate } from '@/components/cards/format'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { ContributionGroup } from '@/components/sharedCosts/ContributionGroup'
 import { formatCents } from '@/lib/money'
 import { cn } from '@/lib/utils'
 import { cashFlowTexts } from './texts'
 
 const t = cashFlowTexts
 
-/** The Income part of the Month screen: list, totals and Received check boxes (FR-1, FR-3). */
+/**
+ * The Income part of the Month screen: list, totals and Received check boxes (FR-1, FR-3), with the
+ * contributions of shared bills and loan payments grouped by contributor (shared bills FR-5).
+ */
 export function IncomeSection({ month }: { month: string }) {
   const { data, isPending, isError } = useMonthInputs(month)
 
@@ -42,13 +46,17 @@ export function IncomeSection({ month }: { month: string }) {
         {data && data.inputs.length > 0 && (
           <>
             <ul className="flex flex-col divide-y">
-              {data.inputs.map((entry) => (
-                <InputRow
-                  key={entry.id ?? `${entry.recurringInputId}-${entry.occurrenceDate}`}
-                  month={month}
-                  entry={entry}
-                />
-              ))}
+              {groupContributions(data.inputs).map((item) =>
+                Array.isArray(item) ? (
+                  <ContributionGroup key={`contributions-${item[0]!.payer.id}`} entries={item} />
+                ) : (
+                  <InputRow
+                    key={item.id ?? `${item.recurringInputId}-${item.occurrenceDate}`}
+                    month={month}
+                    entry={item}
+                  />
+                ),
+              )}
             </ul>
             <Totals totals={data.totals} />
           </>
@@ -56,6 +64,30 @@ export function IncomeSection({ month }: { month: string }) {
       </CardContent>
     </Card>
   )
+}
+
+/**
+ * The list with the contributions of each contributor put together into one group, shown where that
+ * contributor's first contribution is in the list.
+ */
+function groupContributions(entries: InputEntry[]): (InputEntry | InputEntry[])[] {
+  const groups = new Map<string, InputEntry[]>()
+  const items: (InputEntry | InputEntry[])[] = []
+  for (const entry of entries) {
+    if (!entry.contribution) {
+      items.push(entry)
+      continue
+    }
+    const group = groups.get(entry.payer.id)
+    if (group) {
+      group.push(entry)
+    } else {
+      const created = [entry]
+      groups.set(entry.payer.id, created)
+      items.push(created)
+    }
+  }
+  return items
 }
 
 function InputRow({ month, entry }: { month: string; entry: InputEntry }) {

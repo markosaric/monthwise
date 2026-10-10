@@ -34,6 +34,8 @@ export const expenseTexts = {
     edit: 'Edit recurring bill',
     empty: 'No recurring bills yet.',
     showStopped: 'Show stopped',
+    shareHint:
+      'A changed share applies to bills added to months from now on; bills already added keep theirs.',
     stopped: 'Stopped',
     stop: 'Stop',
     restart: 'Restart',

@@ -18,6 +18,8 @@ import { MonthPage } from '@/pages/MonthPage'
 import { NotFoundPage } from '@/pages/NotFoundPage'
 import { SavingsPage } from '@/pages/SavingsPage'
 import { SettingsPage } from '@/pages/SettingsPage'
+import { ParticipantEditPage, ParticipantNewPage } from '@/pages/sharedCosts/ParticipantFormPages'
+import { SharedCostsPage } from '@/pages/sharedCosts/SharedCostsPage'
 import { CardDetailsPage } from '@/pages/settings/CardDetailsPage'
 import { CardEditPage, CardNewPage } from '@/pages/settings/CardFormPages'
 import { CardsSettingsPage } from '@/pages/settings/CardsSettingsPage'
@@ -69,6 +71,10 @@ export const routes: RouteObject[] = [
       { path: 'loans/new', element: <LoanNewPage /> },
       { path: 'loans/:id', element: <LoanDetailsPage /> },
       { path: 'loans/:id/edit', element: <LoanEditPage /> },
+      { path: 'shared-costs', element: <SharedCostsPage /> },
+      { path: 'shared-costs/:yearMonth', element: <SharedCostsPage /> },
+      { path: 'shared-costs/participants/new', element: <ParticipantNewPage /> },
+      { path: 'shared-costs/participants/:id/edit', element: <ParticipantEditPage /> },
       { path: 'savings', element: <SavingsPage /> },
       { path: 'settings', element: <SettingsPage /> },
       { path: 'settings/cards', element: <CardsSettingsPage /> },

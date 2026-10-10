@@ -1,4 +1,5 @@
 using Monthwise.Domain.Common;
+using Monthwise.Domain.SharedCosts;
 
 namespace Monthwise.Domain.Loans;
 
@@ -19,10 +20,15 @@ public sealed record ScheduledPayment(
     bool IsChanged,
     bool NeedsAccount,
     bool IsStored,
-    bool PaidAutomatically)
+    bool PaidAutomatically,
+    CostShare? Share = null,
+    bool IsShareChanged = false)
 {
     /// <summary>The date that decides the month the payment is shown in: the paid date once paid, the due date before (section 3).</summary>
     public DateOnly MonthDate => PaidDate ?? DueDate;
+
+    /// <summary>The share that applies to the payment (shared bills FR-3); null when it is not shared.</summary>
+    public bool IsShared => Share is not null;
 
     /// <summary>Due date passed and not paid (FR-13).</summary>
     public bool IsOverdue(DateOnly today) => !IsPaid && DueDate < today;
@@ -199,7 +205,9 @@ public sealed class LoanSchedule
             stored?.IsChanged ?? false,
             needsAccount,
             stored is not null,
-            paidAutomatically);
+            paidAutomatically,
+            stored is not null ? stored.ShareOr(_loan.Share) : _loan.Share,
+            stored?.IsShareChanged ?? false);
     }
 }
 

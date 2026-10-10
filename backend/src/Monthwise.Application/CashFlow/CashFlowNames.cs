@@ -34,7 +34,10 @@ public sealed class CashFlowNames
 
     public NamedReference Payer(Guid id) => Reference(_payers, id);
     public NamedReference Category(Guid id) => Reference(_categories, id);
-    public NamedReference Account(Guid id) => Reference(_accounts, id);
+    /// <summary>The account's name; an empty id is a contribution without an account yet (shared bills FR-5).</summary>
+    public NamedReference Account(Guid id) => id == Guid.Empty ? new(id, NoAccountYet) : Reference(_accounts, id);
+
+    public const string NoAccountYet = "No account yet";
 
     public InputEntryResponse ToResponse(InputEntry entry)
     {
@@ -54,7 +57,19 @@ public sealed class CashFlowNames
             details.Description,
             entry.IsReceived,
             entry.Occurrence is not null,
-            entry.Frequency);
+            entry.Frequency,
+            entry.Contribution is { } contribution
+                ? new InputContributionResponse(
+                    contribution.Source.Kind,
+                    contribution.Source.BillId,
+                    contribution.Source.LoanId,
+                    contribution.Source.Month?.ToString(),
+                    contribution.Source.PaymentKind,
+                    contribution.CostName,
+                    contribution.Part.Cents,
+                    contribution.IsEdited,
+                    contribution.NeedsAccount)
+                : null);
     }
 
     public RecurringInputResponse ToResponse(RecurringInput recurringInput, DateOnly today)

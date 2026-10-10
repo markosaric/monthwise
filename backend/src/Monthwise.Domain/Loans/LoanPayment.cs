@@ -1,4 +1,5 @@
 using Monthwise.Domain.Common;
+using Monthwise.Domain.SharedCosts;
 
 namespace Monthwise.Domain.Loans;
 
@@ -26,11 +27,30 @@ public sealed class LoanPayment
     public bool? IsPaid { get; private set; }
     public DateOnly? PaidDate { get; private set; }
     public Guid? PaidAccountId { get; private set; }
+
+    /// <summary>
+    /// The payment has a share of its own instead of the loan's (shared bills FR-3): set by the user
+    /// (<see cref="IsShareChanged"/>), or kept when the payment is paid, so later changes of the loan's
+    /// share leave paid payments unchanged. With no share columns it is not shared.
+    /// </summary>
+    public bool HasOwnShare { get; private set; }
+
+    public bool IsShareChanged { get; private set; }
+    public Guid? ShareParticipantId { get; private set; }
+    public int? ShareCount { get; private set; }
+    public int? ParticipantShareCount { get; private set; }
+    public Guid? ContributionAccountId { get; private set; }
     public DateTimeOffset CreatedAt { get; private set; }
     public DateTimeOffset UpdatedAt { get; private set; }
 
     /// <summary>True when the payment holds nothing the calculation does not already give, so it can be removed.</summary>
-    public bool IsEmpty => !IsChanged && IsPaid is null && Amount is null && DueDate is null;
+    public bool IsEmpty => !IsChanged && IsPaid is null && Amount is null && DueDate is null && !HasOwnShare;
+
+    /// <summary>The payment's own share when <see cref="HasOwnShare"/>; null otherwise or when it is not shared.</summary>
+    public CostShare? Share => CostShareColumns.Read(ShareParticipantId, ShareCount, ParticipantShareCount, ContributionAccountId);
+
+    /// <summary>The share that applies to the payment: its own, otherwise the loan's.</summary>
+    public CostShare? ShareOr(CostShare? loanShare) => HasOwnShare ? Share : loanShare;
 
     public static LoanPayment Create(Guid loanId, YearMonth month, LoanPaymentKind kind, DateTimeOffset now) =>
         new()
@@ -70,7 +90,7 @@ public sealed class LoanPayment
     /// Marks the payment as paid on <paramref name="paidDate"/> from <paramref name="accountId"/> (FR-5).
     /// The amount and due date it was paid with are kept.
     /// </summary>
-    public Result MarkPaid(DateOnly paidDate, Guid accountId, Money amount, DateOnly dueDate, DateTimeOffset now)
+    public Result MarkPaid(DateOnly paidDate, Guid accountId, Money amount, DateOnly dueDate, DateTimeOffset now, CostShare? loanShare = null)
     {
         var errors = new List<DomainError>();
         if (paidDate < DueDateRule.BillDate(Month))
@@ -87,6 +107,7 @@ public sealed class LoanPayment
         }
         Amount ??= amount;
         DueDate ??= dueDate;
+        KeepShare(loanShare);
         IsPaid = true;
         PaidDate = paidDate;
         PaidAccountId = accountId;
@@ -102,6 +123,7 @@ public sealed class LoanPayment
             Amount = null;
             DueDate = null;
         }
+        ForgetKeptShare();
         IsPaid = false;
         PaidDate = null;
         PaidAccountId = null;
@@ -123,6 +145,7 @@ public sealed class LoanPayment
             Amount = null;
             DueDate = null;
         }
+        ForgetKeptShare();
         IsPaid = null;
         UpdatedAt = now;
     }
@@ -144,13 +167,59 @@ public sealed class LoanPayment
     /// Stores a standing order payment that was paid automatically, so it stays paid with its values
     /// when the loan or its payment method changes (FR-5, FR-10).
     /// </summary>
-    public void KeepAutomaticPayment(Money amount, DateOnly dueDate, Guid accountId, DateTimeOffset now)
+    public void KeepAutomaticPayment(Money amount, DateOnly dueDate, Guid accountId, DateTimeOffset now, CostShare? loanShare = null)
     {
         Amount ??= amount;
         DueDate ??= dueDate;
+        KeepShare(loanShare);
         IsPaid = true;
         PaidDate = DueDate;
         PaidAccountId = accountId;
         UpdatedAt = now;
     }
+
+    /// <summary>
+    /// Shares this one payment, changes its share or stops sharing it (<paramref name="share"/> null),
+    /// whatever the loan's share is (shared bills FR-3).
+    /// </summary>
+    public void ChangeShare(CostShare? share, DateTimeOffset now)
+    {
+        SetShareColumns(share);
+        HasOwnShare = true;
+        IsShareChanged = true;
+        UpdatedAt = now;
+    }
+
+    /// <summary>Drops the hand-changed share: the payment follows the loan's share again, unless it is paid.</summary>
+    public void ResetShare(DateTimeOffset now)
+    {
+        IsShareChanged = false;
+        if (IsPaid != true)
+        {
+            HasOwnShare = false;
+            SetShareColumns(null);
+        }
+        UpdatedAt = now;
+    }
+
+    private void KeepShare(CostShare? loanShare)
+    {
+        if (!HasOwnShare)
+        {
+            SetShareColumns(loanShare);
+            HasOwnShare = true;
+        }
+    }
+
+    private void ForgetKeptShare()
+    {
+        if (!IsShareChanged)
+        {
+            HasOwnShare = false;
+            SetShareColumns(null);
+        }
+    }
+
+    private void SetShareColumns(CostShare? share) =>
+        (ShareParticipantId, ShareCount, ParticipantShareCount, ContributionAccountId) = CostShareColumns.Write(share);
 }

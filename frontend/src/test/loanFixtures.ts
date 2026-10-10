@@ -85,6 +85,10 @@ export function aPayment(overrides: Partial<LoanPayment> = {}): LoanPayment {
     isChanged: false,
     isOverdue: false,
     needsAccount: false,
+    share: null,
+    ownPartCents: null,
+    isShareChanged: false,
+    contribution: null,
     ...overrides,
   }
 }
@@ -96,5 +100,6 @@ export function aLoanMonth(payments: LoanPayment[], month = '2026-10'): MonthLoa
     month,
     payments,
     totals: { expectedCents: expected, paidCents: paid, totalCents: expected + paid },
+    ownPartCents: payments.reduce((sum, p) => sum + (p.ownPartCents ?? p.amountCents), 0),
   }
 }

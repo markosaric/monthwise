@@ -1,4 +1,5 @@
 using Monthwise.Domain.Common;
+using Monthwise.Domain.SharedCosts;
 
 namespace Monthwise.Domain.Loans;
 
@@ -57,6 +58,13 @@ public sealed class Loan
     public Money? ResidualValue { get; private set; }
     public string? Description { get; private set; }
     public DateOnly? ClosedOn { get; private set; }
+
+    /// <summary>The share columns of <see cref="Share"/> (FR-2); null when the loan is not shared.</summary>
+    public Guid? ShareParticipantId { get; private set; }
+    public int? ShareCount { get; private set; }
+    public int? ParticipantShareCount { get; private set; }
+    public Guid? ContributionAccountId { get; private set; }
+
     public DateTimeOffset CreatedAt { get; private set; }
     public DateTimeOffset UpdatedAt { get; private set; }
 
@@ -64,6 +72,9 @@ public sealed class Loan
     public IReadOnlyList<PaymentChange> Changes => _changes.OrderBy(c => c.FromMonth).ToList();
 
     public bool IsClosed => ClosedOn is not null;
+
+    /// <summary>How the loan is shared (shared bills FR-3): applies to every payment that is not paid and has no share of its own.</summary>
+    public CostShare? Share => CostShareColumns.Read(ShareParticipantId, ShareCount, ParticipantShareCount, ContributionAccountId);
 
     /// <summary>The month of the last regular payment (A11).</summary>
     public YearMonth EndMonth => StartMonth.AddMonths(PaymentCount - 1);
@@ -129,6 +140,18 @@ public sealed class Loan
             return Result.Failure(errors);
         }
         Apply(details, now);
+        return Result.Success();
+    }
+
+    /// <summary>Shares the loan, changes its share or stops sharing it (shared bills FR-3).</summary>
+    public Result SetShare(CostShare? share, DateTimeOffset now)
+    {
+        if (IsClosed)
+        {
+            return Result.Failure(LoanErrors.LoanClosed);
+        }
+        (ShareParticipantId, ShareCount, ParticipantShareCount, ContributionAccountId) = CostShareColumns.Write(share);
+        UpdatedAt = now;
         return Result.Success();
     }
 

@@ -4,6 +4,12 @@ import type { Loan, LoanRequest, PaymentMethod } from '@/api/loans'
 import { paymentMethods } from '@/api/loans'
 import { addMonths, isYearMonth } from '@/lib/dates'
 import { centsToEuroInput, parseEuroInput } from '@/lib/money'
+import {
+  noShare,
+  shareFormSchema,
+  shareFormValuesOf,
+  toShareRequest,
+} from '@/components/sharedCosts/shareModel'
 import { loanTexts } from './texts'
 
 const t = loanTexts
@@ -49,6 +55,9 @@ export const loanFormSchema = z
     residualValue: z.string(),
     allowsResidualValue: z.boolean(),
     description: z.string().max(200, t.errors.descriptionTooLong),
+    share: shareFormSchema,
+    /** Whether expected payments with a share set by hand keep it when the loan's share changes (shared bills FR-3). */
+    keepChangedPaymentShares: z.boolean(),
   })
   .superRefine((values, ctx) => {
     const issue = (path: string, message: string) =>
@@ -87,6 +96,10 @@ export type LoanFormValues = z.infer<typeof loanFormSchema>
 export const apiFieldToFormField: Record<string, keyof LoanFormValues> = {
   monthlyPaymentCents: 'monthlyPayment',
   residualValueCents: 'residualValue',
+  'share.participantId': 'share',
+  'share.shares': 'share',
+  'share.participantShares': 'share',
+  'share.contributionAccountId': 'share',
 }
 
 /** Accounts a standing order can charge: primary and not blocked, expired, archived or not yet valid (FR-3). */
@@ -122,6 +135,8 @@ export function emptyLoanFormValues(accountId: string, startMonth: string): Loan
     residualValue: '',
     allowsResidualValue: false,
     description: '',
+    share: noShare,
+    keepChangedPaymentShares: true,
   }
 }
 
@@ -144,6 +159,8 @@ export function loanFormValuesOf(loan: Loan, allowsResidualValue: boolean): Loan
     // A loan that already has a residual value keeps it, even when its category no longer allows one.
     allowsResidualValue: allowsResidualValue || loan.residualValueCents !== null,
     description: loan.description ?? '',
+    share: shareFormValuesOf(loan.share),
+    keepChangedPaymentShares: true,
   }
 }
 
@@ -167,5 +184,7 @@ export function toLoanRequest(values: LoanFormValues): LoanRequest {
         ? (parseEuroInput(values.residualValue) ?? 0)
         : null,
     description: values.description.trim() === '' ? null : values.description.trim(),
+    share: toShareRequest(values.share),
+    keepChangedPaymentShares: values.keepChangedPaymentShares,
   }
 }

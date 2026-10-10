@@ -1,5 +1,6 @@
 import { useMonthLoanPayments, type LoanPaymentTotals } from '@/api/loans'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { OwnPartTotal } from '@/components/sharedCosts/SharedMarkers'
 import { formatCents } from '@/lib/money'
 import { cn } from '@/lib/utils'
 import { PaymentRow } from './PaymentRow'
@@ -33,6 +34,7 @@ export function LoanPaymentsSection({ month }: { month: string }) {
               ))}
             </ul>
             <PaymentTotals totals={data.totals} />
+            <OwnPartTotal cents={data.ownPartCents} shown={data.payments.some((p) => p.share)} />
           </>
         )}
       </CardContent>

@@ -1,5 +1,8 @@
 using Monthwise.Application.Loans;
+using Monthwise.Application.SharedCosts;
 using Monthwise.Domain.CashFlow;
+using Monthwise.Domain.Loans;
+using Monthwise.Domain.SharedCosts;
 
 namespace Monthwise.Application.CashFlow;
 
@@ -38,6 +41,8 @@ public sealed record NamedReference(Guid Id, string Name);
 /// <summary>
 /// One input in a list: a stored input (<see cref="Id"/> set) or a calculated occurrence of a
 /// recurring input (<see cref="Id"/> null, <see cref="RecurringInputId"/> and <see cref="OccurrenceDate"/> set).
+/// A contribution of a shared bill or loan payment has <see cref="Contribution"/> set; it is calculated
+/// from its cost while <see cref="Id"/> is null (shared bills FR-5).
 /// </summary>
 public sealed record InputEntryResponse(
     Guid? Id,
@@ -53,7 +58,24 @@ public sealed record InputEntryResponse(
     string? Description,
     bool IsReceived,
     bool IsRecurring,
-    RecurrenceFrequency? Frequency);
+    RecurrenceFrequency? Frequency,
+    InputContributionResponse? Contribution = null);
+
+/// <summary>
+/// The shared bill or loan payment of a contribution in the input list (shared bills FR-7):
+/// <see cref="PartCents"/> is the participant's current part; <see cref="NeedsAccount"/> is true while
+/// no account applies yet.
+/// </summary>
+public sealed record InputContributionResponse(
+    ContributionSourceKind Kind,
+    Guid? BillId,
+    Guid? LoanId,
+    string? Month,
+    LoanPaymentKind? PaymentKind,
+    string CostName,
+    long PartCents,
+    bool IsEdited,
+    bool NeedsAccount);
 
 public sealed record InputTotalsResponse(long ExpectedCents, long ReceivedCents, long TotalCents);
 
@@ -154,7 +176,8 @@ public sealed record ReportOutputsResponse(
 
 /// <summary>
 /// The monthly cash flow report (FR-13, Appendix 1). <see cref="MonthResultCents"/> is all inputs
-/// minus all outputs; the previous-month figures allow the comparison.
+/// minus all outputs; the previous-month figures allow the comparison. <see cref="SharedCosts"/> sums
+/// the month's shared bills and loan payments and their contributions (shared bills FR-9).
 /// </summary>
 public sealed record MonthlyReportResponse(
     string Month,
@@ -168,4 +191,5 @@ public sealed record MonthlyReportResponse(
     ReportOutputsResponse Outputs,
     long MonthResultCents,
     long PreviousMonthOutputsCents,
-    long PreviousMonthResultCents);
+    long PreviousMonthResultCents,
+    ReportSharedCostsResponse? SharedCosts = null);

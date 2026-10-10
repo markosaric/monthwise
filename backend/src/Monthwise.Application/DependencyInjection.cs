@@ -5,6 +5,7 @@ using Monthwise.Application.Cards;
 using Monthwise.Application.CashFlow;
 using Monthwise.Application.Expenses;
 using Monthwise.Application.Loans;
+using Monthwise.Application.SharedCosts;
 
 namespace Monthwise.Application;
 
@@ -88,6 +89,13 @@ public static class DependencyInjection
         services.AddScoped<BillHandler>();
         services.AddScoped<GetMonthExpensesHandler>();
         services.AddScoped<ExpenseHandler>();
+
+        services.AddScoped<SharedCostLedger>();
+        services.AddScoped<ShareResolver>();
+        services.AddScoped<ContributionCleaner>();
+        services.AddScoped<ParticipantHandler>();
+        services.AddScoped<ContributionHandler>();
+        services.AddScoped<GetSharedCostsHandler>();
         return services;
     }
 }
