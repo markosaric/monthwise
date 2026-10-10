@@ -23,7 +23,8 @@ internal sealed class RecurringBillConfiguration : IEntityTypeConfiguration<Recu
 {
     public void Configure(EntityTypeBuilder<RecurringBill> builder)
     {
-        builder.ToTable("recurring_bill");
+        builder.ToTable("recurring_bill", table =>
+            table.HasCheckConstraint("ck_recurring_bill_share", ShareColumnsConfiguration.ShareCheck()));
         builder.HasKey(r => r.Id);
         builder.Property(r => r.Id).ValueGeneratedNever();
         builder.Property(r => r.Name).HasMaxLength(RecurringBill.NameMaxLength);
@@ -31,6 +32,7 @@ internal sealed class RecurringBillConfiguration : IEntityTypeConfiguration<Recu
         builder.Property(r => r.Description).HasMaxLength(RecurringBill.DescriptionMaxLength);
         builder.Ignore(r => r.IsActive);
         builder.Ignore(r => r.Details);
+        builder.ConfigureShare("recurring_bill");
 
         builder.HasOne<ExpenseCategory>().WithMany().HasForeignKey(r => r.CategoryId)
             .OnDelete(DeleteBehavior.Restrict).HasConstraintName("fk_recurring_bill_expense_category_category_id");
@@ -58,6 +60,7 @@ internal sealed class BillConfiguration : IEntityTypeConfiguration<Bill>
             table.HasCheckConstraint("ck_bill_paid_issued", "NOT is_paid OR issue_date IS NOT NULL");
             table.HasCheckConstraint("ck_bill_paid_from", "NOT is_paid OR paid_from_id IS NOT NULL");
             table.HasCheckConstraint("ck_bill_paid_after_issue", "paid_date >= issue_date");
+            table.HasCheckConstraint("ck_bill_share", ShareColumnsConfiguration.ShareCheck());
         });
 
         builder.HasKey(b => b.Id);
@@ -70,6 +73,7 @@ internal sealed class BillConfiguration : IEntityTypeConfiguration<Bill>
         builder.Ignore(b => b.State);
         builder.Ignore(b => b.CashFlowDate);
         builder.Ignore(b => b.Details);
+        builder.ConfigureShare("bill");
 
         builder.HasOne<RecurringBill>().WithMany().HasForeignKey(b => b.RecurringBillId)
             .OnDelete(DeleteBehavior.Restrict).HasConstraintName("fk_bill_recurring_bill_recurring_bill_id");

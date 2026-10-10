@@ -24,6 +24,7 @@ export function anEntry(overrides: Partial<InputEntry> = {}): InputEntry {
     isReceived: false,
     isRecurring: false,
     frequency: null,
+    contribution: null,
     ...overrides,
   }
 }

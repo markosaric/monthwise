@@ -2,6 +2,7 @@ using Monthwise.Application.Cards;
 using Monthwise.Application.Common;
 using Monthwise.Domain.CashFlow;
 using Monthwise.Domain.Common;
+using Monthwise.Domain.SharedCosts;
 
 namespace Monthwise.Application.CashFlow;
 
@@ -10,15 +11,12 @@ public sealed class InputResponder(
     IPayerRepository payers,
     IInputCategoryRepository categories,
     ICardRepository cards,
-    IRecurringInputRepository recurringInputs)
+    InputLedger ledger)
 {
     public async Task<InputEntryResponse> RespondAsync(CashFlowInput input, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(input);
-        RecurrenceFrequency? frequency = input.RecurringInputId is { } id
-            ? (await recurringInputs.GetAsync(id, cancellationToken))?.Frequency
-            : null;
-        return await RespondAsync(InputLedger.FromStored(input, frequency), cancellationToken);
+        return await RespondAsync(await ledger.EntryOfAsync(input, cancellationToken), cancellationToken);
     }
 
     public async Task<InputEntryResponse> RespondAsync(InputEntry entry, CancellationToken cancellationToken)
@@ -130,17 +128,27 @@ public sealed class UpdateInputHandler(
         {
             return Result.Failure<InputEntryResponse>(resolved.Errors);
         }
-        var updated = input.Update(resolved.Value, timeProvider.GetUtcNow());
+        var now = timeProvider.GetUtcNow();
+        var updated = input.Update(resolved.Value, now);
         if (updated.IsFailure)
         {
             return Result.Failure<InputEntryResponse>(updated.Errors);
+        }
+        if (input.Contribution is not null)
+        {
+            // An edited contribution keeps its values until it is reset to the part (shared bills FR-6).
+            input.SetEdited(true, now);
         }
         await unitOfWork.SaveChangesAsync(cancellationToken);
         return Result.Success(await responder.RespondAsync(input, cancellationToken));
     }
 }
 
-/// <summary>Deletes a stored input; a stored occurrence is also skipped, so it is not calculated again (FR-8).</summary>
+/// <summary>
+/// Deletes a stored input; a stored occurrence is also skipped, so it is not calculated again (FR-8). A
+/// contribution cannot be deleted: it goes away when its bill or loan payment is no longer shared
+/// (shared bills FR-6).
+/// </summary>
 public sealed class DeleteInputHandler(
     ICashFlowInputRepository inputs,
     IRecurringInputRepository recurringInputs,
@@ -152,6 +160,10 @@ public sealed class DeleteInputHandler(
         if (input is null)
         {
             return Result.Failure(CashFlowErrors.InputNotFound);
+        }
+        if (input.Contribution is not null)
+        {
+            return Result.Failure(SharedCostErrors.ContributionCannotBeDeleted);
         }
         if (input.RecurringInputId is { } recurringId && input.OccurrenceDate is { } date)
         {

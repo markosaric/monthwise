@@ -1,4 +1,5 @@
 using Monthwise.Application.Common;
+using Monthwise.Application.SharedCosts;
 using Monthwise.Domain.Common;
 using Monthwise.Domain.Expenses;
 
@@ -9,6 +10,7 @@ public sealed class RecurringBillHandler(
     IRecurringBillRepository recurringBills,
     IBillRepository bills,
     ExpenseInputChecker checker,
+    ShareResolver shareResolver,
     ExpenseLedger ledger,
     IUnitOfWork unitOfWork,
     TimeProvider timeProvider)
@@ -38,13 +40,17 @@ public sealed class RecurringBillHandler(
     {
         ArgumentNullException.ThrowIfNull(request);
         var details = ToDetails(request);
-        var created = RecurringBill.Create(details, timeProvider.GetUtcNow());
+        var now = timeProvider.GetUtcNow();
+        var created = RecurringBill.Create(details, now);
         var errors = created.IsFailure ? created.Errors.ToList() : [];
         errors.AddRange(await CheckAsync(details, existing: null, cancellationToken));
+        var share = await shareResolver.ResolveAsync(request.Share, existing: null, cancellationToken);
+        errors.AddRange(share.Errors);
         if (errors.Count > 0)
         {
             return Result.Failure<RecurringBillResponse>(errors);
         }
+        created.Value.SetShare(share.Value, now);
         recurringBills.Add(created.Value);
         await unitOfWork.SaveChangesAsync(cancellationToken);
         return Result.Success(await ResponseAsync(created.Value, cancellationToken));
@@ -59,13 +65,18 @@ public sealed class RecurringBillHandler(
             return Result.Failure<RecurringBillResponse>(ExpenseErrors.RecurringBillNotFound);
         }
         var details = ToDetails(request);
+        var now = timeProvider.GetUtcNow();
         var errors = await CheckAsync(details, recurringBill, cancellationToken);
-        var updated = recurringBill.Update(details, timeProvider.GetUtcNow());
+        var share = await shareResolver.ResolveAsync(request.Share, recurringBill.Share, cancellationToken);
+        errors.AddRange(share.Errors);
+        var updated = recurringBill.Update(details, now);
         errors.InsertRange(0, updated.Errors);
         if (errors.Count > 0)
         {
             return Result.Failure<RecurringBillResponse>(errors);
         }
+        // Bills already added keep their shares (shared bills FR-3).
+        recurringBill.SetShare(share.Value, now);
         await unitOfWork.SaveChangesAsync(cancellationToken);
         return Result.Success(await ResponseAsync(recurringBill, cancellationToken));
     }
@@ -149,7 +160,17 @@ public sealed class RecurringBillHandler(
             canBeDeleted: !await bills.AnyForRecurringBillAsync(recurringBill.Id, cancellationToken));
 
     private static RecurringBillResponse ToResponse(ExpenseBook book, RecurringBill r, bool canBeDeleted) =>
-        new(r.Id, r.Name, book.Category(r.CategoryId), r.Payee, book.PaidFrom(r.PaidFromId), r.Description, r.IsActive, r.StoppedOn, canBeDeleted);
+        new(
+            r.Id,
+            r.Name,
+            book.Category(r.CategoryId),
+            r.Payee,
+            book.PaidFrom(r.PaidFromId),
+            r.Description,
+            r.IsActive,
+            r.StoppedOn,
+            canBeDeleted,
+            book.Shared.ToResponse(r.Share));
 
     private static RecurringBillDetails ToDetails(RecurringBillRequest request) =>
         new(request.Name, request.CategoryId, request.Payee, request.PaidFromId, request.Description);

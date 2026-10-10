@@ -1,8 +1,11 @@
 using Monthwise.Application.Cards;
+using Monthwise.Application.CashFlow;
 using Monthwise.Application.Common;
+using Monthwise.Application.SharedCosts;
 using Monthwise.Domain.Cards;
 using Monthwise.Domain.Common;
 using Monthwise.Domain.Loans;
+using Monthwise.Domain.SharedCosts;
 
 namespace Monthwise.Application.Loans;
 
@@ -60,7 +63,8 @@ public sealed class GetMonthLoanPaymentsHandler(LoanLedger ledger)
     {
         var book = await ledger.LoadAsync(cancellationToken);
         var payments = book.PaymentsBetween(month.FirstDay, month.LastDay).ToList();
-        return new MonthLoanPaymentsResponse(month.ToString(), book.ToSortedResponses(payments), LoanBook.Totals(payments));
+        return new MonthLoanPaymentsResponse(
+            month.ToString(), book.ToSortedResponses(payments), LoanBook.Totals(payments), LoanBook.OwnPart(payments).Cents);
     }
 }
 
@@ -83,6 +87,7 @@ public sealed class GetLoansDashboardHandler(LoanLedger ledger)
 public sealed class CreateLoanHandler(
     ILoanRepository loans,
     LoanInputChecker checker,
+    ShareResolver shareResolver,
     LoanLedger ledger,
     IUnitOfWork unitOfWork,
     TimeProvider timeProvider)
@@ -95,11 +100,14 @@ public sealed class CreateLoanHandler(
         {
             return Result.Failure<LoanDetailsResponse>(input.Errors);
         }
-        var created = Loan.Create(input.Value.Details, input.Value.ResidualValueAllowed, timeProvider.GetUtcNow());
-        if (created.IsFailure)
+        var now = timeProvider.GetUtcNow();
+        var created = Loan.Create(input.Value.Details, input.Value.ResidualValueAllowed, now);
+        var share = await shareResolver.ResolveAsync(request.Share, existing: null, cancellationToken);
+        if (created.IsFailure || share.IsFailure)
         {
-            return Result.Failure<LoanDetailsResponse>(created.Errors);
+            return Result.Failure<LoanDetailsResponse>(created.Errors.Concat(share.Errors));
         }
+        created.Value.SetShare(share.Value, now);
         if (await loans.NameInUseAsync(created.Value.Name, null, cancellationToken))
         {
             return Result.Failure<LoanDetailsResponse>(LoanErrors.NameInUse);
@@ -118,6 +126,8 @@ public sealed class UpdateLoanHandler(
     ILoanRepository loans,
     ILoanPaymentRepository payments,
     LoanInputChecker checker,
+    ShareResolver shareResolver,
+    ContributionCleaner contributionCleaner,
     LoanLedger ledger,
     IUnitOfWork unitOfWork,
     TimeProvider timeProvider)
@@ -135,9 +145,10 @@ public sealed class UpdateLoanHandler(
             return Result.Failure<LoanDetailsResponse>(LoanErrors.LoanClosed);
         }
         var input = await checker.CheckAsync(request, loan, cancellationToken);
-        if (input.IsFailure)
+        var share = await shareResolver.ResolveAsync(request.Share, loan.Share, cancellationToken);
+        if (input.IsFailure || share.IsFailure)
         {
-            return Result.Failure<LoanDetailsResponse>(input.Errors);
+            return Result.Failure<LoanDetailsResponse>(input.Errors.Concat(share.Errors));
         }
         var name = input.Value.Details.Name?.Trim() ?? string.Empty;
         if (name.Length > 0 && await loans.NameInUseAsync(name, loan.Id, cancellationToken))
@@ -156,9 +167,35 @@ public sealed class UpdateLoanHandler(
         {
             return Result.Failure<LoanDetailsResponse>(updated.Errors);
         }
+        if (share.Value != loan.Share)
+        {
+            loan.SetShare(share.Value, now);
+            if (!request.KeepChangedPaymentShares)
+            {
+                await ResetChangedSharesAsync(loan, now, cancellationToken);
+            }
+        }
         await RemoveStaleAsync(loan, now, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
+        // Payments the loan no longer has, or no longer shares, have no contribution (shared bills FR-6).
+        await contributionCleaner.CleanUpAsync(cancellationToken);
         return await LoanResponder.DetailsAsync(ledger, loan.Id, cancellationToken);
+    }
+
+    /// <summary>Expected payments with a share changed by hand take the loan's new share (shared bills FR-3).</summary>
+    private async Task ResetChangedSharesAsync(Loan loan, DateTimeOffset now, CancellationToken cancellationToken)
+    {
+        foreach (var stored in await payments.ListAsync(loan.Id, cancellationToken))
+        {
+            if (stored.IsShareChanged && stored.IsPaid != true)
+            {
+                stored.ResetShare(now);
+                if (stored.IsEmpty)
+                {
+                    payments.Remove(stored);
+                }
+            }
+        }
     }
 
     /// <summary>Stored expected payments the changed loan no longer has are removed.</summary>
@@ -194,6 +231,7 @@ public sealed class UpdateLoanHandler(
 public sealed class CloseLoanHandler(
     ILoanRepository loans,
     ILoanPaymentRepository payments,
+    ContributionCleaner contributionCleaner,
     LoanLedger ledger,
     IUnitOfWork unitOfWork,
     TimeProvider timeProvider)
@@ -225,12 +263,22 @@ public sealed class CloseLoanHandler(
             }
         }
         await unitOfWork.SaveChangesAsync(cancellationToken);
+        // The removed payments have no contribution any more (shared bills FR-6).
+        await contributionCleaner.CleanUpAsync(cancellationToken);
         return await LoanResponder.DetailsAsync(ledger, loan.Id, cancellationToken);
     }
 }
 
-/// <summary>Deletes a loan that has no paid payments (FR-10); its changes and stored payments go with it.</summary>
-public sealed class DeleteLoanHandler(ILoanRepository loans, LoanLedger ledger, IUnitOfWork unitOfWork)
+/// <summary>
+/// Deletes a loan that has no paid payments (FR-10); its changes and stored payments go with it. Its
+/// expected contributions go too, received ones stay as ordinary inputs (shared bills FR-6).
+/// </summary>
+public sealed class DeleteLoanHandler(
+    ILoanRepository loans,
+    ICashFlowInputRepository inputs,
+    LoanLedger ledger,
+    IUnitOfWork unitOfWork,
+    TimeProvider timeProvider)
 {
     public async Task<Result> HandleAsync(Guid id, CancellationToken cancellationToken)
     {
@@ -243,6 +291,11 @@ public sealed class DeleteLoanHandler(ILoanRepository loans, LoanLedger ledger, 
         if (book.Schedule(loan.Id).HasPaidPayments(book.Today))
         {
             return Result.Failure(LoanErrors.LoanHasPaidPayments);
+        }
+        var now = timeProvider.GetUtcNow();
+        foreach (var contribution in (await inputs.ListContributionsAsync(cancellationToken)).Where(i => i.ContributionLoanId == loan.Id))
+        {
+            ContributionCleaner.Release(inputs, contribution, now);
         }
         loans.Remove(loan);
         await unitOfWork.SaveChangesAsync(cancellationToken);
@@ -350,11 +403,13 @@ public sealed class PaymentChangeHandler(
     }
 }
 
-/// <summary>Changes, ticks and unticks one payment (FR-4, FR-5).</summary>
+/// <summary>Changes, ticks, unticks and shares one payment (FR-4, FR-5, shared bills FR-3).</summary>
 public sealed class LoanPaymentHandler(
     ILoanRepository loans,
     ILoanPaymentRepository payments,
     ICardRepository cards,
+    ShareResolver shareResolver,
+    ContributionCleaner contributionCleaner,
     LoanLedger ledger,
     IUnitOfWork unitOfWork,
     TimeProvider timeProvider)
@@ -392,8 +447,38 @@ public sealed class LoanPaymentHandler(
                     return Result.Failure(LoanErrors.PaidAccountUnusable);
                 }
             }
-            return stored.MarkPaid(request.PaidDate ?? today, id, payment.Amount, payment.DueDate, now);
+            return stored.MarkPaid(request.PaidDate ?? today, id, payment.Amount, payment.DueDate, now, payment.Share);
         }, cancellationToken);
+    }
+
+    /// <summary>Shares this payment, changes its share or stops sharing it (shared bills FR-3).</summary>
+    public async Task<Result<LoanPaymentResponse>> ChangeShareAsync(
+        Guid loanId, YearMonth month, LoanPaymentKind kind, LoanPaymentShareRequest request, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        var changed = await ApplyAsync(loanId, month, kind, async (payment, stored, now) =>
+        {
+            var share = await shareResolver.ResolveAsync(request.Share, payment.Share, cancellationToken);
+            if (share.IsFailure)
+            {
+                return Result.Failure(share.Errors);
+            }
+            stored.ChangeShare(share.Value, now);
+            return Result.Success();
+        }, cancellationToken);
+        return await AfterShareChangeAsync(changed, loanId, month, kind, cancellationToken);
+    }
+
+    /// <summary>Drops the share set on this payment: it follows the loan's share again (shared bills FR-3).</summary>
+    public async Task<Result<LoanPaymentResponse>> ResetShareAsync(
+        Guid loanId, YearMonth month, LoanPaymentKind kind, CancellationToken cancellationToken)
+    {
+        var reset = await ApplyAsync(loanId, month, kind, (payment, stored, now) =>
+        {
+            stored.ResetShare(now);
+            return Task.FromResult(Result.Success());
+        }, cancellationToken);
+        return await AfterShareChangeAsync(reset, loanId, month, kind, cancellationToken);
     }
 
     public Task<Result<LoanPaymentResponse>> MarkUnpaidAsync(
@@ -403,6 +488,19 @@ public sealed class LoanPaymentHandler(
             stored.MarkUnpaid(now);
             return Task.FromResult(Result.Success());
         }, cancellationToken);
+
+    /// <summary>A payment that is no longer shared has no contribution (shared bills FR-6).</summary>
+    private async Task<Result<LoanPaymentResponse>> AfterShareChangeAsync(
+        Result<LoanPaymentResponse> result, Guid loanId, YearMonth month, LoanPaymentKind kind, CancellationToken cancellationToken)
+    {
+        if (result.IsFailure)
+        {
+            return result;
+        }
+        await contributionCleaner.CleanUpAsync(cancellationToken);
+        var book = await ledger.LoadAsync(cancellationToken);
+        return Result.Success(book.ToResponse(book.Schedule(loanId).Find(month, kind, book.Today)!));
+    }
 
     private async Task<Result<LoanPaymentResponse>> ApplyAsync(
         Guid loanId,
@@ -433,7 +531,7 @@ public sealed class LoanPaymentHandler(
         stored ??= LoanPayment.Create(loan.Id, month, kind, now);
         if (payment.PaidAutomatically)
         {
-            stored.KeepAutomaticPayment(payment.Amount, payment.DueDate, payment.AccountId!.Value, now);
+            stored.KeepAutomaticPayment(payment.Amount, payment.DueDate, payment.AccountId!.Value, now, payment.Share);
         }
         var applied = await apply(payment, stored, now);
         if (applied.IsFailure)
@@ -481,7 +579,7 @@ internal static class LoanResponder
                 stored = LoanPayment.Create(payment.LoanId, payment.Month, payment.Kind, now);
                 payments.Add(stored);
             }
-            stored.KeepAutomaticPayment(payment.Amount, payment.DueDate, payment.AccountId!.Value, now);
+            stored.KeepAutomaticPayment(payment.Amount, payment.DueDate, payment.AccountId!.Value, now, payment.Share);
         }
     }
 }

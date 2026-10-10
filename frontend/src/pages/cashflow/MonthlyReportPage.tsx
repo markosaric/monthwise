@@ -1,8 +1,10 @@
 import { Link, Navigate, useParams } from 'react-router'
 import { useMonthlyReport, type InputTotals, type MonthlyReport } from '@/api/cashFlow'
 import type { LoanPaymentTotals } from '@/api/loans'
+import type { ReportSharedCosts } from '@/api/sharedCosts'
 import { formatDate } from '@/components/cards/format'
 import { cashFlowTexts } from '@/components/cashflow/texts'
+import { sharedCostTexts } from '@/components/sharedCosts/texts'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { formatYearMonth, isYearMonth } from '@/lib/dates'
 import { formatCents } from '@/lib/money'
@@ -111,6 +113,10 @@ function Report({ report }: { report: MonthlyReport }) {
           )}
         </>
       )}
+      {report.sharedCosts && report.sharedCosts.totalCents > 0 && (
+        <SharedCostsCard shared={report.sharedCosts} />
+      )}
+
       <Card>
         <CardHeader>
           <CardTitle>{t.balanceEntries}</CardTitle>
@@ -265,6 +271,35 @@ function OutputGroups({
             </li>
           ))}
         </ul>
+      </CardContent>
+    </Card>
+  )
+}
+
+/** The month's shared bills and loan payments, the participants' parts, the own part and contributions (shared bills FR-9). */
+function SharedCostsCard({ shared }: { shared: ReportSharedCosts }) {
+  const s = sharedCostTexts.report
+  const rows: [string, number][] = [
+    [s.total, shared.totalCents],
+    [s.participantsPart, shared.participantsPartCents],
+    [s.ownPart, shared.ownPartCents],
+    [s.received, shared.contributionsReceivedCents],
+    [s.outstanding, shared.contributionsOutstandingCents],
+  ]
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>{s.title}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <dl className="grid gap-2 text-sm sm:grid-cols-2">
+          {rows.map(([label, cents]) => (
+            <div key={label} className="flex justify-between gap-4">
+              <dt className="text-muted-foreground">{label}</dt>
+              <dd className="font-medium tabular-nums">{formatCents(cents)}</dd>
+            </div>
+          ))}
+        </dl>
       </CardContent>
     </Card>
   )

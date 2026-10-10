@@ -3,12 +3,19 @@ import { useState } from 'react'
 import { Controller, useForm, useWatch } from 'react-hook-form'
 import { Link } from 'react-router'
 import { ApiError, useCards } from '@/api/cards'
-import { paymentMethods, useLoanCategories } from '@/api/loans'
+import { paymentMethods, useLoanCategories, type LoanPayment } from '@/api/loans'
+import type { Share } from '@/api/sharedCosts'
 import { ListSelectWithAdd } from '@/components/cards/ListSelectWithAdd'
 import { Field } from '@/components/cashflow/InputForm'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { NativeSelect } from '@/components/ui/native-select'
+import { Switch } from '@/components/ui/switch'
+import { Label } from '@/components/ui/label'
+import { ContributionWarning } from '@/components/sharedCosts/ContributionWarning'
+import { ShareFields } from '@/components/sharedCosts/ShareFields'
+import { partOf } from '@/components/sharedCosts/shareModel'
+import { sharedCostTexts } from '@/components/sharedCosts/texts'
 import { isYearMonth } from '@/lib/dates'
 import {
   apiFieldToFormField,
@@ -28,10 +35,11 @@ interface Named {
   name: string
 }
 
-/** Add/edit form for loans (FR-2, FR-3, FR-10). */
+/** Add/edit form for loans (FR-2, FR-3, FR-10), and how the loan is shared (shared bills FR-3). */
 export function LoanForm({
   defaultValues,
   current,
+  payments = [],
   editing = false,
   submitLabel,
   onSubmit,
@@ -39,7 +47,9 @@ export function LoanForm({
 }: {
   defaultValues: LoanFormValues
   /** The category, subcategory and account the loan has now; kept selectable when hidden or no longer usable. */
-  current?: { category: Named; subcategory: Named; account: Named | null }
+  current?: { category: Named; subcategory: Named; account: Named | null; share?: Share | null }
+  /** The loan's payments, to point out shares set by hand and received contributions (shared bills FR-3, FR-6). */
+  payments?: LoanPayment[]
   editing?: boolean
   submitLabel: string
   onSubmit: (values: LoanFormValues) => Promise<void>
@@ -57,10 +67,18 @@ export function LoanForm({
     setError,
     formState: { errors, isSubmitting },
   } = useForm<LoanFormValues>({ resolver: zodResolver(loanFormSchema), defaultValues })
-  const [categoryId, paymentMethod, allowsResidualValue] = useWatch({
+  const [categoryId, paymentMethod, allowsResidualValue, share] = useWatch({
     control,
-    name: ['categoryId', 'paymentMethod', 'allowsResidualValue'],
+    name: ['categoryId', 'paymentMethod', 'allowsResidualValue', 'share'],
   })
+  // Expected payments that follow the loan's share; those with a share set by hand keep theirs if asked.
+  const changedShares = payments.filter((p) => !p.isPaid && p.isShareChanged)
+  const followingReceived = payments
+    .filter((p) => !p.isPaid && !p.isShareChanged && p.contribution?.isReceived)
+    .map((p) => ({
+      ...p.contribution!,
+      partCents: share.enabled ? partOf(p.amountCents, share.shares, share.participantShares) : 0,
+    }))
 
   const category = categories.find((c) => c.id === categoryId)
   const categoryOptions = withCurrent<Named>(categories, current?.category)
@@ -311,6 +329,44 @@ export function LoanForm({
           {...register('description')}
         />
       </Field>
+
+      <Controller
+        control={control}
+        name="share"
+        render={({ field }) => (
+          <ShareFields
+            id="share"
+            value={field.value}
+            onChange={field.onChange}
+            cards={cards}
+            current={current?.share}
+            error={
+              errors.share?.message ??
+              errors.share?.participantId?.message ??
+              errors.share?.participantShares?.message
+            }
+          />
+        )}
+      />
+      {changedShares.length > 0 && (
+        <div className="flex items-center gap-3">
+          <Controller
+            control={control}
+            name="keepChangedPaymentShares"
+            render={({ field }) => (
+              <Switch
+                id="keepChangedPaymentShares"
+                checked={field.value}
+                onCheckedChange={field.onChange}
+              />
+            )}
+          />
+          <Label htmlFor="keepChangedPaymentShares">
+            {sharedCostTexts.share.keepChanged(changedShares.length)}
+          </Label>
+        </div>
+      )}
+      <ContributionWarning contributions={followingReceived} />
 
       {editing && <p className="text-sm text-muted-foreground">{t.hints.edit}</p>}
       {formError && (

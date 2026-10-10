@@ -1,4 +1,5 @@
 using Monthwise.Domain.Common;
+using Monthwise.Domain.SharedCosts;
 
 namespace Monthwise.Domain.Expenses;
 
@@ -63,10 +64,23 @@ public sealed class Bill
     public Guid? PaidFromId { get; private set; }
 
     public string? Description { get; private set; }
+
+    /// <summary>The share columns of <see cref="Share"/> (FR-2); null when the bill is not shared.</summary>
+    public Guid? ShareParticipantId { get; private set; }
+    public int? ShareCount { get; private set; }
+    public int? ParticipantShareCount { get; private set; }
+    public Guid? ContributionAccountId { get; private set; }
+
+    /// <summary>The share was set or changed on this bill instead of being copied from its recurring bill (shared bills FR-3).</summary>
+    public bool IsShareChanged { get; private set; }
+
     public DateTimeOffset CreatedAt { get; private set; }
     public DateTimeOffset UpdatedAt { get; private set; }
 
     public bool IsIssued => IssueDate is not null;
+
+    /// <summary>How the bill is shared (shared bills FR-2, FR-3).</summary>
+    public CostShare? Share => CostShareColumns.Read(ShareParticipantId, ShareCount, ParticipantShareCount, ContributionAccountId);
 
     public BillState State => IsPaid ? BillState.Paid : IsIssued ? BillState.Expected : BillState.NotIssued;
 
@@ -93,6 +107,10 @@ public sealed class Bill
             Amount = Money.Zero,
             PaidFromId = recurringBill.PaidFromId,
             Description = recurringBill.Description,
+            ShareParticipantId = recurringBill.ShareParticipantId,
+            ShareCount = recurringBill.ShareCount,
+            ParticipantShareCount = recurringBill.ParticipantShareCount,
+            ContributionAccountId = recurringBill.ContributionAccountId,
             CreatedAt = now,
             UpdatedAt = now,
         };
@@ -152,6 +170,21 @@ public sealed class Bill
         PaidFromId = paidFromId;
         UpdatedAt = now;
         return Result.Success();
+    }
+
+    /// <summary>
+    /// Shares the bill, changes its share or stops sharing it (shared bills FR-3). On a bill from a
+    /// recurring bill a different share than the recurring bill's is marked as changed by hand.
+    /// </summary>
+    public void SetShare(CostShare? share, CostShare? recurringShare, DateTimeOffset now)
+    {
+        if (share == Share)
+        {
+            return;
+        }
+        (ShareParticipantId, ShareCount, ParticipantShareCount, ContributionAccountId) = CostShareColumns.Write(share);
+        IsShareChanged = RecurringBillId is not null && share != recurringShare;
+        UpdatedAt = now;
     }
 
     /// <summary>Unticks Paid: the bill is expected again (FR-5).</summary>

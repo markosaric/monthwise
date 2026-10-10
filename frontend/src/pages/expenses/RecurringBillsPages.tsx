@@ -31,6 +31,9 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
+import { ShareFields } from '@/components/sharedCosts/ShareFields'
+import { shareErrorFields } from '@/components/sharedCosts/shareModel'
+import { sharedCostTexts } from '@/components/sharedCosts/texts'
 import { PageHeader } from '@/pages/PageHeader'
 
 const t = expenseTexts
@@ -96,6 +99,11 @@ function RecurringBillRow({ bill }: { bill: RecurringBill }) {
         </Link>
         <Badge variant="secondary">{bill.category.name}</Badge>
         {!bill.isActive && <Badge variant="outline">{t.recurring.stopped}</Badge>}
+        {bill.share && (
+          <Badge variant="outline">
+            {sharedCostTexts.share.summary(bill.share.participant.name, bill.share.percentage)}
+          </Badge>
+        )}
         <span className="ml-auto flex flex-wrap gap-1">
           <Button
             size="sm"
@@ -182,7 +190,10 @@ export function RecurringBillEditPage() {
   )
 }
 
-/** Name, category, payee, what it is usually paid with and a note; no dates or amount (FR-2). */
+/**
+ * Name, category, payee, what it is usually paid with, a note and how its bills are shared; no dates
+ * or amount (FR-2, shared bills FR-3).
+ */
 function RecurringBillForm({
   defaultValues,
   current,
@@ -213,7 +224,7 @@ function RecurringBillForm({
     try {
       await onSubmit(toRecurringBillRequest(values))
     } catch (error) {
-      setFormError(applyApiErrors(error, defaultValues, setError))
+      setFormError(applyApiErrors(error, defaultValues, setError, shareErrorFields))
     }
   }
 
@@ -259,6 +270,25 @@ function RecurringBillForm({
       <Field id="description" label={t.fields.description} error={errors.description?.message}>
         <Textarea id="description" maxLength={200} rows={2} {...register('description')} />
       </Field>
+      <Controller
+        control={control}
+        name="share"
+        render={({ field }) => (
+          <ShareFields
+            id="share"
+            value={field.value}
+            onChange={field.onChange}
+            cards={cards}
+            current={current?.share}
+            error={
+              errors.share?.message ??
+              errors.share?.participantId?.message ??
+              errors.share?.participantShares?.message
+            }
+          />
+        )}
+      />
+      {current && <p className="text-xs text-muted-foreground">{t.recurring.shareHint}</p>}
       {formError && (
         <p role="alert" className="text-sm text-destructive">
           {formError}

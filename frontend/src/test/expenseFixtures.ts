@@ -53,6 +53,10 @@ export function aBill(overrides: Partial<Bill> = {}): Bill {
     dueDateHint: null,
     paidWithCard: false,
     changesChargedCardPayment: false,
+    share: null,
+    ownPartCents: null,
+    isShareChanged: false,
+    contribution: null,
     ...overrides,
   }
 }
@@ -83,6 +87,7 @@ export function aBillMonth(bills: Bill[], month = '2026-10'): MonthBills {
     totals: { expectedCents: expected, paidCents: paid, totalCents: expected + paid },
     withCardCents: bills.filter((b) => b.paidWithCard).reduce((s, b) => s + b.amountCents, 0),
     notIssuedCount: bills.filter((b) => b.state === 'NotIssued').length,
+    ownPartCents: counted.reduce((s, b) => s + (b.ownPartCents ?? b.amountCents), 0),
   }
 }
 

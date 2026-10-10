@@ -6,6 +6,7 @@ using Monthwise.Domain.CashFlow;
 using Monthwise.Domain.Common;
 using Monthwise.Domain.Expenses;
 using Monthwise.Domain.Loans;
+using Monthwise.Domain.SharedCosts;
 using Monthwise.Infrastructure.Persistence.Configurations;
 using Monthwise.Infrastructure.Persistence.Converters;
 using Monthwise.Infrastructure.Security;
@@ -38,6 +39,7 @@ public sealed class MonthwiseDbContext(DbContextOptions<MonthwiseDbContext> opti
     public DbSet<RecurringBill> RecurringBills => Set<RecurringBill>();
     public DbSet<Bill> Bills => Set<Bill>();
     public DbSet<Expense> Expenses => Set<Expense>();
+    public DbSet<Participant> Participants => Set<Participant>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -66,6 +68,7 @@ public sealed class MonthwiseDbContext(DbContextOptions<MonthwiseDbContext> opti
         modelBuilder.ApplyConfiguration(new RecurringBillConfiguration());
         modelBuilder.ApplyConfiguration(new BillConfiguration());
         modelBuilder.ApplyConfiguration(new ExpenseConfiguration());
+        modelBuilder.ApplyConfiguration(new ParticipantConfiguration());
     }
 
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)

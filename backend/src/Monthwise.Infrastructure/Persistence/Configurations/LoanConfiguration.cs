@@ -17,6 +17,7 @@ internal sealed class LoanConfiguration : IEntityTypeConfiguration<Loan>
             table.HasCheckConstraint("ck_loan_payment_count", "payment_count >= 1");
             table.HasCheckConstraint(
                 "ck_loan_standing_order_account", "(payment_method = 'StandingOrder') = (account_id IS NOT NULL)");
+            table.HasCheckConstraint("ck_loan_share", ShareColumnsConfiguration.ShareCheck());
         });
 
         builder.HasKey(l => l.Id);
@@ -30,6 +31,7 @@ internal sealed class LoanConfiguration : IEntityTypeConfiguration<Loan>
         builder.Ignore(l => l.EndMonth);
         builder.Ignore(l => l.LastPaymentMonth);
         builder.Ignore(l => l.Details);
+        builder.ConfigureShare("loan");
 
         builder.HasOne<LoanCategory>().WithMany().HasForeignKey(l => l.CategoryId)
             .OnDelete(DeleteBehavior.Restrict).HasConstraintName("fk_loan_loan_category_category_id");
@@ -86,6 +88,8 @@ internal sealed class LoanPaymentConfiguration : IEntityTypeConfiguration<LoanPa
             table.HasCheckConstraint("ck_loan_payment_paid", "(is_paid IS TRUE) = (paid_date IS NOT NULL)");
             table.HasCheckConstraint("ck_loan_payment_paid_account", "(is_paid IS TRUE) = (paid_account_id IS NOT NULL)");
             table.HasCheckConstraint("ck_loan_payment_paid_after_bill", "paid_date IS NULL OR paid_date >= month");
+            table.HasCheckConstraint("ck_loan_payment_share", ShareColumnsConfiguration.ShareCheck("has_own_share"));
+            table.HasCheckConstraint("ck_loan_payment_share_changed", "NOT is_share_changed OR has_own_share");
         });
 
         builder.HasKey(p => p.Id);
@@ -93,6 +97,7 @@ internal sealed class LoanPaymentConfiguration : IEntityTypeConfiguration<LoanPa
         builder.Property(p => p.Kind).HasConversion<string>().HasMaxLength(20);
         builder.Property(p => p.Amount).HasColumnName("amount_cents");
         builder.Ignore(p => p.IsEmpty);
+        builder.ConfigureShare("loan_payment");
 
         builder.HasOne<Loan>().WithMany().HasForeignKey(p => p.LoanId)
             .OnDelete(DeleteBehavior.Cascade).HasConstraintName("fk_loan_payment_loan_loan_id");

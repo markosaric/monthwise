@@ -1,6 +1,12 @@
 import { z } from 'zod'
 import type { Bill, BillRequest, RecurringBill, RecurringBillRequest } from '@/api/expenses'
 import { centsToEuroInput, parseEuroInput } from '@/lib/money'
+import {
+  noShare,
+  shareFormSchema,
+  shareFormValuesOf,
+  toShareRequest,
+} from '@/components/sharedCosts/shareModel'
 import { expenseTexts } from './texts'
 
 const t = expenseTexts
@@ -23,6 +29,7 @@ export function billFormSchema(requireIssued: boolean) {
       description: z.string().max(200),
       paid: z.boolean(),
       paidDate: z.string(),
+      share: shareFormSchema,
     })
     .superRefine((values, ctx) => {
       const issued =
@@ -73,6 +80,7 @@ export function emptyBillFormValues(paidFromId: string, today: string): BillForm
     description: '',
     paid: false,
     paidDate: today,
+    share: noShare,
   }
 }
 
@@ -90,6 +98,7 @@ export function billFormValuesOf(bill: Bill, today: string): BillFormValues {
     description: bill.description ?? '',
     paid: bill.state === 'Paid',
     paidDate: bill.paidDate ?? today,
+    share: shareFormValuesOf(bill.share),
   }
 }
 
@@ -105,6 +114,7 @@ export function toBillRequest(values: BillFormValues): BillRequest {
     paidFromId: values.paidFromId === '' ? null : values.paidFromId,
     description: values.description.trim() === '' ? null : values.description.trim(),
     paidDate: values.paid ? values.paidDate : null,
+    share: toShareRequest(values.share),
   }
 }
 
@@ -114,6 +124,7 @@ export const recurringBillFormSchema = z.object({
   payee: z.string().max(100),
   paidFromId: z.string(),
   description: z.string().max(200),
+  share: shareFormSchema,
 })
 
 export type RecurringBillFormValues = z.infer<typeof recurringBillFormSchema>
@@ -125,6 +136,7 @@ export function recurringBillFormValuesOf(bill?: RecurringBill): RecurringBillFo
     payee: bill?.payee ?? '',
     paidFromId: bill?.paidFrom?.id ?? '',
     description: bill?.description ?? '',
+    share: shareFormValuesOf(bill?.share),
   }
 }
 
@@ -135,5 +147,6 @@ export function toRecurringBillRequest(values: RecurringBillFormValues): Recurri
     payee: values.payee.trim() === '' ? null : values.payee.trim(),
     paidFromId: values.paidFromId === '' ? null : values.paidFromId,
     description: values.description.trim() === '' ? null : values.description.trim(),
+    share: toShareRequest(values.share),
   }
 }

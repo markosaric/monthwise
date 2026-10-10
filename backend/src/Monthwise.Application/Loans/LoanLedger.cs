@@ -1,9 +1,11 @@
 using Monthwise.Application.Cards;
 using Monthwise.Application.CashFlow;
 using Monthwise.Application.Common;
+using Monthwise.Application.SharedCosts;
 using Monthwise.Domain.Cards;
 using Monthwise.Domain.Common;
 using Monthwise.Domain.Loans;
+using Monthwise.Domain.SharedCosts;
 
 namespace Monthwise.Application.Loans;
 
@@ -40,6 +42,9 @@ public sealed class LoanBook
     }
 
     public DateOnly Today { get; }
+
+    /// <summary>The shared bills and loan payments with their contributions (shared bills FR-5).</summary>
+    public SharedCostBook Shared { get; internal set; } = null!;
 
     public IReadOnlyCollection<Loan> Loans => _loans.Values;
 
@@ -97,7 +102,8 @@ public sealed class LoanBook
             summary.PaidAmount.Cents,
             summary.RemainingAmount.Cents,
             summary.HasOverduePayment,
-            summary.NeedsAccount);
+            summary.NeedsAccount,
+            Shared.ToResponse(loan.Share));
     }
 
     public LoanPaymentResponse ToResponse(ScheduledPayment payment)
@@ -122,7 +128,13 @@ public sealed class LoanBook
             payment.IsPaid,
             payment.IsChanged,
             payment.IsOverdue(Today),
-            payment.NeedsAccount);
+            payment.NeedsAccount,
+            Shared.ToResponse(payment.Share),
+            payment.Share?.OwnPartOf(payment.Amount).Cents,
+            payment.IsShareChanged,
+            payment.Share is null
+                ? null
+                : Shared.ContributionOf(ContributionSource.ForLoanPayment(payment.LoanId, payment.Month, payment.Kind)));
     }
 
     /// <summary>Payments in list order: by paid or due date, then loan name.</summary>
@@ -143,6 +155,10 @@ public sealed class LoanBook
         return new LoanPaymentTotalsResponse(expected.Cents, paid.Cents, (expected + paid).Cents);
     }
 
+    /// <summary>What the household pays itself of the payments: the total minus the participants' parts (shared bills FR-7).</summary>
+    public static Money OwnPart(IEnumerable<ScheduledPayment> payments) =>
+        Money.Sum(payments.Select(p => p.Share?.OwnPartOf(p.Amount) ?? p.Amount));
+
     private DateOnly? ChargesStopOn(Loan loan) =>
         loan.PaymentMethod == PaymentMethod.StandingOrder && !loan.IsClosed && loan.AccountId is { } accountId
             ? LoanAccount.ChargesStopOn(_accounts.GetValueOrDefault(accountId), Today)
@@ -157,10 +173,12 @@ public sealed class LoanLedger(
     ILoanSubcategoryRepository subcategories,
     ICardListRepository<Bank> banks,
     ICardRepository cards,
+    SharedCostLedger sharedCostLedger,
     TimeProvider timeProvider)
 {
-    public async Task<LoanBook> LoadAsync(CancellationToken cancellationToken) =>
-        new(
+    public async Task<LoanBook> LoadAsync(CancellationToken cancellationToken)
+    {
+        var book = new LoanBook(
             timeProvider.Today(),
             await loans.ListAsync(cancellationToken),
             await payments.ListAsync(null, cancellationToken),
@@ -168,6 +186,9 @@ public sealed class LoanLedger(
             await subcategories.ListAsync(cancellationToken),
             await banks.ListAsync(cancellationToken),
             await cards.ListAsync(cancellationToken));
+        book.Shared = await sharedCostLedger.LoadAsync(book, cancellationToken);
+        return book;
+    }
 
     /// <summary>
     /// Accounts with ongoing standing orders: standing order loans with expected payments (FR-3). They

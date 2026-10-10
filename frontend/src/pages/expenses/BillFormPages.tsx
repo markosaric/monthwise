@@ -70,6 +70,8 @@ export function BillEditPage() {
         <BillForm
           requireIssued={bill.recurringBillId === null}
           currentPaidFrom={bill.paidFrom}
+          currentShare={bill.share}
+          contribution={bill.contribution}
           dueDateHinted={notIssued && bill.dueDateHint !== null}
           defaultValues={billFormValuesOf(bill, todayIso())}
           submitLabel={t.actions.save}

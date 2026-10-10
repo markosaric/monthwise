@@ -2,6 +2,7 @@ using Monthwise.Application.CardPurchases;
 using Monthwise.Application.Cards;
 using Monthwise.Application.Expenses;
 using Monthwise.Application.Loans;
+using Monthwise.Application.SharedCosts;
 using Monthwise.Domain.CashFlow;
 using Monthwise.Domain.Common;
 
@@ -140,7 +141,26 @@ public sealed class GetMonthlyReportHandler(
             outputs,
             totals.TotalCents - outputTotals.TotalCents,
             previousOutputs,
-            previousTotal - previousOutputs);
+            previousTotal - previousOutputs,
+            SharedCosts(book.Shared, entries, month));
+    }
+
+    /// <summary>
+    /// The month's shared bills and loan payments (by the date they count on) with the participants' parts
+    /// and the household's own part, and the month's contributions (shared bills FR-9).
+    /// </summary>
+    private static ReportSharedCostsResponse SharedCosts(SharedCostBook shared, IEnumerable<InputEntry> entries, YearMonth month)
+    {
+        var costs = shared.Costs.Where(c => YearMonth.FromDate(c.CostDate) == month).ToList();
+        var total = Money.Sum(costs.Select(c => c.Amount));
+        var parts = Money.Sum(costs.Select(c => c.Share.PartOf(c.Amount)));
+        var contributions = entries.Where(e => e.Contribution is not null).ToList();
+        return new ReportSharedCostsResponse(
+            total.Cents,
+            parts.Cents,
+            (total - parts).Cents,
+            Money.Sum(contributions.Where(e => e.IsReceived).Select(e => e.Details.Amount)).Cents,
+            Money.Sum(contributions.Where(e => !e.IsReceived).Select(e => e.Details.Amount)).Cents);
     }
 
     /// <summary>The group name of bills paid later, which have no account yet.</summary>

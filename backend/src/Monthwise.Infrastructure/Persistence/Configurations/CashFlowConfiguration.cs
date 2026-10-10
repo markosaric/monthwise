@@ -2,6 +2,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Monthwise.Domain.Cards;
 using Monthwise.Domain.CashFlow;
+using Monthwise.Domain.Expenses;
+using Monthwise.Domain.Loans;
 
 namespace Monthwise.Infrastructure.Persistence.Configurations;
 
@@ -17,6 +19,11 @@ internal sealed class CashFlowInputConfiguration : IEntityTypeConfiguration<Cash
                 "ck_cash_flow_input_received_after_issue", "received_date IS NULL OR received_date >= issue_date");
             table.HasCheckConstraint(
                 "ck_cash_flow_input_occurrence", "(recurring_input_id IS NULL) = (occurrence_date IS NULL)");
+            table.HasCheckConstraint(
+                "ck_cash_flow_input_contribution_loan",
+                "(contribution_loan_id IS NULL) = (contribution_month IS NULL) AND (contribution_loan_id IS NULL) = (contribution_payment_kind IS NULL)");
+            table.HasCheckConstraint(
+                "ck_cash_flow_input_contribution_one_source", "contribution_bill_id IS NULL OR contribution_loan_id IS NULL");
         });
 
         builder.HasKey(i => i.Id);
@@ -27,13 +34,25 @@ internal sealed class CashFlowInputConfiguration : IEntityTypeConfiguration<Cash
         builder.Ignore(i => i.MonthDate);
         builder.Ignore(i => i.Month);
         builder.Ignore(i => i.Details);
+        builder.Ignore(i => i.Contribution);
+        builder.Property(i => i.ContributionPaymentKind).HasConversion<string>().HasMaxLength(20);
 
         builder.HasOne<Payer>().WithMany().HasForeignKey(i => i.PayerId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne<InputCategory>().WithMany().HasForeignKey(i => i.CategoryId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne<Card>().WithMany().HasForeignKey(i => i.AccountId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne<RecurringInput>().WithMany().HasForeignKey(i => i.RecurringInputId).OnDelete(DeleteBehavior.Restrict);
 
+        builder.HasOne<Bill>().WithMany().HasForeignKey(i => i.ContributionBillId)
+            .OnDelete(DeleteBehavior.Restrict).HasConstraintName("fk_cash_flow_input_bill_contribution_bill_id");
+        builder.HasOne<Loan>().WithMany().HasForeignKey(i => i.ContributionLoanId)
+            .OnDelete(DeleteBehavior.Restrict).HasConstraintName("fk_cash_flow_input_loan_contribution_loan_id");
+
         builder.HasIndex(i => new { i.RecurringInputId, i.OccurrenceDate }).IsUnique().HasFilter("recurring_input_id IS NOT NULL");
+        builder.HasIndex(i => i.ContributionBillId).IsUnique().HasFilter("contribution_bill_id IS NOT NULL")
+            .HasDatabaseName("ux_cash_flow_input_contribution_bill_id");
+        builder.HasIndex(i => new { i.ContributionLoanId, i.ContributionMonth, i.ContributionPaymentKind }).IsUnique()
+            .HasFilter("contribution_loan_id IS NOT NULL")
+            .HasDatabaseName("ux_cash_flow_input_contribution_loan_payment");
         builder.HasIndex(i => i.ReceivedDate);
         builder.HasIndex(i => i.ExpectedDate);
     }

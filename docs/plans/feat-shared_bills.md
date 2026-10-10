@@ -1,7 +1,7 @@
 # Plan: Shared bills and loan payments
 
 - **Branch:** `feat/shared_bills`
-- **Status:** Draft
+- **Status:** Done
 - **Date:** 2026-10-10
 - **Requirements:** [shared-bills.md](../feature-requirements/shared-bills.md) (approved), and
   [monthly-bills-and-expenses.md, Appendix 1](../feature-requirements/monthly-bills-and-expenses.md#appendix-1-shared-bills),
@@ -235,3 +235,53 @@ same error mapping as before. `ShareRequest` / `ShareResponse`: `participantId`,
   no longer shared.
 - **Shared costs** gets its own navigation item and screen, and participants are managed there (FR-1,
   FR-8), not in Settings.
+
+## Changes during implementation
+- **Participant names:** a name already used by another participant or by another payer is a field
+  error (`400` on `name`), as for recurring bill names, not a `409`.
+- **Contribution edit:** `PUT …/contribution` takes a `ContributionRequest` (account, amount, expected
+  and received date, description) instead of an `InputRequest`, because the payer and the category are
+  always the participant and Agreed contributions. `POST …/contribution/received` takes an optional
+  received date and account, so a contribution without an account can be received in one step.
+- **Generic input endpoints:** editing a contribution with `PUT /api/inputs/{id}` also marks it as
+  edited; the front-end uses the contribution endpoints.
+- **Loan request:** `keepChangedPaymentShares` defaults to `true`, so hand-changed payment shares are
+  kept unless the user switches it off; the switch is shown only when such payments exist.
+- **Clean-up:** a stored contribution whose bill or loan payment is no longer shared or no longer exists
+  (bill not issued again, share stopped, loan shortened or closed) is removed when expected and detached
+  when received, by `ContributionCleaner` after the change is saved. Deleting a bill or a loan releases
+  its contributions first, because the links restrict deletes.
+- **Responses:** `ContributionResponse` also returns `isOverdue` and the account; the bill and loan
+  payment month lists return `ownPartCents` next to their totals; `RecurringBillResponse` and
+  `LoanResponse` return the share. The report block is `sharedCosts` and is shown only when the month has
+  shared costs.
+- **Routes:** the Shared costs screen also has `/shared-costs/:yearMonth` for other months.
+- **Navigation:** with the new item the phone bottom navigation has eight entries, so it uses short
+  labels there: **Home** for Dashboard, **Cash** for Cash flow and **Shared** for Shared costs. The
+  sidebar keeps the full names.
+
+
+## Appendix 1: Contributions grouped by contributor
+
+- **Date:** 2026-10-10
+- **Asked by:** the user, after reviewing the Month screen
+- **Requirements:** unchanged; this is how the Income part shows contributions (FR-5, FR-7)
+
+In the Income part of the Month screen the contributions of one contributor are shown together, so the
+summed payment is visible at a glance:
+
+- **One group line per contributor and month**, placed where that contributor's first contribution is
+  in the list: only the contributor, the number of contributions and the summed amount. It shows no
+  bills, loan payments or dates: those are in the single contributions, and a contributor is expected
+  to pay some time in the month rather than on the date of one bill.
+- **Group check box:** ticked when all contributions of the group are received. Ticking it marks every
+  contribution that is not received yet as received; unticking it makes all of them expected again. When
+  only some are received the check box is shown as partly ticked and the line says how many are
+  received ("1 of 2 received"). A contribution without an account yet is skipped and the group opens, so it can be ticked on
+  its own and given an account.
+- **Show / Hide button** (with a + style arrow) opens the single contributions below the group line,
+  each with its own Received check box, Edit and Reset to part, exactly as before.
+- Totals of the Income part are unchanged.
+- Implementation: front-end only (`ContributionGroup` in `src/components/sharedCosts/`, grouping in
+  `IncomeSection`); the group check box calls the existing contribution endpoints for each
+  contribution, so no API change is needed.

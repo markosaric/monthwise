@@ -1,5 +1,6 @@
 using Monthwise.Application.CashFlow;
 using Monthwise.Application.Loans;
+using Monthwise.Application.SharedCosts;
 using Monthwise.Domain.Expenses;
 
 namespace Monthwise.Application.Expenses;
@@ -13,8 +14,14 @@ public sealed record ExpenseCategoryResponse(Guid Id, string Name, bool IsPredef
 /// </summary>
 public sealed record PaidFromResponse(Guid Id, string Name, bool IsCreditCard);
 
-/// <summary>Add or edit a recurring bill (FR-2).</summary>
-public sealed record RecurringBillRequest(string Name, Guid CategoryId, string? Payee, Guid? PaidFromId, string? Description);
+/// <summary>Add or edit a recurring bill (FR-2); <see cref="Share"/> shares its bills (shared bills FR-3).</summary>
+public sealed record RecurringBillRequest(
+    string Name,
+    Guid CategoryId,
+    string? Payee,
+    Guid? PaidFromId,
+    string? Description,
+    ShareRequest? Share = null);
 
 /// <summary>A recurring bill (FR-2). <see cref="CanBeDeleted"/> is true while no bill was added from it.</summary>
 public sealed record RecurringBillResponse(
@@ -26,11 +33,13 @@ public sealed record RecurringBillResponse(
     string? Description,
     bool IsActive,
     DateOnly? StoppedOn,
-    bool CanBeDeleted);
+    bool CanBeDeleted,
+    ShareResponse? Share = null);
 
 /// <summary>
 /// Add a one-off bill or edit a bill (FR-4). Amount 0 without dates keeps a bill from a recurring bill
 /// Not issued. <see cref="PaidDate"/> set means paid on that day; null means not paid.
+/// <see cref="Share"/> shares the bill, or stops sharing it when null (shared bills FR-3).
 /// </summary>
 public sealed record BillRequest(
     string Name,
@@ -41,14 +50,17 @@ public sealed record BillRequest(
     DateOnly? DueDate,
     Guid? PaidFromId,
     string? Description,
-    DateOnly? PaidDate);
+    DateOnly? PaidDate,
+    ShareRequest? Share = null);
 
 /// <summary>
 /// A bill (FR-4). <see cref="PaidFrom"/> is what it was paid with, or what it will usually be paid with
 /// while not paid. <see cref="DueDateHint"/> prefills the due date of a Not issued bill from the last
 /// issued bill of its recurring bill (FR-2). <see cref="PaidWithCard"/> is true for a paid bill whose
 /// amount is in a card payment (FR-6); <see cref="ChangesChargedCardPayment"/> then says that the card
-/// payment is already due, so the UI warns before an edit, untick or delete.
+/// payment is already due, so the UI warns before an edit, untick or delete. A shared bill has its
+/// <see cref="Share"/>, the household's <see cref="OwnPartCents"/> once issued and its
+/// <see cref="Contribution"/> (shared bills FR-5, FR-7).
 /// </summary>
 public sealed record BillResponse(
     Guid Id,
@@ -67,18 +79,24 @@ public sealed record BillResponse(
     bool IsOverdue,
     DateOnly? DueDateHint,
     bool PaidWithCard,
-    bool ChangesChargedCardPayment);
+    bool ChangesChargedCardPayment,
+    ShareResponse? Share = null,
+    long? OwnPartCents = null,
+    bool IsShareChanged = false,
+    ContributionResponse? Contribution = null);
 
 /// <summary>
 /// The bills of a month (FR-9). The totals leave out Not issued bills and bills paid with a credit card,
-/// which are in their card payment (<see cref="WithCardCents"/>).
+/// which are in their card payment (<see cref="WithCardCents"/>). <see cref="OwnPartCents"/> is what the
+/// household pays itself of the counted bills: their total minus the participants' parts (shared bills FR-7).
 /// </summary>
 public sealed record MonthBillsResponse(
     string Month,
     IReadOnlyList<BillResponse> Bills,
     LoanPaymentTotalsResponse Totals,
     long WithCardCents,
-    int NotIssuedCount);
+    int NotIssuedCount,
+    long OwnPartCents);
 
 /// <summary>Ticks Paid (FR-5). Without <see cref="PaidDate"/> it is today; without <see cref="PaidFromId"/> the bill's own.</summary>
 public sealed record BillPaidRequest(DateOnly? PaidDate, Guid? PaidFromId);

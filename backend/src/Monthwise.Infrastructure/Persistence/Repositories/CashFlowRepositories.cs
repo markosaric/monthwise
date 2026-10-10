@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Monthwise.Application.CashFlow;
 using Monthwise.Domain.CashFlow;
+using Monthwise.Domain.SharedCosts;
 
 namespace Monthwise.Infrastructure.Persistence.Repositories;
 
@@ -34,6 +35,23 @@ internal sealed class CashFlowInputRepository(MonthwiseDbContext db) : ICashFlow
             .Select(i => new { RecurringInputId = i.RecurringInputId!.Value, OccurrenceDate = i.OccurrenceDate!.Value })
             .ToListAsync(cancellationToken);
         return keys.Select(k => new OccurrenceKey(k.RecurringInputId, k.OccurrenceDate)).ToHashSet();
+    }
+
+    public async Task<IReadOnlyList<CashFlowInput>> ListContributionsAsync(CancellationToken cancellationToken) =>
+        await db.CashFlowInputs
+            .Where(i => i.ContributionBillId != null || i.ContributionLoanId != null)
+            .ToListAsync(cancellationToken);
+
+    public Task<CashFlowInput?> GetContributionAsync(ContributionSource source, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(source);
+        return source.Kind == ContributionSourceKind.Bill
+            ? db.CashFlowInputs.FirstOrDefaultAsync(i => i.ContributionBillId == source.BillId, cancellationToken)
+            : db.CashFlowInputs.FirstOrDefaultAsync(
+                i => i.ContributionLoanId == source.LoanId
+                    && i.ContributionMonth == source.Month
+                    && i.ContributionPaymentKind == source.PaymentKind,
+                cancellationToken);
     }
 
     public void Add(CashFlowInput input) => db.CashFlowInputs.Add(input);

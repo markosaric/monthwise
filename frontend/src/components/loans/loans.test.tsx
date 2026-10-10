@@ -4,6 +4,7 @@ import { cardTexts } from '@/components/cards/texts'
 import { aCard, zaba } from '@/test/cardFixtures'
 import { aMonth } from '@/test/cashFlowFixtures'
 import { aLoan, aLoanMonth, aPayment, bankLoan, lease } from '@/test/loanFixtures'
+import { noShare } from '@/components/sharedCosts/shareModel'
 import { renderRoute } from '@/test/renderRoute'
 import { healthy, json, stubApi } from '@/test/stubApi'
 import { endMonthOf, paymentCountOf, toLoanRequest } from './loanFormModel'
@@ -141,6 +142,8 @@ describe('Add loan form', () => {
       residualValue: '2.000,00',
       allowsResidualValue: true,
       description: '',
+      share: noShare,
+      keepChangedPaymentShares: true,
     })
     expect(request).toMatchObject({
       name: 'Car',

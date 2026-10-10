@@ -1,4 +1,5 @@
 using Monthwise.Domain.Common;
+using Monthwise.Domain.SharedCosts;
 
 namespace Monthwise.Domain.Expenses;
 
@@ -33,10 +34,19 @@ public sealed class RecurringBill
     /// <summary>Set when stopped: no longer added to new months; bills already added stay.</summary>
     public DateOnly? StoppedOn { get; private set; }
 
+    /// <summary>The share columns of <see cref="Share"/> (FR-2); null when the recurring bill is not shared.</summary>
+    public Guid? ShareParticipantId { get; private set; }
+    public int? ShareCount { get; private set; }
+    public int? ParticipantShareCount { get; private set; }
+    public Guid? ContributionAccountId { get; private set; }
+
     public DateTimeOffset CreatedAt { get; private set; }
     public DateTimeOffset UpdatedAt { get; private set; }
 
     public bool IsActive => StoppedOn is null;
+
+    /// <summary>How its bills are shared (shared bills FR-3): copied to each bill added from it.</summary>
+    public CostShare? Share => CostShareColumns.Read(ShareParticipantId, ShareCount, ParticipantShareCount, ContributionAccountId);
 
     public RecurringBillDetails Details => new(Name, CategoryId, Payee, PaidFromId, Description);
 
@@ -68,6 +78,13 @@ public sealed class RecurringBill
         }
         Apply(details, now);
         return Result.Success();
+    }
+
+    /// <summary>Shares the recurring bill, or stops sharing it; bills already added keep their shares (shared bills FR-3).</summary>
+    public void SetShare(CostShare? share, DateTimeOffset now)
+    {
+        (ShareParticipantId, ShareCount, ParticipantShareCount, ContributionAccountId) = CostShareColumns.Write(share);
+        UpdatedAt = now;
     }
 
     public void Stop(DateOnly today, DateTimeOffset now)

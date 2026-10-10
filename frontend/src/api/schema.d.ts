@@ -105,6 +105,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/shared-costs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Each participant's shared costs, the month's (yyyy-MM) parts and contributions, and what is outstanding. */
+        get: operations["GetSharedCosts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/cards": {
         parameters: {
             query?: never;
@@ -1262,6 +1279,195 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/participants": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The people costs are shared with. */
+        get: operations["GetParticipants"];
+        put?: never;
+        post: operations["CreateParticipant"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/participants/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetParticipant"];
+        /** Edits a participant; the payer of their contributions is renamed with them. */
+        put: operations["UpdateParticipant"];
+        post?: never;
+        /** Deletes a participant that shares no cost. */
+        delete: operations["DeleteParticipant"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/participants/{id}/archive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ArchiveParticipant"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/participants/{id}/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["RestoreParticipant"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/loans/{id}/payments/{month}/{kind}/share": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Shares one payment, changes its share or stops sharing it (share null), whatever the loan's share is. */
+        put: operations["ChangeLoanPaymentShare"];
+        post?: never;
+        /** The payment follows the loan's share again. */
+        delete: operations["ResetLoanPaymentShare"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/bills/{id}/contribution": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Edits the contribution; it then keeps its values until it is reset to the part. */
+        put: operations["EditBillContribution"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/bills/{id}/contribution/received": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Ticks the contribution as received: today, to its account, unless given. */
+        post: operations["MarkBillContributionReceived"];
+        /** Unticks Received; a contribution that was not edited follows its cost again. */
+        delete: operations["MarkBillContributionExpected"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/bills/{id}/contribution/reset": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reset to part: an expected contribution follows its cost again, a received one gets the current part. */
+        post: operations["ResetBillContribution"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/loans/{id}/payments/{month}/{kind}/contribution": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Edits the contribution; it then keeps its values until it is reset to the part. */
+        put: operations["EditLoanPaymentContribution"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/loans/{id}/payments/{month}/{kind}/contribution/received": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Ticks the contribution as received: today, to its account, unless given. */
+        post: operations["MarkLoanPaymentContributionReceived"];
+        /** Unticks Received; a contribution that was not edited follows its cost again. */
+        delete: operations["MarkLoanPaymentContributionExpected"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/loans/{id}/payments/{month}/{kind}/contribution/reset": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reset to part: an expected contribution follows its cost again, a received one gets the current part. */
+        post: operations["ResetLoanPaymentContribution"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1337,6 +1543,7 @@ export interface components {
             description: null | string;
             /** Format: date */
             paidDate: null | string;
+            share?: null | components["schemas"]["ShareRequest"];
         };
         BillResponse: {
             /** Format: uuid */
@@ -1363,6 +1570,12 @@ export interface components {
             dueDateHint: null | string;
             paidWithCard: boolean;
             changesChargedCardPayment: boolean;
+            share?: null | components["schemas"]["ShareResponse"];
+            /** Format: int64 */
+            ownPartCents?: null | number;
+            /** @default false */
+            isShareChanged: boolean;
+            contribution?: null | components["schemas"]["ContributionResponse"];
         };
         /** @enum {unknown} */
         BillState: "NotIssued" | "Expected" | "Paid";
@@ -1583,6 +1796,51 @@ export interface components {
         };
         /** @enum {unknown} */
         ChartGranularity: "Day" | "Month";
+        ContributionReceivedRequest: {
+            /** Format: date */
+            receivedDate: null | string;
+            /** Format: uuid */
+            accountId: null | string;
+        };
+        ContributionRequest: {
+            /** Format: uuid */
+            accountId: string;
+            /** Format: int64 */
+            amountCents: number;
+            /** Format: date */
+            expectedDate: string;
+            /** Format: date */
+            receivedDate: null | string;
+            description: null | string;
+        };
+        ContributionResponse: {
+            kind: components["schemas"]["ContributionSourceKind"];
+            /** Format: uuid */
+            billId: null | string;
+            /** Format: uuid */
+            loanId: null | string;
+            month: null | string;
+            paymentKind: null | components["schemas"]["LoanPaymentKind"];
+            costName: string;
+            participant: components["schemas"]["NamedReference"];
+            /** Format: int64 */
+            partCents: number;
+            /** Format: uuid */
+            inputId: null | string;
+            /** Format: int64 */
+            amountCents: number;
+            /** Format: date */
+            expectedDate: string;
+            /** Format: date */
+            receivedDate: null | string;
+            isReceived: boolean;
+            isEdited: boolean;
+            needsAccount: boolean;
+            isOverdue: boolean;
+            account: null | components["schemas"]["NamedReference"];
+        };
+        /** @enum {unknown} */
+        ContributionSourceKind: "Bill" | "LoanPayment";
         DashboardCardsResponse: {
             hasAnyCards: boolean;
             cards: components["schemas"]["CardResponse"][];
@@ -1660,6 +1918,20 @@ export interface components {
             isPredefined: boolean;
             isHidden: boolean;
         };
+        InputContributionResponse: {
+            kind: components["schemas"]["ContributionSourceKind"];
+            /** Format: uuid */
+            billId: null | string;
+            /** Format: uuid */
+            loanId: null | string;
+            month: null | string;
+            paymentKind: null | components["schemas"]["LoanPaymentKind"];
+            costName: string;
+            /** Format: int64 */
+            partCents: number;
+            isEdited: boolean;
+            needsAccount: boolean;
+        };
         InputEntryResponse: {
             /** Format: uuid */
             id: null | string;
@@ -1682,6 +1954,7 @@ export interface components {
             isReceived: boolean;
             isRecurring: boolean;
             frequency: null | components["schemas"]["RecurrenceFrequency"];
+            contribution?: null | components["schemas"]["InputContributionResponse"];
         };
         InputRequest: {
             payerName: string;
@@ -1814,6 +2087,15 @@ export interface components {
             isChanged: boolean;
             isOverdue: boolean;
             needsAccount: boolean;
+            share?: null | components["schemas"]["ShareResponse"];
+            /** Format: int64 */
+            ownPartCents?: null | number;
+            /** @default false */
+            isShareChanged: boolean;
+            contribution?: null | components["schemas"]["ContributionResponse"];
+        };
+        LoanPaymentShareRequest: {
+            share: null | components["schemas"]["ShareRequest"];
         };
         LoanPaymentTotalsResponse: {
             /** Format: int64 */
@@ -1845,6 +2127,9 @@ export interface components {
             /** Format: int64 */
             residualValueCents: null | number;
             description: null | string;
+            share?: null | components["schemas"]["ShareRequest"];
+            /** @default true */
+            keepChangedPaymentShares: boolean;
         };
         LoanResponse: {
             /** Format: uuid */
@@ -1885,6 +2170,7 @@ export interface components {
             remainingAmountCents: number;
             hasOverduePayment: boolean;
             needsAccount: boolean;
+            share?: null | components["schemas"]["ShareResponse"];
         };
         LoansDashboardResponse: {
             hasAnyLoans: boolean;
@@ -1913,6 +2199,8 @@ export interface components {
             withCardCents: number;
             /** Format: int32 */
             notIssuedCount: number;
+            /** Format: int64 */
+            ownPartCents: number;
         };
         MonthCardPaymentsResponse: {
             month: string;
@@ -1933,6 +2221,8 @@ export interface components {
             month: string;
             payments: components["schemas"]["LoanPaymentResponse"][];
             totals: components["schemas"]["LoanPaymentTotalsResponse"];
+            /** Format: int64 */
+            ownPartCents: number;
         };
         MonthlyReportResponse: {
             month: string;
@@ -1952,6 +2242,7 @@ export interface components {
             previousMonthOutputsCents: number;
             /** Format: int64 */
             previousMonthResultCents: number;
+            sharedCosts?: null | components["schemas"]["ReportSharedCostsResponse"];
         };
         NamedReference: {
             /** Format: uuid */
@@ -1966,6 +2257,30 @@ export interface components {
             id: string;
             name: string;
             isCreditCard: boolean;
+        };
+        ParticipantRequest: {
+            name: string;
+            description: null | string;
+        };
+        ParticipantResponse: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            description: null | string;
+            isArchived: boolean;
+            canBeDeleted: boolean;
+        };
+        ParticipantSharedCostsResponse: {
+            participant: components["schemas"]["ParticipantResponse"];
+            costs: components["schemas"]["SharedCostResponse"][];
+            /** Format: int64 */
+            monthPartsCents: number;
+            /** Format: int64 */
+            monthReceivedCents: number;
+            /** Format: int64 */
+            outstandingCents: number;
+            monthContributions: components["schemas"]["ContributionResponse"][];
+            outstanding: components["schemas"]["ContributionResponse"][];
         };
         PayerResponse: {
             /** Format: uuid */
@@ -2018,6 +2333,7 @@ export interface components {
             /** Format: uuid */
             paidFromId: null | string;
             description: null | string;
+            share?: null | components["schemas"]["ShareRequest"];
         };
         RecurringBillResponse: {
             /** Format: uuid */
@@ -2031,6 +2347,7 @@ export interface components {
             /** Format: date */
             stoppedOn: null | string;
             canBeDeleted: boolean;
+            share?: null | components["schemas"]["ShareResponse"];
         };
         RecurringInputRequest: {
             payerName: string;
@@ -2097,6 +2414,18 @@ export interface components {
             byLoan: components["schemas"]["ReportOutputGroupResponse"][];
             byCard: components["schemas"]["ReportOutputGroupResponse"][];
         };
+        ReportSharedCostsResponse: {
+            /** Format: int64 */
+            totalCents: number;
+            /** Format: int64 */
+            participantsPartCents: number;
+            /** Format: int64 */
+            ownPartCents: number;
+            /** Format: int64 */
+            contributionsReceivedCents: number;
+            /** Format: int64 */
+            contributionsOutstandingCents: number;
+        };
         RevealedNumberResponse: {
             value: string;
         };
@@ -2105,6 +2434,37 @@ export interface components {
         };
         /** @enum {unknown} */
         SensitiveNumberKind: "CardNumber" | "Iban";
+        SharedCostResponse: {
+            kind: components["schemas"]["ContributionSourceKind"];
+            /** Format: uuid */
+            id: string;
+            name: string;
+            share: components["schemas"]["ShareResponse"];
+        };
+        SharedCostsResponse: {
+            month: string;
+            participants: components["schemas"]["ParticipantSharedCostsResponse"][];
+        };
+        ShareRequest: {
+            /** Format: uuid */
+            participantId: string;
+            /** Format: int32 */
+            shares: number;
+            /** Format: int32 */
+            participantShares: number;
+            /** Format: uuid */
+            contributionAccountId: null | string;
+        };
+        ShareResponse: {
+            participant: components["schemas"]["NamedReference"];
+            /** Format: int32 */
+            shares: number;
+            /** Format: int32 */
+            participantShares: number;
+            /** Format: int32 */
+            percentage: number;
+            contributionAccount: null | components["schemas"]["NamedReference"];
+        };
     };
     responses: never;
     parameters: never;
@@ -2305,6 +2665,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MonthCardPaymentsResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+        };
+    };
+    GetSharedCosts: {
+        parameters: {
+            query: {
+                month: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SharedCostsResponse"];
                 };
             };
             /** @description Bad Request */
@@ -6464,6 +6855,740 @@ export interface operations {
             };
             /** @description Not Found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetParticipants: {
+        parameters: {
+            query?: {
+                includeArchived?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ParticipantResponse"][];
+                };
+            };
+        };
+    };
+    CreateParticipant: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ParticipantRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ParticipantResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+        };
+    };
+    GetParticipant: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ParticipantResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    UpdateParticipant: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ParticipantRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ParticipantResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    DeleteParticipant: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ArchiveParticipant: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ParticipantResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    RestoreParticipant: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ParticipantResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ChangeLoanPaymentShare: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                month: string;
+                kind: components["schemas"]["LoanPaymentKind"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LoanPaymentShareRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LoanPaymentResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ResetLoanPaymentShare: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                month: string;
+                kind: components["schemas"]["LoanPaymentKind"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LoanPaymentResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    EditBillContribution: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ContributionRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContributionResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    MarkBillContributionReceived: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": null | components["schemas"]["ContributionReceivedRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContributionResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    MarkBillContributionExpected: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContributionResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ResetBillContribution: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContributionResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    EditLoanPaymentContribution: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                month: string;
+                kind: components["schemas"]["LoanPaymentKind"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ContributionRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContributionResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    MarkLoanPaymentContributionReceived: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                month: string;
+                kind: components["schemas"]["LoanPaymentKind"];
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": null | components["schemas"]["ContributionReceivedRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContributionResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    MarkLoanPaymentContributionExpected: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                month: string;
+                kind: components["schemas"]["LoanPaymentKind"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContributionResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ResetLoanPaymentContribution: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                month: string;
+                kind: components["schemas"]["LoanPaymentKind"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContributionResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

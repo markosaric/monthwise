@@ -593,6 +593,23 @@ namespace Monthwise.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("category_id");
 
+                    b.Property<Guid?>("ContributionBillId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("contribution_bill_id");
+
+                    b.Property<Guid?>("ContributionLoanId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("contribution_loan_id");
+
+                    b.Property<DateOnly?>("ContributionMonth")
+                        .HasColumnType("date")
+                        .HasColumnName("contribution_month");
+
+                    b.Property<string>("ContributionPaymentKind")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("contribution_payment_kind");
+
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
@@ -605,6 +622,10 @@ namespace Monthwise.Infrastructure.Persistence.Migrations
                     b.Property<DateOnly>("ExpectedDate")
                         .HasColumnType("date")
                         .HasColumnName("expected_date");
+
+                    b.Property<bool>("IsEdited")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_edited");
 
                     b.Property<DateOnly>("IssueDate")
                         .HasColumnType("date")
@@ -639,6 +660,11 @@ namespace Monthwise.Infrastructure.Persistence.Migrations
                     b.HasIndex("CategoryId")
                         .HasDatabaseName("ix_cash_flow_input_category_id");
 
+                    b.HasIndex("ContributionBillId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_cash_flow_input_contribution_bill_id")
+                        .HasFilter("contribution_bill_id IS NOT NULL");
+
                     b.HasIndex("ExpectedDate")
                         .HasDatabaseName("ix_cash_flow_input_expected_date");
 
@@ -653,9 +679,18 @@ namespace Monthwise.Infrastructure.Persistence.Migrations
                         .HasDatabaseName("ix_cash_flow_input_recurring_input_id_occurrence_date")
                         .HasFilter("recurring_input_id IS NOT NULL");
 
+                    b.HasIndex("ContributionLoanId", "ContributionMonth", "ContributionPaymentKind")
+                        .IsUnique()
+                        .HasDatabaseName("ux_cash_flow_input_contribution_loan_payment")
+                        .HasFilter("contribution_loan_id IS NOT NULL");
+
                     b.ToTable("cash_flow_input", null, t =>
                         {
                             t.HasCheckConstraint("ck_cash_flow_input_amount_positive", "amount_cents > 0");
+
+                            t.HasCheckConstraint("ck_cash_flow_input_contribution_loan", "(contribution_loan_id IS NULL) = (contribution_month IS NULL) AND (contribution_loan_id IS NULL) = (contribution_payment_kind IS NULL)");
+
+                            t.HasCheckConstraint("ck_cash_flow_input_contribution_one_source", "contribution_bill_id IS NULL OR contribution_loan_id IS NULL");
 
                             t.HasCheckConstraint("ck_cash_flow_input_expected_after_issue", "expected_date >= issue_date");
 
@@ -846,6 +881,10 @@ namespace Monthwise.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("category_id");
 
+                    b.Property<Guid?>("ContributionAccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("contribution_account_id");
+
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
@@ -862,6 +901,10 @@ namespace Monthwise.Infrastructure.Persistence.Migrations
                     b.Property<bool>("IsPaid")
                         .HasColumnType("boolean")
                         .HasColumnName("is_paid");
+
+                    b.Property<bool>("IsShareChanged")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_share_changed");
 
                     b.Property<DateOnly?>("IssueDate")
                         .HasColumnType("date")
@@ -885,6 +928,10 @@ namespace Monthwise.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("paid_from_id");
 
+                    b.Property<int?>("ParticipantShareCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("participant_share_count");
+
                     b.Property<string>("Payee")
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)")
@@ -893,6 +940,14 @@ namespace Monthwise.Infrastructure.Persistence.Migrations
                     b.Property<Guid?>("RecurringBillId")
                         .HasColumnType("uuid")
                         .HasColumnName("recurring_bill_id");
+
+                    b.Property<int?>("ShareCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("share_count");
+
+                    b.Property<Guid?>("ShareParticipantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("share_participant_id");
 
                     b.Property<DateTimeOffset>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -904,8 +959,14 @@ namespace Monthwise.Infrastructure.Persistence.Migrations
                     b.HasIndex("CategoryId")
                         .HasDatabaseName("ix_bill_category_id");
 
+                    b.HasIndex("ContributionAccountId")
+                        .HasDatabaseName("ix_bill_contribution_account_id");
+
                     b.HasIndex("Month")
                         .HasDatabaseName("ix_bill_month");
+
+                    b.HasIndex("ShareParticipantId")
+                        .HasDatabaseName("ix_bill_share_participant_id");
 
                     b.HasIndex("PaidFromId", "PaidDate")
                         .HasDatabaseName("ix_bill_paid_from_id_paid_date");
@@ -930,6 +991,8 @@ namespace Monthwise.Infrastructure.Persistence.Migrations
                             t.HasCheckConstraint("ck_bill_paid_from", "NOT is_paid OR paid_from_id IS NOT NULL");
 
                             t.HasCheckConstraint("ck_bill_paid_issued", "NOT is_paid OR issue_date IS NOT NULL");
+
+                            t.HasCheckConstraint("ck_bill_share", "(share_participant_id IS NULL AND share_count IS NULL AND participant_share_count IS NULL AND contribution_account_id IS NULL) OR (share_participant_id IS NOT NULL AND share_count BETWEEN 2 AND 4 AND participant_share_count >= 1 AND participant_share_count < share_count)");
                         });
                 });
 
@@ -1026,6 +1089,10 @@ namespace Monthwise.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("category_id");
 
+                    b.Property<Guid?>("ContributionAccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("contribution_account_id");
+
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
@@ -1045,10 +1112,22 @@ namespace Monthwise.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("paid_from_id");
 
+                    b.Property<int?>("ParticipantShareCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("participant_share_count");
+
                     b.Property<string>("Payee")
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)")
                         .HasColumnName("payee");
+
+                    b.Property<int?>("ShareCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("share_count");
+
+                    b.Property<Guid?>("ShareParticipantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("share_participant_id");
 
                     b.Property<DateOnly?>("StoppedOn")
                         .HasColumnType("date")
@@ -1064,10 +1143,19 @@ namespace Monthwise.Infrastructure.Persistence.Migrations
                     b.HasIndex("CategoryId")
                         .HasDatabaseName("ix_recurring_bill_category_id");
 
+                    b.HasIndex("ContributionAccountId")
+                        .HasDatabaseName("ix_recurring_bill_contribution_account_id");
+
                     b.HasIndex("PaidFromId")
                         .HasDatabaseName("ix_recurring_bill_paid_from_id");
 
-                    b.ToTable("recurring_bill", (string)null);
+                    b.HasIndex("ShareParticipantId")
+                        .HasDatabaseName("ix_recurring_bill_share_participant_id");
+
+                    b.ToTable("recurring_bill", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_recurring_bill_share", "(share_participant_id IS NULL AND share_count IS NULL AND participant_share_count IS NULL AND contribution_account_id IS NULL) OR (share_participant_id IS NOT NULL AND share_count BETWEEN 2 AND 4 AND participant_share_count >= 1 AND participant_share_count < share_count)");
+                        });
                 });
 
             modelBuilder.Entity("Monthwise.Domain.Loans.Loan", b =>
@@ -1087,6 +1175,10 @@ namespace Monthwise.Infrastructure.Persistence.Migrations
                     b.Property<DateOnly?>("ClosedOn")
                         .HasColumnType("date")
                         .HasColumnName("closed_on");
+
+                    b.Property<Guid?>("ContributionAccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("contribution_account_id");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -1111,6 +1203,10 @@ namespace Monthwise.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(50)")
                         .HasColumnName("name");
 
+                    b.Property<int?>("ParticipantShareCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("participant_share_count");
+
                     b.Property<int>("PaymentCount")
                         .HasColumnType("integer")
                         .HasColumnName("payment_count");
@@ -1128,6 +1224,14 @@ namespace Monthwise.Infrastructure.Persistence.Migrations
                     b.Property<long?>("ResidualValue")
                         .HasColumnType("bigint")
                         .HasColumnName("residual_value_cents");
+
+                    b.Property<int?>("ShareCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("share_count");
+
+                    b.Property<Guid?>("ShareParticipantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("share_participant_id");
 
                     b.Property<DateOnly>("StartMonth")
                         .HasColumnType("date")
@@ -1150,8 +1254,14 @@ namespace Monthwise.Infrastructure.Persistence.Migrations
                     b.HasIndex("CategoryId")
                         .HasDatabaseName("ix_loan_category_id");
 
+                    b.HasIndex("ContributionAccountId")
+                        .HasDatabaseName("ix_loan_contribution_account_id");
+
                     b.HasIndex("LenderId")
                         .HasDatabaseName("ix_loan_lender_id");
+
+                    b.HasIndex("ShareParticipantId")
+                        .HasDatabaseName("ix_loan_share_participant_id");
 
                     b.HasIndex("SubcategoryId")
                         .HasDatabaseName("ix_loan_subcategory_id");
@@ -1165,6 +1275,8 @@ namespace Monthwise.Infrastructure.Persistence.Migrations
                             t.HasCheckConstraint("ck_loan_payment_day", "payment_day BETWEEN 1 AND 31");
 
                             t.HasCheckConstraint("ck_loan_residual_value_positive", "residual_value_cents IS NULL OR residual_value_cents > 0");
+
+                            t.HasCheckConstraint("ck_loan_share", "(share_participant_id IS NULL AND share_count IS NULL AND participant_share_count IS NULL AND contribution_account_id IS NULL) OR (share_participant_id IS NOT NULL AND share_count BETWEEN 2 AND 4 AND participant_share_count >= 1 AND participant_share_count < share_count)");
 
                             t.HasCheckConstraint("ck_loan_standing_order_account", "(payment_method = 'StandingOrder') = (account_id IS NOT NULL)");
                         });
@@ -1226,6 +1338,10 @@ namespace Monthwise.Infrastructure.Persistence.Migrations
                         .HasColumnType("bigint")
                         .HasColumnName("amount_cents");
 
+                    b.Property<Guid?>("ContributionAccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("contribution_account_id");
+
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
@@ -1234,6 +1350,10 @@ namespace Monthwise.Infrastructure.Persistence.Migrations
                         .HasColumnType("date")
                         .HasColumnName("due_date");
 
+                    b.Property<bool>("HasOwnShare")
+                        .HasColumnType("boolean")
+                        .HasColumnName("has_own_share");
+
                     b.Property<bool>("IsChanged")
                         .HasColumnType("boolean")
                         .HasColumnName("is_changed");
@@ -1241,6 +1361,10 @@ namespace Monthwise.Infrastructure.Persistence.Migrations
                     b.Property<bool?>("IsPaid")
                         .HasColumnType("boolean")
                         .HasColumnName("is_paid");
+
+                    b.Property<bool>("IsShareChanged")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_share_changed");
 
                     b.Property<string>("Kind")
                         .IsRequired()
@@ -1264,12 +1388,27 @@ namespace Monthwise.Infrastructure.Persistence.Migrations
                         .HasColumnType("date")
                         .HasColumnName("paid_date");
 
+                    b.Property<int?>("ParticipantShareCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("participant_share_count");
+
+                    b.Property<int?>("ShareCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("share_count");
+
+                    b.Property<Guid?>("ShareParticipantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("share_participant_id");
+
                     b.Property<DateTimeOffset>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at");
 
                     b.HasKey("Id")
                         .HasName("pk_loan_payment");
+
+                    b.HasIndex("ContributionAccountId")
+                        .HasDatabaseName("ix_loan_payment_contribution_account_id");
 
                     b.HasIndex("DueDate")
                         .HasDatabaseName("ix_loan_payment_due_date");
@@ -1279,6 +1418,9 @@ namespace Monthwise.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("PaidDate")
                         .HasDatabaseName("ix_loan_payment_paid_date");
+
+                    b.HasIndex("ShareParticipantId")
+                        .HasDatabaseName("ix_loan_payment_share_participant_id");
 
                     b.HasIndex("LoanId", "Month", "Kind")
                         .IsUnique()
@@ -1293,6 +1435,10 @@ namespace Monthwise.Infrastructure.Persistence.Migrations
                             t.HasCheckConstraint("ck_loan_payment_paid_account", "(is_paid IS TRUE) = (paid_account_id IS NOT NULL)");
 
                             t.HasCheckConstraint("ck_loan_payment_paid_after_bill", "paid_date IS NULL OR paid_date >= month");
+
+                            t.HasCheckConstraint("ck_loan_payment_share", "(share_participant_id IS NULL AND share_count IS NULL AND participant_share_count IS NULL AND contribution_account_id IS NULL) OR (share_participant_id IS NOT NULL AND share_count BETWEEN 2 AND 4 AND participant_share_count >= 1 AND participant_share_count < share_count AND has_own_share)");
+
+                            t.HasCheckConstraint("ck_loan_payment_share_changed", "NOT is_share_changed OR has_own_share");
                         });
                 });
 
@@ -1432,6 +1578,49 @@ namespace Monthwise.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Monthwise.Domain.SharedCosts.Participant", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateOnly?>("ArchivedOn")
+                        .HasColumnType("date")
+                        .HasColumnName("archived_on");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("description");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("name");
+
+                    b.Property<Guid>("PayerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("payer_id");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id")
+                        .HasName("pk_participant");
+
+                    b.HasIndex("PayerId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_participant_payer_id");
+
+                    b.ToTable("participant", (string)null);
+                });
+
             modelBuilder.Entity("Monthwise.Domain.CardPurchases.CardPayment", b =>
                 {
                     b.HasOne("Monthwise.Domain.Cards.Card", null)
@@ -1549,6 +1738,18 @@ namespace Monthwise.Infrastructure.Persistence.Migrations
                         .IsRequired()
                         .HasConstraintName("fk_cash_flow_input_input_categories_category_id");
 
+                    b.HasOne("Monthwise.Domain.Expenses.Bill", null)
+                        .WithMany()
+                        .HasForeignKey("ContributionBillId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_cash_flow_input_bill_contribution_bill_id");
+
+                    b.HasOne("Monthwise.Domain.Loans.Loan", null)
+                        .WithMany()
+                        .HasForeignKey("ContributionLoanId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_cash_flow_input_loan_contribution_loan_id");
+
                     b.HasOne("Monthwise.Domain.CashFlow.Payer", null)
                         .WithMany()
                         .HasForeignKey("PayerId")
@@ -1608,6 +1809,12 @@ namespace Monthwise.Infrastructure.Persistence.Migrations
 
                     b.HasOne("Monthwise.Domain.Cards.Card", null)
                         .WithMany()
+                        .HasForeignKey("ContributionAccountId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_bill_card_contribution_account_id");
+
+                    b.HasOne("Monthwise.Domain.Cards.Card", null)
+                        .WithMany()
                         .HasForeignKey("PaidFromId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .HasConstraintName("fk_bill_card_paid_from_id");
@@ -1617,6 +1824,12 @@ namespace Monthwise.Infrastructure.Persistence.Migrations
                         .HasForeignKey("RecurringBillId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .HasConstraintName("fk_bill_recurring_bill_recurring_bill_id");
+
+                    b.HasOne("Monthwise.Domain.SharedCosts.Participant", null)
+                        .WithMany()
+                        .HasForeignKey("ShareParticipantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_bill_participant_share_participant_id");
                 });
 
             modelBuilder.Entity("Monthwise.Domain.Expenses.Expense", b =>
@@ -1647,9 +1860,21 @@ namespace Monthwise.Infrastructure.Persistence.Migrations
 
                     b.HasOne("Monthwise.Domain.Cards.Card", null)
                         .WithMany()
+                        .HasForeignKey("ContributionAccountId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_recurring_bill_card_contribution_account_id");
+
+                    b.HasOne("Monthwise.Domain.Cards.Card", null)
+                        .WithMany()
                         .HasForeignKey("PaidFromId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .HasConstraintName("fk_recurring_bill_card_paid_from_id");
+
+                    b.HasOne("Monthwise.Domain.SharedCosts.Participant", null)
+                        .WithMany()
+                        .HasForeignKey("ShareParticipantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_recurring_bill_participant_share_participant_id");
                 });
 
             modelBuilder.Entity("Monthwise.Domain.Loans.Loan", b =>
@@ -1667,12 +1892,24 @@ namespace Monthwise.Infrastructure.Persistence.Migrations
                         .IsRequired()
                         .HasConstraintName("fk_loan_loan_category_category_id");
 
+                    b.HasOne("Monthwise.Domain.Cards.Card", null)
+                        .WithMany()
+                        .HasForeignKey("ContributionAccountId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_loan_card_contribution_account_id");
+
                     b.HasOne("Monthwise.Domain.Cards.Bank", null)
                         .WithMany()
                         .HasForeignKey("LenderId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_loan_bank_lender_id");
+
+                    b.HasOne("Monthwise.Domain.SharedCosts.Participant", null)
+                        .WithMany()
+                        .HasForeignKey("ShareParticipantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_loan_participant_share_participant_id");
 
                     b.HasOne("Monthwise.Domain.Loans.LoanSubcategory", null)
                         .WithMany()
@@ -1684,6 +1921,12 @@ namespace Monthwise.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("Monthwise.Domain.Loans.LoanPayment", b =>
                 {
+                    b.HasOne("Monthwise.Domain.Cards.Card", null)
+                        .WithMany()
+                        .HasForeignKey("ContributionAccountId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_loan_payment_card_contribution_account_id");
+
                     b.HasOne("Monthwise.Domain.Loans.Loan", null)
                         .WithMany()
                         .HasForeignKey("LoanId")
@@ -1696,6 +1939,12 @@ namespace Monthwise.Infrastructure.Persistence.Migrations
                         .HasForeignKey("PaidAccountId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .HasConstraintName("fk_loan_payment_card_paid_account_id");
+
+                    b.HasOne("Monthwise.Domain.SharedCosts.Participant", null)
+                        .WithMany()
+                        .HasForeignKey("ShareParticipantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_loan_payment_participant_share_participant_id");
                 });
 
             modelBuilder.Entity("Monthwise.Domain.Loans.LoanSubcategory", b =>
@@ -1716,6 +1965,16 @@ namespace Monthwise.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_loan_payment_change_loan_loan_id");
+                });
+
+            modelBuilder.Entity("Monthwise.Domain.SharedCosts.Participant", b =>
+                {
+                    b.HasOne("Monthwise.Domain.CashFlow.Payer", null)
+                        .WithMany()
+                        .HasForeignKey("PayerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_participant_payer_payer_id");
                 });
 
             modelBuilder.Entity("Monthwise.Domain.CardPurchases.CardPurchase", b =>

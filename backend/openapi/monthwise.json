@@ -265,6 +265,47 @@
         }
       }
     },
+    "/api/shared-costs": {
+      "get": {
+        "tags": [
+          "Shared costs"
+        ],
+        "summary": "Each participant's shared costs, the month's (yyyy-MM) parts and contributions, and what is outstanding.",
+        "operationId": "GetSharedCosts",
+        "parameters": [
+          {
+            "name": "month",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SharedCostsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/cards": {
       "get": {
         "tags": [
@@ -5767,6 +5808,1055 @@
           }
         }
       }
+    },
+    "/api/participants": {
+      "get": {
+        "tags": [
+          "Shared costs"
+        ],
+        "summary": "The people costs are shared with.",
+        "operationId": "GetParticipants",
+        "parameters": [
+          {
+            "name": "includeArchived",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ParticipantResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Shared costs"
+        ],
+        "operationId": "CreateParticipant",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ParticipantRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ParticipantResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/participants/{id}": {
+      "get": {
+        "tags": [
+          "Shared costs"
+        ],
+        "operationId": "GetParticipant",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ParticipantResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Shared costs"
+        ],
+        "summary": "Edits a participant; the payer of their contributions is renamed with them.",
+        "operationId": "UpdateParticipant",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ParticipantRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ParticipantResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Shared costs"
+        ],
+        "summary": "Deletes a participant that shares no cost.",
+        "operationId": "DeleteParticipant",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/participants/{id}/archive": {
+      "post": {
+        "tags": [
+          "Shared costs"
+        ],
+        "operationId": "ArchiveParticipant",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ParticipantResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/participants/{id}/restore": {
+      "post": {
+        "tags": [
+          "Shared costs"
+        ],
+        "operationId": "RestoreParticipant",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ParticipantResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/loans/{id}/payments/{month}/{kind}/share": {
+      "put": {
+        "tags": [
+          "Loans"
+        ],
+        "summary": "Shares one payment, changes its share or stops sharing it (share null), whatever the loan's share is.",
+        "operationId": "ChangeLoanPaymentShare",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "month",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "kind",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/LoanPaymentKind"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoanPaymentShareRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoanPaymentResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Loans"
+        ],
+        "summary": "The payment follows the loan's share again.",
+        "operationId": "ResetLoanPaymentShare",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "month",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "kind",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/LoanPaymentKind"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoanPaymentResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/bills/{id}/contribution": {
+      "put": {
+        "tags": [
+          "Shared costs"
+        ],
+        "summary": "Edits the contribution; it then keeps its values until it is reset to the part.",
+        "operationId": "EditBillContribution",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ContributionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContributionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/bills/{id}/contribution/received": {
+      "post": {
+        "tags": [
+          "Shared costs"
+        ],
+        "summary": "Ticks the contribution as received: today, to its account, unless given.",
+        "operationId": "MarkBillContributionReceived",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/ContributionReceivedRequest"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContributionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Shared costs"
+        ],
+        "summary": "Unticks Received; a contribution that was not edited follows its cost again.",
+        "operationId": "MarkBillContributionExpected",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContributionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/bills/{id}/contribution/reset": {
+      "post": {
+        "tags": [
+          "Shared costs"
+        ],
+        "summary": "Reset to part: an expected contribution follows its cost again, a received one gets the current part.",
+        "operationId": "ResetBillContribution",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContributionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/loans/{id}/payments/{month}/{kind}/contribution": {
+      "put": {
+        "tags": [
+          "Shared costs"
+        ],
+        "summary": "Edits the contribution; it then keeps its values until it is reset to the part.",
+        "operationId": "EditLoanPaymentContribution",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "month",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "kind",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/LoanPaymentKind"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ContributionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContributionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/loans/{id}/payments/{month}/{kind}/contribution/received": {
+      "post": {
+        "tags": [
+          "Shared costs"
+        ],
+        "summary": "Ticks the contribution as received: today, to its account, unless given.",
+        "operationId": "MarkLoanPaymentContributionReceived",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "month",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "kind",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/LoanPaymentKind"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/ContributionReceivedRequest"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContributionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Shared costs"
+        ],
+        "summary": "Unticks Received; a contribution that was not edited follows its cost again.",
+        "operationId": "MarkLoanPaymentContributionExpected",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "month",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "kind",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/LoanPaymentKind"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContributionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/loans/{id}/payments/{month}/{kind}/contribution/reset": {
+      "post": {
+        "tags": [
+          "Shared costs"
+        ],
+        "summary": "Reset to part: an expected contribution follows its cost again, a received one gets the current part.",
+        "operationId": "ResetLoanPaymentContribution",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "month",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "kind",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/LoanPaymentKind"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContributionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -6019,6 +7109,16 @@
               "string"
             ],
             "format": "date"
+          },
+          "share": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ShareRequest"
+              }
+            ]
           }
         }
       },
@@ -6129,6 +7229,37 @@
           },
           "changesChargedCardPayment": {
             "type": "boolean"
+          },
+          "share": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ShareResponse"
+              }
+            ]
+          },
+          "ownPartCents": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int64"
+          },
+          "isShareChanged": {
+            "type": "boolean",
+            "default": false
+          },
+          "contribution": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ContributionResponse"
+              }
+            ]
           }
         }
       },
@@ -6950,6 +8081,183 @@
           "Month"
         ]
       },
+      "ContributionReceivedRequest": {
+        "required": [
+          "receivedDate",
+          "accountId"
+        ],
+        "type": "object",
+        "properties": {
+          "receivedDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "accountId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          }
+        }
+      },
+      "ContributionRequest": {
+        "required": [
+          "accountId",
+          "amountCents",
+          "expectedDate",
+          "receivedDate",
+          "description"
+        ],
+        "type": "object",
+        "properties": {
+          "accountId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "amountCents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "expectedDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "receivedDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "description": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "ContributionResponse": {
+        "required": [
+          "kind",
+          "billId",
+          "loanId",
+          "month",
+          "paymentKind",
+          "costName",
+          "participant",
+          "partCents",
+          "inputId",
+          "amountCents",
+          "expectedDate",
+          "receivedDate",
+          "isReceived",
+          "isEdited",
+          "needsAccount",
+          "isOverdue",
+          "account"
+        ],
+        "type": "object",
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/ContributionSourceKind"
+          },
+          "billId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "loanId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "month": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "paymentKind": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/LoanPaymentKind"
+              }
+            ]
+          },
+          "costName": {
+            "type": "string"
+          },
+          "participant": {
+            "$ref": "#/components/schemas/NamedReference"
+          },
+          "partCents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "inputId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "amountCents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "expectedDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "receivedDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "isReceived": {
+            "type": "boolean"
+          },
+          "isEdited": {
+            "type": "boolean"
+          },
+          "needsAccount": {
+            "type": "boolean"
+          },
+          "isOverdue": {
+            "type": "boolean"
+          },
+          "account": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NamedReference"
+              }
+            ]
+          }
+        }
+      },
+      "ContributionSourceKind": {
+        "enum": [
+          "Bill",
+          "LoanPayment"
+        ]
+      },
       "DashboardCardsResponse": {
         "required": [
           "hasAnyCards",
@@ -7226,6 +8534,68 @@
           }
         }
       },
+      "InputContributionResponse": {
+        "required": [
+          "kind",
+          "billId",
+          "loanId",
+          "month",
+          "paymentKind",
+          "costName",
+          "partCents",
+          "isEdited",
+          "needsAccount"
+        ],
+        "type": "object",
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/ContributionSourceKind"
+          },
+          "billId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "loanId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "month": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "paymentKind": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/LoanPaymentKind"
+              }
+            ]
+          },
+          "costName": {
+            "type": "string"
+          },
+          "partCents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "isEdited": {
+            "type": "boolean"
+          },
+          "needsAccount": {
+            "type": "boolean"
+          }
+        }
+      },
       "InputEntryResponse": {
         "required": [
           "id",
@@ -7313,6 +8683,16 @@
               },
               {
                 "$ref": "#/components/schemas/RecurrenceFrequency"
+              }
+            ]
+          },
+          "contribution": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/InputContributionResponse"
               }
             ]
           }
@@ -7810,6 +9190,55 @@
           },
           "needsAccount": {
             "type": "boolean"
+          },
+          "share": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ShareResponse"
+              }
+            ]
+          },
+          "ownPartCents": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int64"
+          },
+          "isShareChanged": {
+            "type": "boolean",
+            "default": false
+          },
+          "contribution": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ContributionResponse"
+              }
+            ]
+          }
+        }
+      },
+      "LoanPaymentShareRequest": {
+        "required": [
+          "share"
+        ],
+        "type": "object",
+        "properties": {
+          "share": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ShareRequest"
+              }
+            ]
           }
         }
       },
@@ -7914,6 +9343,20 @@
               "null",
               "string"
             ]
+          },
+          "share": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ShareRequest"
+              }
+            ]
+          },
+          "keepChangedPaymentShares": {
+            "type": "boolean",
+            "default": true
           }
         }
       },
@@ -8053,6 +9496,16 @@
           },
           "needsAccount": {
             "type": "boolean"
+          },
+          "share": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ShareResponse"
+              }
+            ]
           }
         }
       },
@@ -8126,7 +9579,8 @@
           "bills",
           "totals",
           "withCardCents",
-          "notIssuedCount"
+          "notIssuedCount",
+          "ownPartCents"
         ],
         "type": "object",
         "properties": {
@@ -8149,6 +9603,10 @@
           "notIssuedCount": {
             "type": "integer",
             "format": "int32"
+          },
+          "ownPartCents": {
+            "type": "integer",
+            "format": "int64"
           }
         }
       },
@@ -8222,7 +9680,8 @@
         "required": [
           "month",
           "payments",
-          "totals"
+          "totals",
+          "ownPartCents"
         ],
         "type": "object",
         "properties": {
@@ -8237,6 +9696,10 @@
           },
           "totals": {
             "$ref": "#/components/schemas/LoanPaymentTotalsResponse"
+          },
+          "ownPartCents": {
+            "type": "integer",
+            "format": "int64"
           }
         }
       },
@@ -8309,6 +9772,16 @@
           "previousMonthResultCents": {
             "type": "integer",
             "format": "int64"
+          },
+          "sharedCosts": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ReportSharedCostsResponse"
+              }
+            ]
           }
         }
       },
@@ -8356,6 +9829,102 @@
           },
           "isCreditCard": {
             "type": "boolean"
+          }
+        }
+      },
+      "ParticipantRequest": {
+        "required": [
+          "name",
+          "description"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "ParticipantResponse": {
+        "required": [
+          "id",
+          "name",
+          "description",
+          "isArchived",
+          "canBeDeleted"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "isArchived": {
+            "type": "boolean"
+          },
+          "canBeDeleted": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ParticipantSharedCostsResponse": {
+        "required": [
+          "participant",
+          "costs",
+          "monthPartsCents",
+          "monthReceivedCents",
+          "outstandingCents",
+          "monthContributions",
+          "outstanding"
+        ],
+        "type": "object",
+        "properties": {
+          "participant": {
+            "$ref": "#/components/schemas/ParticipantResponse"
+          },
+          "costs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SharedCostResponse"
+            }
+          },
+          "monthPartsCents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "monthReceivedCents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "outstandingCents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "monthContributions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ContributionResponse"
+            }
+          },
+          "outstanding": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ContributionResponse"
+            }
           }
         }
       },
@@ -8565,6 +10134,16 @@
               "null",
               "string"
             ]
+          },
+          "share": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ShareRequest"
+              }
+            ]
           }
         }
       },
@@ -8626,6 +10205,16 @@
           },
           "canBeDeleted": {
             "type": "boolean"
+          },
+          "share": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ShareResponse"
+              }
+            ]
           }
         }
       },
@@ -8865,6 +10454,38 @@
           }
         }
       },
+      "ReportSharedCostsResponse": {
+        "required": [
+          "totalCents",
+          "participantsPartCents",
+          "ownPartCents",
+          "contributionsReceivedCents",
+          "contributionsOutstandingCents"
+        ],
+        "type": "object",
+        "properties": {
+          "totalCents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "participantsPartCents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "ownPartCents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "contributionsReceivedCents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "contributionsOutstandingCents": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
       "RevealedNumberResponse": {
         "required": [
           "value"
@@ -8895,6 +10516,115 @@
           "CardNumber",
           "Iban"
         ]
+      },
+      "SharedCostResponse": {
+        "required": [
+          "kind",
+          "id",
+          "name",
+          "share"
+        ],
+        "type": "object",
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/ContributionSourceKind"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "share": {
+            "$ref": "#/components/schemas/ShareResponse"
+          }
+        }
+      },
+      "SharedCostsResponse": {
+        "required": [
+          "month",
+          "participants"
+        ],
+        "type": "object",
+        "properties": {
+          "month": {
+            "type": "string"
+          },
+          "participants": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ParticipantSharedCostsResponse"
+            }
+          }
+        }
+      },
+      "ShareRequest": {
+        "required": [
+          "participantId",
+          "shares",
+          "participantShares",
+          "contributionAccountId"
+        ],
+        "type": "object",
+        "properties": {
+          "participantId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "shares": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "participantShares": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "contributionAccountId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          }
+        }
+      },
+      "ShareResponse": {
+        "required": [
+          "participant",
+          "shares",
+          "participantShares",
+          "percentage",
+          "contributionAccount"
+        ],
+        "type": "object",
+        "properties": {
+          "participant": {
+            "$ref": "#/components/schemas/NamedReference"
+          },
+          "shares": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "participantShares": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "percentage": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "contributionAccount": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NamedReference"
+              }
+            ]
+          }
+        }
       }
     }
   },
@@ -8910,6 +10640,9 @@
     },
     {
       "name": "Card purchases"
+    },
+    {
+      "name": "Shared costs"
     },
     {
       "name": "Cards"
