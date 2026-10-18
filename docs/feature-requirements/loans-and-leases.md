@@ -304,3 +304,19 @@ contribution, as described in [shared-bills.md](shared-bills.md).
 - The residual value bill of a shared lease is shared with the same shares as its payments.
 - The Month screen also shows the own part of a shared loan payment and of the loan payment totals
   (see [shared-bills.md](shared-bills.md) FR-7).
+
+## Appendix 2: Loans and balances on the redesigned Dashboard
+
+- **Date:** 2026-10-18
+- **Branch:** `feat/design_refresh`
+- **Changes:** FR-3 (where an account with ongoing standing orders is shown), FR-13, acceptance
+  criteria about the expected balance on the Dashboard
+
+- FR-3: a blocked or expired account with a standing-order loan stays in the **Accounts** part of
+  the **Cards** screen (no longer the Dashboard Cards widget) under the same rule.
+- FR-13: the Loans widget is replaced by the **Loans** small card on the Dashboard (see
+  [design-refresh.md](design-refresh.md) FR-10): the total monthly payment of active loans and the
+  total still to repay, shown in red when a loan payment is overdue, opening the Loans screen. It is
+  not shown when no active loans exist. The list of single loans is on the Loans screen.
+- The expected end-of-month balance that loan payments lower is shown on the Cards screen, not the
+  Dashboard.

@@ -274,3 +274,13 @@ a card purchase.
 Acceptance criterion 16 becomes: the user can add and rename expense categories in Settings; the
 same list is offered for card purchases, bills and expenses; a used category can only be hidden,
 and a purchase can be saved without a category.
+
+## Appendix 2: Expected balance on the Cards screen
+
+- **Date:** 2026-10-18
+- **Branch:** `feat/design_refresh`
+- **Changes:** FR-9, acceptance criteria about the expected balance on the Dashboard
+
+The expected end-of-month balance that card payments lower is shown in the **Accounts** part of the
+**Cards** screen, no longer on the Dashboard (see [design-refresh.md](design-refresh.md) FR-12).
+How it is calculated does not change.
