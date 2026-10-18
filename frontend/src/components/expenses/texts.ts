@@ -9,6 +9,7 @@ export const expenseTexts = {
     title: 'Bills',
     empty: 'No bills this month yet.',
     addBill: 'Add bill',
+    paidOf: (paid: number, all: number) => `${paid} of ${all} paid`,
     addRecurring: 'Add recurring bills',
     addRecurringTo: (month: string) => `Add recurring bills to ${month}`,
     added: (count: number, month: string) =>
@@ -50,6 +51,7 @@ export const expenseTexts = {
     title: 'Expenses',
     empty: 'No expenses this month yet.',
     add: 'Add expense',
+    count: (count: number) => `${count} ${count === 1 ? 'expense' : 'expenses'}`,
     edit: 'Edit expense',
     cashWithdrawal: 'Cash withdrawal',
     addCashWithdrawal: 'Cash withdrawal',

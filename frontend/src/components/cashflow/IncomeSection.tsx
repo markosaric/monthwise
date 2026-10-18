@@ -1,4 +1,4 @@
-import { Repeat } from 'lucide-react'
+import { ArrowDownLeft, Repeat } from 'lucide-react'
 import { Link } from 'react-router'
 import { toast } from 'sonner'
 import {
@@ -10,9 +10,13 @@ import {
   type InputTotals,
 } from '@/api/cashFlow'
 import { formatDate } from '@/components/cards/format'
+import { addActions } from '@/components/design/actions'
+import { AddButton } from '@/components/design/AddButton'
+import { meaningColors } from '@/components/design/colors'
+import { CheckButton, ListRow } from '@/components/design/ListRow'
+import { SectionCard } from '@/components/design/SectionCard'
+import { StatusChip } from '@/components/design/StatusChip'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Card, CardAction, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ContributionGroup } from '@/components/sharedCosts/ContributionGroup'
 import { formatCents } from '@/lib/money'
 import { cn } from '@/lib/utils'
@@ -26,18 +30,27 @@ const t = cashFlowTexts
  */
 export function IncomeSection({ month }: { month: string }) {
   const { data, isPending, isError } = useMonthInputs(month)
+  const received = data?.inputs.filter((i) => i.isReceived).length ?? 0
+  const all = data?.inputs.length ?? 0
 
   return (
-    <Card className="max-w-3xl">
-      <CardHeader>
-        <CardTitle>{t.income}</CardTitle>
-        <CardAction>
-          <Button asChild size="sm">
-            <Link to={`/month/${month}/inputs/new`}>{t.addInput}</Link>
-          </Button>
-        </CardAction>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-3">
+    <SectionCard
+      icon={ArrowDownLeft}
+      color={meaningColors.moneyIn}
+      title={t.income}
+      status={data && all > 0 ? t.receivedOf(received, all) : undefined}
+      total={data ? formatCents(data.totals.totalCents) : undefined}
+      defaultOpen={!data || all === 0 || received < all}
+      actions={
+        <AddButton
+          to={`/month/${month}/inputs/new`}
+          label={t.addInput}
+          icon={addActions.income.icon}
+          color={addActions.income.color}
+        />
+      }
+    >
+      <div className="flex flex-col gap-3">
         {isPending && <p className="text-sm text-muted-foreground">Loading…</p>}
         {isError && <p className="text-sm text-destructive">Inputs could not be loaded.</p>}
         {data && data.inputs.length === 0 && (
@@ -61,8 +74,8 @@ export function IncomeSection({ month }: { month: string }) {
             <Totals totals={data.totals} />
           </>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </SectionCard>
   )
 }
 
@@ -92,7 +105,6 @@ function groupContributions(entries: InputEntry[]): (InputEntry | InputEntry[])[
 
 function InputRow({ month, entry }: { month: string; entry: InputEntry }) {
   const setReceived = useSetReceived()
-  const checkboxId = `received-${entry.id ?? `${entry.recurringInputId}-${entry.occurrenceDate}`}`
   // A calculated occurrence can be ticked but not unticked: unticking a stored one makes it expected again.
   const lateOrEarly = entry.receivedDate !== null && entry.receivedDate !== entry.expectedDate
 
@@ -105,56 +117,61 @@ function InputRow({ month, entry }: { month: string; entry: InputEntry }) {
   }
 
   return (
-    <li
-      className={cn('flex items-start gap-3 py-3', !entry.isReceived && 'text-muted-foreground')}
+    <ListRow
+      label={entry.payer.name}
       data-expected={!entry.isReceived || undefined}
-    >
-      <input
-        id={checkboxId}
-        type="checkbox"
-        className="mt-1 size-4 accent-primary"
-        checked={entry.isReceived}
-        disabled={setReceived.isPending}
-        onChange={(event) => toggle(event.target.checked)}
-        aria-label={`${t.fields.received}: ${entry.payer.name}`}
-      />
-      <Link
-        to={entryEditPath(month, entry)}
-        className="flex min-w-0 flex-1 flex-col gap-0.5 hover:underline"
-      >
-        <span className="flex flex-wrap items-center gap-2">
-          <span className={cn('font-medium', entry.isReceived && 'text-foreground')}>
-            {entry.payer.name}
-          </span>
+      dimmed={!entry.isReceived}
+      check={
+        <CheckButton
+          checked={entry.isReceived}
+          disabled={setReceived.isPending}
+          onChange={(event) => toggle(event.target.checked)}
+          label={`${t.fields.received}: ${entry.payer.name}`}
+        />
+      }
+      title={
+        <Link to={entryEditPath(month, entry)} className="hover:underline">
+          {entry.payer.name}
+        </Link>
+      }
+      date={formatDate(entry.receivedDate ?? entry.expectedDate)}
+      chips={
+        <>
+          <StatusChip
+            status={entry.isReceived ? 'done' : 'expected'}
+            label={entry.isReceived ? t.totals.received : t.totals.expected}
+          />
           {entry.isRecurring && (
             <Badge variant="secondary" className="gap-1">
               <Repeat className="size-3" aria-hidden />
               {entry.frequency ? t.frequencies[entry.frequency] : t.fields.recurring}
             </Badge>
           )}
+        </>
+      }
+      amount={formatCents(entry.amountCents)}
+      details={
+        <span className="flex flex-col gap-0.5">
+          <span>
+            {entry.category.name} · {entry.account.name}
+            {entry.description && ` · ${entry.description}`}
+          </span>
+          <span className="text-xs">
+            {entry.receivedDate ? (
+              <>
+                {t.totals.received} {formatDate(entry.receivedDate)}
+                {lateOrEarly && ` (${t.receivedLate} ${formatDate(entry.expectedDate)})`}
+              </>
+            ) : (
+              <>
+                {t.totals.expected} {formatDate(entry.expectedDate)}
+              </>
+            )}
+            {` · ${t.fields.issueDate.split(' (')[0]} ${formatDate(entry.issueDate)}`}
+          </span>
         </span>
-        <span className="text-sm">
-          {entry.category.name} · {entry.account.name}
-          {entry.description && ` · ${entry.description}`}
-        </span>
-        <span className="text-xs">
-          {entry.receivedDate ? (
-            <>
-              {t.totals.received} {formatDate(entry.receivedDate)}
-              {lateOrEarly && ` (${t.receivedLate} ${formatDate(entry.expectedDate)})`}
-            </>
-          ) : (
-            <>
-              {t.totals.expected} {formatDate(entry.expectedDate)}
-            </>
-          )}
-          {` · ${t.fields.issueDate.split(' (')[0]} ${formatDate(entry.issueDate)}`}
-        </span>
-      </Link>
-      <span className={cn('font-medium tabular-nums', entry.isReceived && 'text-foreground')}>
-        {formatCents(entry.amountCents)}
-      </span>
-    </li>
+      }
+    />
   )
 }
 

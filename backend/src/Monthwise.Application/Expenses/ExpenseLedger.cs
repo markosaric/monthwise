@@ -173,9 +173,11 @@ public sealed class ExpenseBook
     /// paid with a credit card. An expected bill counts on its due date, also when it will be paid with a
     /// credit card; it then has no account yet.
     /// </summary>
-    public IEnumerable<ExpenseOutput> Outputs()
-    {
-        var bills = Bills
+    public IEnumerable<ExpenseOutput> Outputs() => BillOutputs().Concat(ExpenseOutputs());
+
+    /// <summary>The bills among <see cref="Outputs"/>.</summary>
+    public IEnumerable<ExpenseOutput> BillOutputs() =>
+        Bills
             .Where(b => b.IsIssued && !IsPaidWithCard(b))
             .Select(b => new ExpenseOutput(
                 b.CashFlowDate!.Value,
@@ -183,11 +185,12 @@ public sealed class ExpenseBook
                 b.Amount,
                 IsCreditCard(b.PaidFromId) ? null : b.PaidFromId,
                 b.CategoryId));
-        var expenses = Expenses
+
+    /// <summary>The expenses and cash withdrawals among <see cref="Outputs"/>.</summary>
+    public IEnumerable<ExpenseOutput> ExpenseOutputs() =>
+        Expenses
             .Where(e => !IsPaidWithCard(e))
             .Select(e => new ExpenseOutput(e.Date, true, e.Amount, e.PaidFromId, e.CategoryId));
-        return bills.Concat(expenses);
-    }
 
     public IEnumerable<ExpenseOutput> OutputsBetween(DateOnly from, DateOnly to) => Outputs().Where(o => o.Date >= from && o.Date <= to);
 }

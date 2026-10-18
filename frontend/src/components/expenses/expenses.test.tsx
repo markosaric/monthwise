@@ -49,6 +49,46 @@ function lastBody(fetchMock: ReturnType<typeof stubApi>, method: string) {
 }
 
 describe('Bills on the Month screen', () => {
+  it('keeps the add buttons in their sections and shows short rows with details on request', async () => {
+    stubApi({
+      ...monthApi,
+      'GET /api/bills': () =>
+        json(
+          aBillMonth([
+            aBill({ isOverdue: true }),
+            aBill({ id: 'bill-2', name: 'Water', state: 'Paid', paidDate: '2026-10-05' }),
+          ]),
+        ),
+      'GET /api/expenses': () => json(anExpenseMonth([])),
+    })
+    renderRoute(`/month/${month}`)
+
+    // Design refresh FR-15: the add buttons stay in the section they belong to.
+    const bills = await screen.findByRole('region', { name: t.bills.title })
+    expect(within(bills).getByRole('link', { name: t.bills.addBill })).toHaveAttribute(
+      'href',
+      `/month/${month}/bills/new`,
+    )
+    expect(within(bills).getByRole('button', { name: t.bills.addRecurring })).toBeInTheDocument()
+    expect(await within(bills).findByText('1 of 2 paid')).toBeInTheDocument()
+    expect(screen.queryByRole('navigation', { name: 'Quick actions' })).not.toBeInTheDocument()
+    const expenses = screen.getByRole('region', { name: t.expenses.title })
+    expect(within(expenses).getByRole('link', { name: t.expenses.add })).toBeInTheDocument()
+    expect(
+      within(expenses).getByRole('link', { name: t.expenses.addCashWithdrawal }),
+    ).toHaveAttribute('href', `/month/${month}/expenses/new?kind=cash`)
+
+    // A row shows its status; category and account only when expanded.
+    const row = within(bills).getByRole('link', { name: 'Electricity, apartment' }).closest('li')!
+    expect(within(row).getByText(t.labels.overdue)).toBeInTheDocument()
+    const details = within(row).getByText(/Electricity · Tekući račun/)
+    expect(details).not.toBeVisible()
+    await userEvent.click(
+      within(row).getByRole('button', { name: 'Show details: Electricity, apartment' }),
+    )
+    expect(details).toBeVisible()
+  })
+
   it('shows not issued bills without a Paid box, overdue and card markers, and totals', async () => {
     stubApi({
       ...monthApi,
@@ -199,6 +239,8 @@ describe('Expenses', () => {
     })
     renderRoute(`/month/${month}`)
 
+    // Expenses are always paid, so the section starts collapsed (design refresh FR-15).
+    await userEvent.click(await screen.findByRole('button', { name: `Expand ${t.expenses.title}` }))
     expect(await screen.findAllByRole('link', { name: 'Konzum' })).toHaveLength(2)
     expect(screen.getByText(t.expenses.totals.cash).nextElementSibling).toHaveTextContent(
       '100,00 €',

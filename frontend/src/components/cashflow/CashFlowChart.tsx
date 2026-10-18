@@ -1,4 +1,13 @@
-import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
+import {
+  Bar,
+  CartesianGrid,
+  ComposedChart,
+  Line,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts'
 import type { CashFlowChart as ChartData, ChartGranularity } from '@/api/cashFlow'
 import { formatDate } from '@/components/cards/format'
 import { formatDayShort, formatYearMonth, monthOf } from '@/lib/dates'
@@ -21,6 +30,8 @@ interface Row {
   expected: number
   outputPaid: number
   outputExpected: number
+  /** All inputs minus all outputs of the bucket. */
+  result: number
 }
 
 function toRows(chart: ChartData): Row[] {
@@ -31,6 +42,7 @@ function toRows(chart: ChartData): Row[] {
     expected: b.expectedCents,
     outputPaid: b.outputPaidCents,
     outputExpected: b.outputExpectedCents,
+    result: b.receivedCents + b.expectedCents - b.outputPaidCents - b.outputExpectedCents,
   }))
 }
 
@@ -63,6 +75,10 @@ export function ChartLegend() {
           {s.label}
         </li>
       ))}
+      <li className="flex items-center gap-2">
+        <span className="h-0.5 w-4 rounded-full bg-foreground" aria-hidden />
+        {t.result}
+      </li>
     </ul>
   )
 }
@@ -88,7 +104,7 @@ export function CashFlowChart({
       aria-label={`${t.title}: ${series.map((s) => s.label).join(', ')}`}
     >
       <ResponsiveContainer width="100%" height="100%">
-        <BarChart
+        <ComposedChart
           data={rows}
           margin={{ top: 8, right: 8, bottom: 0, left: 0 }}
           barCategoryGap={monthly ? '25%' : '15%'}
@@ -128,6 +144,7 @@ export function CashFlowChart({
                   {series.map((s) => (
                     <TooltipLine key={s.key} color={s.color} label={s.label} cents={row[s.key]} />
                   ))}
+                  <TooltipLine color="var(--foreground)" label={t.result} cents={row.result} />
                 </div>
               )
             }}
@@ -144,7 +161,15 @@ export function CashFlowChart({
               isAnimationActive={false}
             />
           ))}
-        </BarChart>
+          <Line
+            dataKey="result"
+            type="monotone"
+            stroke="var(--foreground)"
+            strokeWidth={2}
+            dot={monthly}
+            isAnimationActive={false}
+          />
+        </ComposedChart>
       </ResponsiveContainer>
     </div>
   )

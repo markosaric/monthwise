@@ -1,6 +1,9 @@
 import { useMonthCardPayments } from '@/api/cardPurchases'
 import { PaymentTotals } from '@/components/loans/LoanPaymentsSection'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { CreditCard } from 'lucide-react'
+import { sectionColors } from '@/components/design/colors'
+import { SectionCard } from '@/components/design/SectionCard'
+import { formatCents } from '@/lib/money'
 import { CardPaymentRow } from './CardPaymentRow'
 import { cardPurchaseTexts } from './texts'
 
@@ -12,13 +15,19 @@ const t = cardPurchaseTexts
  */
 export function CardPaymentsSection({ month }: { month: string }) {
   const { data, isPending, isError } = useMonthCardPayments(month)
+  const paid = data?.payments.filter((p) => p.isPaid).length ?? 0
+  const all = data?.payments.length ?? 0
 
   return (
-    <Card className="max-w-3xl">
-      <CardHeader>
-        <CardTitle>{t.monthTitle}</CardTitle>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-3">
+    <SectionCard
+      icon={CreditCard}
+      color={sectionColors.cards}
+      title={t.monthTitle}
+      status={data && all > 0 ? `${paid} of ${all} paid` : undefined}
+      total={data ? formatCents(data.totals.totalCents) : undefined}
+      defaultOpen={!data || all === 0 || paid < all}
+    >
+      <div className="flex flex-col gap-3">
         {isPending && <p className="text-sm text-muted-foreground">Loading…</p>}
         {isError && <p className="text-sm text-destructive">Card payments could not be loaded.</p>}
         {data && data.payments.length === 0 && (
@@ -34,7 +43,7 @@ export function CardPaymentsSection({ month }: { month: string }) {
             <PaymentTotals totals={data.totals} />
           </>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </SectionCard>
   )
 }

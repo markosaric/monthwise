@@ -62,6 +62,7 @@ api.MapLoanEndpoints();
 api.MapCardPurchaseEndpoints();
 api.MapExpenseEndpoints();
 api.MapSharedCostEndpoints();
+api.MapDashboardEndpoints();
 
 await app.RunAsync();
 

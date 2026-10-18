@@ -167,7 +167,8 @@ describe('Income section on the Month screen', () => {
       within(receivedRow).getByText(/Received 12\.10\.2026 \(expected 10\.10\.2026\)/),
     ).toBeInTheDocument()
     expect(screen.getAllByText('50,00 €').length).toBeGreaterThan(0)
-    expect(screen.getByText('1.050,00 €')).toBeInTheDocument()
+    // The total is in the section header and in the totals below the list.
+    expect(screen.getAllByText('1.050,00 €')).toHaveLength(2)
   })
 
   it('ticks a calculated occurrence of a recurring input', async () => {
@@ -204,7 +205,7 @@ describe('Income section on the Month screen', () => {
   })
 })
 
-describe('Dashboard balances', () => {
+describe('Account balances on the Cards screen', () => {
   it('shows current and expected balance and the starting balance hint', async () => {
     stubApi({
       ...healthy,
@@ -222,15 +223,82 @@ describe('Dashboard balances', () => {
           ],
         }),
     })
-    renderRoute('/')
+    renderRoute('/cards')
 
-    expect(await screen.findByText('-25,00 €')).toHaveClass('text-destructive')
-    expect(screen.getByText('1.800,00 €')).toBeInTheDocument()
-    expect(screen.getByText(t.balance.noStarting)).toBeInTheDocument()
+    const accounts = (await screen.findByText('Tekući')).closest('[data-slot=card]') as HTMLElement
+    expect(within(accounts).getByText('-25,00 €')).toHaveClass('text-destructive')
+    expect(within(accounts).getByText('1.800,00 €')).toBeInTheDocument()
+    expect(within(accounts).getByText(t.balance.noStarting)).toBeInTheDocument()
+    // The Cards screen adds up the listed accounts in its key figures.
+    const figures = screen.getByRole('region', { name: 'Key figures' })
+    expect(within(figures).getByText('Current balance').parentElement).toHaveTextContent('-25,00 €')
+    expect(within(figures).getByText('Expected at end of month').parentElement).toHaveTextContent(
+      '1.800,00 €',
+    )
   })
 })
 
 describe('Cash flow dashboard and report', () => {
+  it('shows key figures, keeps filters behind one button and lists the months', async () => {
+    const month = todayIso().slice(0, 7)
+    const fetchMock = stubApi({
+      'GET /api/cards': () => json([aCard({ id: 'tekuci', name: 'Tekući' })]),
+      ...lists,
+      'GET /api/cash-flow/chart': () =>
+        json({
+          from: `${month}-01`,
+          to: lastDayOf(month),
+          granularity: 'Day',
+          buckets: [
+            {
+              start: `${month}-02`,
+              receivedCents: 185000,
+              expectedCents: 2000,
+              outputPaidCents: 50000,
+              outputExpectedCents: 7000,
+            },
+          ],
+        }),
+    })
+    renderRoute('/cash-flow')
+
+    const figures = await screen.findByRole('region', { name: t.cashFlow.keyFigures })
+    expect(within(figures).getByText(t.cashFlow.inputs).parentElement).toHaveTextContent(
+      '1.870,00 €',
+    )
+    expect(within(figures).getByText(t.cashFlow.outputs).parentElement).toHaveTextContent(
+      '570,00 €',
+    )
+    expect(screen.getByRole('link', { name: /\+1\.300,00/ })).toHaveAttribute(
+      'href',
+      `/cash-flow/${month}`,
+    )
+    // The filters are not on the screen until the Filters button is pressed.
+    expect(screen.queryByLabelText(cashFlowTexts.fields.account)).not.toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: t.cashFlow.filters }))
+    await userEvent.selectOptions(
+      await screen.findByLabelText(cashFlowTexts.fields.account),
+      'Tekući',
+    )
+    await userEvent.keyboard('{Escape}')
+
+    const remove = await screen.findByRole('button', {
+      name: t.cashFlow.removeFilter(cashFlowTexts.fields.account),
+    })
+    expect(remove.parentElement).toHaveTextContent('Tekući')
+    await waitFor(() =>
+      expect(
+        fetchMock.mock.calls.some(([request]) =>
+          String((request as Request).url).includes('accountId=tekuci'),
+        ),
+      ).toBe(true),
+    )
+    await userEvent.click(remove)
+    expect(
+      screen.queryByRole('button', { name: t.cashFlow.removeFilter(cashFlowTexts.fields.account) }),
+    ).not.toBeInTheDocument()
+  })
+
   it('shows the chart data as a table', async () => {
     const month = todayIso().slice(0, 7)
     stubApi({
@@ -345,9 +413,15 @@ describe('Cash flow dashboard and report', () => {
     expect(screen.getByText(t.balance.kinds.Correction)).toBeInTheDocument()
     expect(screen.getByText('(-5,00 €)')).toBeInTheDocument()
     expect(screen.getByText(t.report.monthResult)).toBeInTheDocument()
-    expect(screen.getByText('1.250,00 €')).toBeInTheDocument()
-    expect(screen.getByText('Lease')).toBeInTheDocument()
+    // The month result is a key figure (with its change against last month) and in the result card.
+    expect(screen.getAllByText('1.250,00 €')).toHaveLength(2)
+    const figures = screen.getByRole('region', { name: 'Key figures' })
+    expect(within(figures).getByText('Month result').parentElement).toHaveTextContent('up 4%')
+    // Lease is in the outputs ring legend and in the outputs by category list.
+    expect(screen.getAllByText('Lease')).toHaveLength(2)
     expect(screen.getByText('No account yet')).toBeInTheDocument()
+    // Only the category groups start open (design refresh FR-17).
+    await userEvent.click(screen.getByRole('button', { name: t.report.outputsByCard }))
     expect(screen.getByRole('link', { name: 'Family Visa' })).toHaveAttribute(
       'href',
       '/cards/card-1/payments/2026-10',

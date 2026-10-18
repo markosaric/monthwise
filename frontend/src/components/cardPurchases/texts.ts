@@ -81,6 +81,7 @@ export const cardPurchaseTexts = {
     due: 'Payment date',
     paidOn: 'Paid on',
     paid: 'Paid',
+    expected: 'Expected',
     automatic: 'Charged automatically',
     paidTitle: 'Card payment paid',
     paidDescription: 'Card payment of',

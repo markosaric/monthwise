@@ -122,6 +122,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/dashboard": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** How the current month is going: key figures, what is still to pay and coming up, and section summaries. */
+        get: operations["GetDashboard"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/cards": {
         parameters: {
             query?: never;
@@ -1841,10 +1858,105 @@ export interface components {
         };
         /** @enum {unknown} */
         ContributionSourceKind: "Bill" | "LoanPayment";
+        DashboardCardPaymentsResponse: {
+            /** Format: int64 */
+            monthTotalCents: number;
+            /** Format: int32 */
+            count: number;
+            /** Format: int32 */
+            cardsWithInstallments: number;
+        };
         DashboardCardsResponse: {
             hasAnyCards: boolean;
             cards: components["schemas"]["CardResponse"][];
             balances: components["schemas"]["AccountBalanceResponse"][];
+        };
+        /** @enum {unknown} */
+        DashboardItemKind: "Bill" | "LoanPayment" | "CardPayment" | "Input";
+        DashboardItemResponse: {
+            kind: components["schemas"]["DashboardItemKind"];
+            name: string;
+            /** Format: date */
+            date: string;
+            /** Format: int64 */
+            amountCents: number;
+        };
+        DashboardLoansResponse: {
+            /** Format: int32 */
+            activeCount: number;
+            /** Format: int64 */
+            monthlyPaymentCents: number;
+            /** Format: int64 */
+            remainingCents: number;
+            hasOverdue: boolean;
+        };
+        DashboardMonthResponse: {
+            month: string;
+            /** Format: int64 */
+            inputsCents: number;
+            /** Format: int64 */
+            outputsCents: number;
+        };
+        DashboardOutputsByKindResponse: {
+            /** Format: int64 */
+            billsCents: number;
+            /** Format: int64 */
+            expensesCents: number;
+            /** Format: int64 */
+            loanPaymentsCents: number;
+            /** Format: int64 */
+            cardPaymentsCents: number;
+        };
+        DashboardRecurringBillsResponse: {
+            /** Format: int32 */
+            activeCount: number;
+            /** Format: int32 */
+            notIssuedThisMonth: number;
+        };
+        DashboardResponse: {
+            month: string;
+            /** Format: date */
+            today: string;
+            inputs: components["schemas"]["DashboardTotalsResponse"];
+            outputs: components["schemas"]["DashboardTotalsResponse"];
+            /** Format: int64 */
+            monthResultCents: number;
+            /** Format: int64 */
+            previousMonthResultCents: number;
+            stillToPay: components["schemas"]["DashboardStillToPayResponse"];
+            nextDue: null | components["schemas"]["DashboardItemResponse"];
+            comingUp: components["schemas"]["DashboardItemResponse"][];
+            outputsByKind: components["schemas"]["DashboardOutputsByKindResponse"];
+            lastSixMonths: components["schemas"]["DashboardMonthResponse"][];
+            loans: null | components["schemas"]["DashboardLoansResponse"];
+            cardPayments: null | components["schemas"]["DashboardCardPaymentsResponse"];
+            sharedCosts: null | components["schemas"]["DashboardSharedCostsResponse"];
+            recurringBills: null | components["schemas"]["DashboardRecurringBillsResponse"];
+        };
+        DashboardSharedCostsResponse: {
+            /** Format: int64 */
+            outstandingCents: number;
+            /** Format: int32 */
+            participantsOwing: number;
+            hasOverdue: boolean;
+        };
+        DashboardStillToPayResponse: {
+            /** Format: int64 */
+            totalCents: number;
+            /** Format: int32 */
+            count: number;
+            /** Format: int64 */
+            overdueCents: number;
+            /** Format: int32 */
+            overdueCount: number;
+        };
+        DashboardTotalsResponse: {
+            /** Format: int64 */
+            totalCents: number;
+            /** Format: int64 */
+            doneCents: number;
+            /** Format: int64 */
+            previousMonthTotalCents: number;
         };
         ExpenseCategoryResponse: {
             /** Format: uuid */
@@ -2705,6 +2817,26 @@ export interface operations {
                 };
                 content: {
                     "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+        };
+    };
+    GetDashboard: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DashboardResponse"];
                 };
             };
         };

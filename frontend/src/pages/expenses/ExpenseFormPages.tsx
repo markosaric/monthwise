@@ -15,6 +15,7 @@ import { expenseTexts } from '@/components/expenses/texts'
 import { messageOf } from '@/components/loans/messageOf'
 import { Button } from '@/components/ui/button'
 import { isYearMonth, monthOf, todayIso } from '@/lib/dates'
+import { useReturnTo } from '@/lib/returnTo'
 import { PageHeader } from '@/pages/PageHeader'
 
 const t = expenseTexts
@@ -27,6 +28,7 @@ export function ExpenseNewPage() {
   const { yearMonth } = useParams()
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
+  const returnTo = useReturnTo()
   const cash = searchParams.get('kind') === 'cash'
   const { data: cards, isPending } = useCards('Default')
   const { data: last, isPending: lastPending } = useLastExpensePaidFrom()
@@ -53,7 +55,7 @@ export function ExpenseNewPage() {
         cashWithdrawal={cash}
         defaultValues={emptyExpenseFormValues(date, paidFromId)}
         submitLabel={t.actions.save}
-        onCancel={() => navigate(-1)}
+        onCancel={() => (returnTo ? navigate(returnTo) : navigate(-1))}
         onSubmit={async (request) => {
           await change.mutateAsync(
             cash
@@ -69,7 +71,7 @@ export function ExpenseNewPage() {
               : { action: 'create', request },
           )
           toast.success(t.saved)
-          navigate(`/month/${monthOf(request.date)}`, { replace: true })
+          navigate(returnTo ?? `/month/${monthOf(request.date)}`, { replace: true })
         }}
       />
     </>

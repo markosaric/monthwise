@@ -11,7 +11,7 @@ import { formatMonth } from './format'
 import { cardTexts } from './texts'
 
 /**
- * One card in the Settings list or the Dashboard widget; links to its details. On the Dashboard
+ * One card in the Settings list or the Accounts part of the Cards screen; links to its details. There
  * (`compact`) it shows only name, primary mark, status, masked numbers and the current and expected
  * end-of-month balance (card settings Appendix 1, input cash flow FR-11).
  */

@@ -211,7 +211,9 @@ The Dashboard always shows the **current month** and shows, from top to bottom:
      installments.
    - **Shared costs:** outstanding contributions total, and the number of participants who owe
      something (red when any is overdue).
-   - **Recurring bills:** number of active recurring bills and their monthly total.
+   - **Recurring bills:** number of active recurring bills, and how many of this month's bills from
+     them are not issued yet (recurring bills have no amount of their own, so there is no monthly
+     total).
    A small card is not shown when its section has no data (e.g. no loans).
 
 **FR-11 Empty Dashboard**

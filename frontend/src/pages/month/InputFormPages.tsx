@@ -29,6 +29,7 @@ import { cashFlowTexts } from '@/components/cashflow/texts'
 import { Button } from '@/components/ui/button'
 import { currentMonth, isYearMonth, monthOf, todayIso } from '@/lib/dates'
 import { formatCents } from '@/lib/money'
+import { useReturnTo } from '@/lib/returnTo'
 import { PageHeader } from '@/pages/PageHeader'
 
 const t = cashFlowTexts
@@ -42,6 +43,7 @@ function useMonthParam(): string {
 export function InputNewPage() {
   const month = useMonthParam()
   const navigate = useNavigate()
+  const returnTo = useReturnTo()
   const { data: cards, isPending } = useCards('Default')
   const createInput = useCreateInput()
 
@@ -57,11 +59,13 @@ export function InputNewPage() {
         mode="new"
         defaultValues={emptyInputFormValues(defaultAccountId(cards ?? []), issue, expected)}
         submitLabel={t.addInput}
-        onCancel={() => navigate(-1)}
+        onCancel={() => (returnTo ? navigate(returnTo) : navigate(-1))}
         onSubmit={async (values) => {
           const entry = await createInput.mutateAsync(toInputRequest(values, true))
           toast.success(t.saved)
-          navigate(`/month/${monthOf(entry.receivedDate ?? entry.expectedDate)}`, { replace: true })
+          navigate(returnTo ?? `/month/${monthOf(entry.receivedDate ?? entry.expectedDate)}`, {
+            replace: true,
+          })
         }}
       />
     </>

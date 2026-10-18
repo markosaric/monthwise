@@ -2,11 +2,28 @@
 @import 'tw-animate-css';
 @import 'shadcn/tailwind.css';
 @import '@fontsource-variable/geist';
+@import '@fontsource-variable/fraunces';
 
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --font-heading: var(--font-sans);
+  --font-heading: 'Fraunces Variable', Georgia, serif;
+  --color-section-dashboard: var(--section-dashboard);
+  --color-section-month: var(--section-month);
+  --color-section-cashflow: var(--section-cashflow);
+  --color-section-cards: var(--section-cards);
+  --color-section-loans: var(--section-loans);
+  --color-section-shared: var(--section-shared);
+  --color-section-savings: var(--section-savings);
+  --color-section-settings: var(--section-settings);
+  --color-money-in: var(--money-in);
+  --color-money-out: var(--money-out);
+  --color-money-in-text: var(--money-in-text);
+  --color-money-out-text: var(--money-out-text);
+  --color-expense: var(--expense);
+  --color-highlight: var(--highlight);
+  --color-problem: var(--problem);
+  --color-page: var(--page);
   --font-sans: 'Geist Variable', sans-serif;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
@@ -51,6 +68,24 @@
 :root {
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
+  /* Design refresh (FR-1, FR-7): one colour per section and colours with a fixed meaning. */
+  --page: #f6f7fb;
+  --section-dashboard: #6366f1;
+  --section-month: #3b82f6;
+  --section-cashflow: #0d9488;
+  --section-cards: #8b5cf6;
+  --section-loans: #9a3412;
+  --section-shared: #db2777;
+  --section-savings: #16a34a;
+  --section-settings: #64748b;
+  --money-in: #16a34a;
+  --money-out: #ea580c;
+  --expense: #ca8a04;
+  --highlight: #0f766e;
+  /* Darker shades for amounts written in these colours, readable on white (NFR-1). */
+  --money-in-text: #15803d;
+  --money-out-text: #c2410c;
+  --problem: #dc2626;
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
@@ -72,11 +107,11 @@
   --chart-3: oklch(0.439 0 0);
   --chart-4: oklch(0.371 0 0);
   --chart-5: oklch(0.269 0 0);
-  /* Cash flow chart: one blue hue, received strong and expected lighter (validated ordinal ramp). */
-  --chart-received: #2a78d6;
-  --chart-expected: #86b6ef;
-  --chart-output-paid: #d4572a;
-  --chart-output-expected: #f0b396;
+  /* Cash flow chart: inputs green, outputs orange; received or paid strong, expected a lighter tint. */
+  --chart-received: #16a34a;
+  --chart-expected: #9fdcb4;
+  --chart-output-paid: #ea580c;
+  --chart-output-expected: #f7bf9b;
   --radius: 0.625rem;
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
@@ -131,7 +166,12 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-page text-foreground;
+  }
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-heading);
   }
   html {
     @apply font-sans;

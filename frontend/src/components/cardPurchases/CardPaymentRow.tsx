@@ -7,6 +7,8 @@ import { formatDate } from '@/components/cards/format'
 import { messageOf } from '@/components/loans/messageOf'
 import { PaymentDialog } from '@/components/loans/PaymentDialogs'
 import { payingAccounts } from '@/components/loans/loanFormModel'
+import { CheckButton, ListRow } from '@/components/design/ListRow'
+import { StatusChip } from '@/components/design/StatusChip'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -14,7 +16,6 @@ import { Label } from '@/components/ui/label'
 import { NativeSelect } from '@/components/ui/native-select'
 import { formatYearMonth, todayIso } from '@/lib/dates'
 import { formatCents } from '@/lib/money'
-import { cn } from '@/lib/utils'
 import { cardPurchaseTexts } from './texts'
 
 const t = cardPurchaseTexts
@@ -47,68 +48,78 @@ export function CardPaymentRow({
   }
 
   return (
-    <li
-      className={cn('flex items-start gap-3 py-3', !payment.isPaid && 'text-muted-foreground')}
+    <ListRow
+      label={title}
       data-expected={!payment.isPaid || undefined}
-    >
-      <input
-        type="checkbox"
-        className="mt-1 size-4 accent-primary"
-        checked={payment.isPaid}
-        disabled={action.isPending}
-        onChange={(event) => (event.target.checked ? setPaidOpen(true) : untick())}
-        aria-label={`${t.payment.paid}: ${payment.cardName} ${payment.month}`}
-      />
-      <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-        <span className="flex flex-wrap items-center gap-2">
-          <Link
-            to={`/cards/${payment.cardId}/payments/${payment.month}`}
-            className={cn('font-medium hover:underline', payment.isPaid && 'text-foreground')}
-          >
-            {title}
-          </Link>
+      dimmed={!payment.isPaid}
+      check={
+        <CheckButton
+          checked={payment.isPaid}
+          disabled={action.isPending}
+          onChange={(event) => (event.target.checked ? setPaidOpen(true) : untick())}
+          label={`${t.payment.paid}: ${payment.cardName} ${payment.month}`}
+        />
+      }
+      title={
+        <Link to={`/cards/${payment.cardId}/payments/${payment.month}`} className="hover:underline">
+          {title}
+        </Link>
+      }
+      date={formatDate(payment.paidDate ?? payment.paymentDate)}
+      chips={
+        <>
+          {payment.isOverdue ? (
+            <StatusChip status="overdue" label={t.labels.overdue} />
+          ) : (
+            <StatusChip
+              status={payment.isPaid ? 'done' : 'expected'}
+              label={payment.isPaid ? t.payment.paid : t.payment.expected}
+            />
+          )}
           {payment.paysFromAccountDirectly && (
             <Badge variant="outline">{t.payment.automatic}</Badge>
           )}
-          {payment.isOverdue && <Badge variant="destructive">{t.labels.overdue}</Badge>}
           {payment.needsAccount && <Badge variant="destructive">{t.labels.needsAccount}</Badge>}
-        </span>
-        <span className="text-sm">
-          {t.payment.period} {formatDate(payment.periodFrom)} – {formatDate(payment.statementDate)}
-          {payment.account && ` · ${payment.account.name}`}
-        </span>
-        <span className="text-xs">
-          {payment.paidDate ? (
-            <>
-              {t.payment.paidOn} {formatDate(payment.paidDate)}
-              {paidOnOtherDay &&
-                ` (${t.payment.due.toLowerCase()} ${formatDate(payment.paymentDate)})`}
-            </>
-          ) : (
-            <>
-              {t.payment.due} {formatDate(payment.paymentDate)}
-            </>
+        </>
+      }
+      amount={formatCents(payment.amountCents)}
+      details={
+        <span className="flex flex-col gap-0.5">
+          <span>
+            {t.payment.period} {formatDate(payment.periodFrom)} –{' '}
+            {formatDate(payment.statementDate)}
+            {payment.account && ` · ${payment.account.name}`}
+          </span>
+          <span className="text-xs">
+            {payment.paidDate ? (
+              <>
+                {t.payment.paidOn} {formatDate(payment.paidDate)}
+                {paidOnOtherDay &&
+                  ` (${t.payment.due.toLowerCase()} ${formatDate(payment.paymentDate)})`}
+              </>
+            ) : (
+              <>
+                {t.payment.due} {formatDate(payment.paymentDate)}
+              </>
+            )}
+          </span>
+          {payment.isPaid && (
+            <span className="flex flex-wrap gap-1 pt-1">
+              <Button size="xs" variant="ghost" onClick={() => setPaidOpen(true)}>
+                {t.actions.correctPaid}
+              </Button>
+            </span>
+          )}
+          {paidOpen && (
+            <CardPaidDialog
+              payment={payment}
+              open
+              onOpenChange={(open) => !open && setPaidOpen(false)}
+            />
           )}
         </span>
-        {payment.isPaid && (
-          <span className="flex flex-wrap gap-1 pt-1">
-            <Button size="xs" variant="ghost" onClick={() => setPaidOpen(true)}>
-              {t.actions.correctPaid}
-            </Button>
-          </span>
-        )}
-      </div>
-      <span className={cn('font-medium tabular-nums', payment.isPaid && 'text-foreground')}>
-        {formatCents(payment.amountCents)}
-      </span>
-      {paidOpen && (
-        <CardPaidDialog
-          payment={payment}
-          open
-          onOpenChange={(open) => !open && setPaidOpen(false)}
-        />
-      )}
-    </li>
+      }
+    />
   )
 }
 

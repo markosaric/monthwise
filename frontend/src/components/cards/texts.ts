@@ -11,7 +11,7 @@ export const cardTexts = {
   editCard: 'Edit card',
   emptyList: 'No cards yet. Add your cards and bank accounts to start tracking card spending.',
   emptyFilter: 'No cards here.',
-  dashboardTitle: 'Cards',
+  dashboardTitle: 'Accounts',
   dashboardNoCards: 'No cards yet. Set up your cards and accounts to start tracking card spending.',
   dashboardNoValidCards: 'None of your cards is currently valid.',
   setUpCards: 'Set up cards',

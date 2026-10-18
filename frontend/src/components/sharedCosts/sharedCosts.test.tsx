@@ -60,7 +60,8 @@ describe('Sharing a bill', () => {
     await userEvent.type(await screen.findByLabelText('Name'), 'Electricity, apartment')
     await userEvent.selectOptions(screen.getByLabelText('Category'), 'Electricity')
     await userEvent.type(screen.getByLabelText('Amount (€)'), '85,01')
-    await userEvent.type(screen.getByLabelText('Due date'), '2026-10-15')
+    // The due date may not be before the issue date, which defaults to today.
+    await userEvent.type(screen.getByLabelText('Due date'), '2099-12-15')
     await userEvent.click(screen.getByLabelText(t.share.shared))
 
     const shares = screen.getByLabelText(t.share.shares)
@@ -245,7 +246,7 @@ describe('Contributions grouped by contributor', () => {
     const box = await screen.findByRole('checkbox', { name: t.contribution.groupReceived('Ana') })
     expect(box).not.toBeChecked()
     expect((box as HTMLInputElement).indeterminate).toBe(true)
-    expect(screen.getByText(/1 of 2 received/)).toBeInTheDocument()
+    expect(within(box.closest('li')!).getByText(/1 of 2 received/)).toBeInTheDocument()
   })
 })
 
@@ -282,5 +283,16 @@ describe('The Shared costs screen', () => {
       'href',
       '/shared-costs/participants/ana/edit',
     )
+
+    // Key figures and the participant card (design refresh FR-19).
+    const figures = screen.getByRole('region', { name: 'Key figures' })
+    expect(within(figures).getByText(t.screen.overdue).parentElement).toHaveTextContent('21,25 €')
+    expect(within(figures).getByText(t.screen.monthReceived).parentElement).toHaveTextContent(
+      '21,25 €',
+    )
+    expect(
+      screen.getByRole('progressbar', { name: `Ana: ${t.screen.monthReceived}` }),
+    ).toHaveAttribute('aria-valuenow', '2125')
+    expect(screen.getByText(t.screen.receivedAndOutstanding)).toBeInTheDocument()
   })
 })

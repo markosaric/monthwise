@@ -157,7 +157,7 @@ Hosting and importing history from Numbers are out of scope for now.
 ```
 /frontend                        React app (Vite)
   /src/pages                     dashboard, month, cards, loans, savings, settings
-  /src/components                UI components
+  /src/components                UI components (/design: shared design-refresh building blocks)
   /src/api                       generated API client
 /backend
   /src/Monthwise.Domain          entities, installment and summary logic
@@ -173,9 +173,15 @@ docker-compose.yml               PostgreSQL for local development
 
 ## 5. MVP screens
 
-1. **Dashboard** – available budget (calculated/actual), income vs. expenses, upcoming due dates, total debt.
+The look of all screens (colours, fonts, key figures, charts, the collapsible menu) is described in
+[design-refresh.md](feature-requirements/design-refresh.md).
+
+1. **Dashboard** – how the current month is going: quick actions, key figures (inputs, outputs,
+   month result, still to pay), what is coming up, outputs by kind and section summaries
+   (`GET /api/dashboard`). Account balances are on the Cards screen.
 2. **Month** – Income and Expenses tables by category, paid/received checkboxes, carryover, month closing.
-3. **Cards** – installments per card (X/N, remaining), one-off charges, statement reconciliation.
+3. **Cards** – account balances (current and expected at the end of the month), installments per
+   card (X/N, remaining), one-off charges, statement reconciliation.
 4. **Loans and leasing** – monthly payment, due date, share.
 5. **Savings** – account balances over time.
 6. **Settings** – categories, recurring items, accounts/cards, shares.

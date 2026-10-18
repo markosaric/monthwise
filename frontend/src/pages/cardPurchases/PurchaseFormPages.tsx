@@ -13,6 +13,7 @@ import {
 } from '@/components/cardPurchases/purchaseFormModel'
 import { cardPurchaseTexts } from '@/components/cardPurchases/texts'
 import { todayIso } from '@/lib/dates'
+import { useReturnTo } from '@/lib/returnTo'
 import { PageHeader } from '@/pages/PageHeader'
 
 const t = cardPurchaseTexts
@@ -20,6 +21,7 @@ const t = cardPurchaseTexts
 /** Record a purchase (FR-3). With `?card={id}` that card is chosen; with only one card it is chosen too. */
 export function PurchaseNewPage() {
   const navigate = useNavigate()
+  const returnTo = useReturnTo()
   const [searchParams] = useSearchParams()
   const { data: cards, isPending, isError } = useInstallmentCards()
   const create = useCreateCardPurchase()
@@ -42,11 +44,11 @@ export function PurchaseNewPage() {
         cards={usable}
         defaultValues={emptyPurchaseFormValues(cardId, todayIso())}
         submitLabel={t.addPurchase}
-        onCancel={() => navigate(-1)}
+        onCancel={() => (returnTo ? navigate(returnTo) : navigate(-1))}
         onSubmit={async (request) => {
           const details = await create.mutateAsync(request)
           toast.success(t.saved)
-          navigate(`/cards/purchases/${details.purchase.id}`, { replace: true })
+          navigate(returnTo ?? `/cards/purchases/${details.purchase.id}`, { replace: true })
         }}
       />
     </>

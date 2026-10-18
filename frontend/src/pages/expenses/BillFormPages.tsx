@@ -11,6 +11,7 @@ import { expenseTexts } from '@/components/expenses/texts'
 import { messageOf } from '@/components/loans/messageOf'
 import { Button } from '@/components/ui/button'
 import { formatYearMonth, isYearMonth, todayIso } from '@/lib/dates'
+import { useReturnTo } from '@/lib/returnTo'
 import { PageHeader } from '@/pages/PageHeader'
 
 const t = expenseTexts
@@ -19,6 +20,7 @@ const t = expenseTexts
 export function BillNewPage() {
   const { yearMonth } = useParams()
   const navigate = useNavigate()
+  const returnTo = useReturnTo()
   const { data: cards, isPending } = useCards('Default')
   const change = useChangeBill()
   if (!isYearMonth(yearMonth)) return <Navigate to="/month" replace />
@@ -31,11 +33,11 @@ export function BillNewPage() {
         requireIssued
         defaultValues={emptyBillFormValues(onlyPrimaryAccount(cards ?? []), todayIso())}
         submitLabel={t.bills.addBill}
-        onCancel={() => navigate(-1)}
+        onCancel={() => (returnTo ? navigate(returnTo) : navigate(-1))}
         onSubmit={async (request) => {
           await change.mutateAsync({ action: 'create', month: yearMonth, request })
           toast.success(t.saved)
-          navigate(`/month/${yearMonth}`, { replace: true })
+          navigate(returnTo ?? `/month/${yearMonth}`, { replace: true })
         }}
       />
     </>

@@ -1,7 +1,7 @@
 # Plan: Design refresh
 
 - **Branch:** `feat/design_refresh`
-- **Status:** Draft
+- **Status:** Done
 - **Date:** 2026-10-18
 - **Requirements:** [design-refresh.md](../feature-requirements/design-refresh.md) (approved), with
   the mock-up [design-refresh-mockup.html](../feature-requirements/design-refresh-mockup.html), and
@@ -57,7 +57,7 @@ Loans, Shared costs and Settings screens. Nothing the app stores or calculates c
 ### Key rules from the requirements
 | Requirement | Rule used in this plan |
 |---|---|
-| FR-1, FR-7 | Section colours as CSS tokens: Dashboard indigo, Month blue, Cash flow teal, Cards violet, Loans orange, Shared costs pink, Savings green, Settings grey. Meaning tokens: input green, output orange, expense amber, expected = 35 % tint of its colour, problem red. Accent teal. |
+| FR-1, FR-7 | Section colours as CSS tokens: Dashboard indigo, Month blue, Cash flow teal, Cards violet, Loans dark orange, Shared costs pink, Savings green, Settings grey. Meaning tokens: input green, output orange, expense dark yellow, expected = a lighter tint of its colour, problem red. Accent (highlight card) dark teal so white text stays readable; amounts written in green or orange use darker text shades (NFR-1). |
 | FR-2 | Overview screens start with at most 4 `StatCard`s; the change pill compares with the previous month only where the API returns it. |
 | FR-4 | Display font **Fraunces** (variable, `@fontsource-variable/fraunces`) for `h1`–`h3`, key figures and card titles; body stays **Geist**; key figures use `tabular-nums`. |
 | FR-6 | Menu state `expanded`/`collapsed` in `localStorage` key `monthwise.menu`, default expanded; read and write wrapped in try/catch. Toggle is a `button` with `aria-expanded` and `aria-controls`. Collapsed width 72 px, labels as tooltips. |
@@ -89,9 +89,9 @@ Loans, Shared costs and Settings screens. Nothing the app stores or calculates c
   | `outputsByKind`: bills, expenses, loan payments, card payments | the month's outputs grouped by kind |
   | `lastSixMonths`: month, inputs, outputs | `GetCashFlowChartHandler`, monthly buckets |
   | `loans`: hasActive, monthly total, remaining, hasOverdue | `GetLoansDashboardHandler` |
-  | `cardPayments`: month total, cards with installments | month card payments and installment cards |
+  | `cardPayments`: month total, number of card payments, cards with installments | month card payments and installment cards |
   | `sharedCosts`: outstanding total, participants owing, hasOverdue | `GetSharedCostsHandler` |
-  | `recurringBills`: active count, monthly total | recurring bill list |
+  | `recurringBills`: active count, bills not issued this month | recurring bill list, month bills (`NotIssuedCount`) |
 
 - `GET /api/cards/dashboard` stays as it is and is now used by the Cards screen (its name is kept so
   the API does not break; renaming can be a later refactor).
@@ -153,14 +153,14 @@ Loans, Shared costs and Settings screens. Nothing the app stores or calculates c
 
 ## Tests
 - Unit tests (Domain): none, the domain does not change.
-- Application tests:
-  - `GetDashboardHandler`: totals and previous-month figures equal the monthly report's; still to
-    pay and overdue counts; next due picks the earliest unpaid output; Coming up spans the month end,
-    includes expected inputs, is limited to 5 and to 7 days; outputs by kind add up to the outputs
-    total; loans, card payments, shared costs and recurring bill figures equal their own screens.
-- API / integration tests (real PostgreSQL in CI):
-  - `GET /api/dashboard` with an empty database (all zero, no loans block) and with seeded bills,
-    loan payments, card payments, inputs and contributions.
+- API / integration tests (real PostgreSQL in CI), which also cover `GetDashboardHandler` (the
+  repository has no separate application test project):
+  - `GET /api/dashboard` with an empty database: all zero, no next due, nothing coming up, six
+    months, no section blocks.
+  - With inputs, bills, an expense and a loan: totals, previous-month figures and the month result
+    equal the monthly report's; outputs by kind add up to the outputs total; still to pay, next due
+    and Coming up (bill before input on the same day); the 6-month chart; the Loans block.
+  - Recurring bills block: active recurring bills and bills not issued this month.
 - Front-end (Vitest + Testing Library):
   - Menu: toggle collapses and expands, `aria-expanded` changes, state survives a re-render from
     storage, storage errors are ignored, tooltips have the labels.
@@ -183,6 +183,25 @@ Loans, Shared costs and Settings screens. Nothing the app stores or calculates c
   - Desktop and phone width for every screen, collapsed and expanded menu, keyboard use of toggle
     and quick actions, contrast of text on coloured backgrounds (NFR-1), API stopped and database
     stopped for the status alert.
+
+## Implementation notes
+
+Changes to the approach found while building, before the requirements were merged:
+
+- **Recurring bills small card (FR-10):** recurring bills have no amount of their own, so the card
+  shows the active recurring bills and how many of this month's bills from them are not issued yet,
+  instead of a monthly total. The requirement was changed on this branch to match.
+- **Outputs by kind:** `ExpenseBook.Outputs()` is split into `BillOutputs()` and
+  `ExpenseOutputs()`, so the Dashboard counts bills and expenses exactly as the monthly report does.
+- **Coming up** reads this month's lists, and next month's when the 7 days reach into it.
+- **Month progress (FR-15):** the "x of y" next to each bar is in amounts (e.g. "2.600,00 € of
+  2.920,00 €"); the section headers show "x of y paid" as counts.
+- **Cash flow (FR-16):** the period still opens on This month (input cash flow FR-12); the months
+  list replaces the "Open monthly report" button.
+- **Card status badges:** Active is green and Expiring soon amber, so the Cards screen and Settings
+  follow FR-1.
+- A Shared costs test typed a fixed due date that is now before today's default issue date; it uses
+  a date far in the future instead.
 
 ## Open questions
 - None.

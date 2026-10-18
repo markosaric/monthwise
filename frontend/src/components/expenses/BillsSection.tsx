@@ -1,3 +1,4 @@
+import { ReceiptText } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { toast } from 'sonner'
@@ -8,14 +9,18 @@ import { messageOf } from '@/components/loans/messageOf'
 import { PaymentDialog } from '@/components/loans/PaymentDialogs'
 import { PaymentTotals } from '@/components/loans/LoanPaymentsSection'
 import { OwnPart, OwnPartTotal, ShareBadges } from '@/components/sharedCosts/SharedMarkers'
+import { addActions } from '@/components/design/actions'
+import { AddButton } from '@/components/design/AddButton'
+import { meaningColors } from '@/components/design/colors'
+import { CheckButton, ListRow } from '@/components/design/ListRow'
+import { SectionCard } from '@/components/design/SectionCard'
+import { StatusChip } from '@/components/design/StatusChip'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { addMonths, currentMonth, formatYearMonth, isYearMonth, todayIso } from '@/lib/dates'
 import { formatCents } from '@/lib/money'
-import { cn } from '@/lib/utils'
 import { PaidFromSelect } from './PaidFromSelect'
 import { expenseTexts } from './texts'
 
@@ -28,19 +33,35 @@ const t = expenseTexts
 export function BillsSection({ month }: { month: string }) {
   const { data, isPending, isError } = useMonthBills(month)
   const [addOpen, setAddOpen] = useState(false)
+  const issued = data?.bills.filter((b) => b.state !== 'NotIssued') ?? []
+  const paid = issued.filter((b) => b.state === 'Paid').length
 
   return (
-    <Card className="max-w-3xl">
-      <CardHeader className="flex flex-row flex-wrap items-center gap-2">
-        <CardTitle className="mr-auto">{t.bills.title}</CardTitle>
-        <Button size="sm" variant="outline" onClick={() => setAddOpen(true)}>
-          {t.bills.addRecurring}
-        </Button>
-        <Button asChild size="sm">
-          <Link to={`/month/${month}/bills/new`}>{t.bills.addBill}</Link>
-        </Button>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-3">
+    <SectionCard
+      icon={ReceiptText}
+      color={meaningColors.moneyOut}
+      title={t.bills.title}
+      status={data && issued.length > 0 ? t.bills.paidOf(paid, issued.length) : undefined}
+      total={data ? formatCents(data.totals.totalCents) : undefined}
+      defaultOpen={!data || data.bills.length === 0 || paid < data.bills.length}
+      actions={
+        <>
+          <AddButton
+            to={`/month/${month}/bills/new`}
+            label={t.bills.addBill}
+            icon={addActions.bill.icon}
+            color={addActions.bill.color}
+          />
+          <AddButton
+            onClick={() => setAddOpen(true)}
+            label={t.bills.addRecurring}
+            icon={addActions.recurring.icon}
+            color={addActions.recurring.color}
+          />
+        </>
+      }
+    >
+      <div className="flex flex-col gap-3">
         {isPending && <p className="text-sm text-muted-foreground">Loading…</p>}
         {isError && <p className="text-sm text-destructive">Bills could not be loaded.</p>}
         {data && data.bills.length === 0 && (
@@ -68,9 +89,9 @@ export function BillsSection({ month }: { month: string }) {
         <Link to="/recurring-bills" className="text-sm text-muted-foreground underline">
           {t.bills.recurring}
         </Link>
-      </CardContent>
+      </div>
       {addOpen && <AddRecurringDialog onOpenChange={(open) => !open && setAddOpen(false)} />}
-    </Card>
+    </SectionCard>
   )
 }
 
@@ -94,70 +115,80 @@ export function BillRow({ bill }: { bill: Bill }) {
     }
   }
 
+  const date = bill.paidDate ?? bill.dueDate ?? bill.dueDateHint
   return (
-    <li
-      className={cn('flex items-start gap-3 py-3', !paid && 'text-muted-foreground')}
+    <ListRow
+      label={bill.name}
       data-state={bill.state}
-    >
-      <input
-        type="checkbox"
-        className="mt-1 size-4 accent-primary"
-        checked={paid}
-        disabled={notIssued || change.isPending}
-        onChange={(event) => (event.target.checked ? setPaidOpen(true) : untick())}
-        aria-label={`${t.fields.paid}: ${bill.name}`}
-      />
-      <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-        <span className="flex flex-wrap items-center gap-2">
-          <Link
-            to={`/bills/${bill.id}/edit`}
-            className={cn('font-medium hover:underline', paid && 'text-foreground')}
-          >
-            {bill.name}
-          </Link>
-          {notIssued && <Badge variant="outline">{t.states.NotIssued}</Badge>}
-          {bill.isOverdue && <Badge variant="destructive">{t.labels.overdue}</Badge>}
+      dimmed={!paid}
+      check={
+        <CheckButton
+          checked={paid}
+          disabled={notIssued || change.isPending}
+          onChange={(event) => (event.target.checked ? setPaidOpen(true) : untick())}
+          label={`${t.fields.paid}: ${bill.name}`}
+        />
+      }
+      title={
+        <Link to={`/bills/${bill.id}/edit`} className="hover:underline">
+          {bill.name}
+        </Link>
+      }
+      date={date && formatDate(date)}
+      chips={
+        <>
+          {notIssued ? (
+            <Badge variant="outline">{t.states.NotIssued}</Badge>
+          ) : bill.isOverdue ? (
+            <StatusChip status="overdue" label={t.labels.overdue} />
+          ) : (
+            <StatusChip status={paid ? 'done' : 'expected'} label={t.states[bill.state]} />
+          )}
           {bill.paidWithCard && <Badge variant="secondary">{t.labels.withCard}</Badge>}
           <ShareBadges share={bill.share} isShareChanged={bill.isShareChanged} />
-        </span>
-        <span className="text-sm">
-          {bill.category.name}
-          {bill.paidFrom && ` · ${bill.paidFrom.name}`}
-        </span>
-        <span className="text-xs">
-          {bill.paidDate ? (
-            <>
-              {t.labels.paidOn} {formatDate(bill.paidDate)}
-              {bill.dueDate && ` (${t.labels.due} ${formatDate(bill.dueDate)})`}
-            </>
-          ) : bill.dueDate ? (
-            <>
-              {t.labels.due} {formatDate(bill.dueDate)}
-            </>
-          ) : (
-            bill.dueDateHint && (
-              <>
-                {t.labels.due} {formatDate(bill.dueDateHint)} ({t.labels.hint})
-              </>
-            )
-          )}
-        </span>
-        {notIssued && (
-          <span className="pt-1">
+          {notIssued && (
             <Button asChild size="xs" variant="ghost">
               <Link to={`/bills/${bill.id}/edit`}>{t.bills.issueBill}</Link>
             </Button>
+          )}
+        </>
+      }
+      amount={
+        <>
+          {notIssued ? '–' : formatCents(bill.amountCents)}
+          <OwnPart cents={bill.ownPartCents} />
+        </>
+      }
+      details={
+        <span className="flex flex-col gap-0.5">
+          <span>
+            {bill.category.name}
+            {bill.paidFrom && ` · ${bill.paidFrom.name}`}
           </span>
-        )}
-      </div>
-      <span className={cn('font-medium tabular-nums', paid && 'text-foreground')}>
-        {notIssued ? '–' : formatCents(bill.amountCents)}
-        <OwnPart cents={bill.ownPartCents} />
-      </span>
-      {paidOpen && (
-        <BillPaidDialog bill={bill} onOpenChange={(open) => !open && setPaidOpen(false)} />
-      )}
-    </li>
+          <span className="text-xs">
+            {bill.paidDate ? (
+              <>
+                {t.labels.paidOn} {formatDate(bill.paidDate)}
+                {bill.dueDate && ` (${t.labels.due} ${formatDate(bill.dueDate)})`}
+              </>
+            ) : bill.dueDate ? (
+              <>
+                {t.labels.due} {formatDate(bill.dueDate)}
+              </>
+            ) : (
+              bill.dueDateHint && (
+                <>
+                  {t.labels.due} {formatDate(bill.dueDateHint)} ({t.labels.hint})
+                </>
+              )
+            )}
+          </span>
+          {paidOpen && (
+            <BillPaidDialog bill={bill} onOpenChange={(open) => !open && setPaidOpen(false)} />
+          )}
+        </span>
+      }
+    />
   )
 }
 
