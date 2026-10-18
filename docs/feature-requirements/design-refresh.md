@@ -252,13 +252,16 @@ The Dashboard always shows the **current month** and shows, from top to bottom:
 | Q4 | Cash withdrawal | Banknote | Teal | The cash withdrawal form (**Cash withdrawal**) |
 | Q5 | Add purchase | Shopping bag | Violet (Cards colour) | The new card purchase form (**Add purchase** on the Cards screen) |
 
-- Each button shows its icon on a tinted square in its colour and a short label.
+- Each button shows **only its icon** on a tinted square in its colour, without visible text. Its
+  label (e.g. "Add bill") appears as a tooltip when the pointer rests on the icon for about one
+  second, and disappears when the pointer leaves. The label also appears when the button gets
+  keyboard focus, and screen readers always read it.
 - **Add purchase** follows the same rule as on the Cards screen: it is shown only when at least one
   card can take a new purchase.
 - After the form is saved or cancelled, the user returns to the screen the button was on (the
   Dashboard), and the Dashboard shows the new entry in its figures.
-- On phones the buttons are shown as a row of round coloured icons with the label under each,
-  scrolling sideways when they do not fit.
+- On phones, where there is no hover, the buttons are a row of round coloured icons without text;
+  a long press shows the label. The row scrolls sideways when it does not fit.
 - The quick action row is only on the Dashboard. On the **Month** screen the add buttons stay in
   the section they belong to (FR-15), using the same icons and colours.
 
@@ -416,7 +419,8 @@ appendix.
     status and starting balance hint by the same rules as the old Dashboard widget, its four key
     figures and the balance chart, followed by the cards with installments.
 13. The Dashboard starts with the quick actions Add income, Add bill, Add expense, Cash withdrawal
-    and (when a card can take a purchase) Add purchase, each with its own icon and colour; each opens
+    and (when a card can take a purchase) Add purchase, shown as coloured icons whose label appears
+    only after resting the pointer on the icon for about one second (or on focus); each opens
     its form for the current month and returns to the Dashboard after saving or cancelling.
 14. The Month screen keeps each add button in its own section header with the FR-14 icon and
     colour (no quick action row), and shows its key figures and
