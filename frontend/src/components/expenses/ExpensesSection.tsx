@@ -1,9 +1,13 @@
+import { ShoppingCart } from 'lucide-react'
 import { Link } from 'react-router'
+import { addActions } from '@/components/design/actions'
+import { AddButton } from '@/components/design/AddButton'
+import { meaningColors } from '@/components/design/colors'
+import { ListRow } from '@/components/design/ListRow'
+import { SectionCard } from '@/components/design/SectionCard'
 import { useMonthExpenses, type Expense, type ExpenseTotals } from '@/api/expenses'
 import { formatDate } from '@/components/cards/format'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { formatCents } from '@/lib/money'
 import { expenseTexts } from './texts'
 
@@ -17,17 +21,31 @@ export function ExpensesSection({ month }: { month: string }) {
   const { data, isPending, isError } = useMonthExpenses(month)
 
   return (
-    <Card className="max-w-3xl">
-      <CardHeader className="flex flex-row flex-wrap items-center gap-2">
-        <CardTitle className="mr-auto">{t.expenses.title}</CardTitle>
-        <Button asChild size="sm" variant="outline">
-          <Link to={`/month/${month}/expenses/new?kind=cash`}>{t.expenses.addCashWithdrawal}</Link>
-        </Button>
-        <Button asChild size="sm">
-          <Link to={`/month/${month}/expenses/new`}>{t.expenses.add}</Link>
-        </Button>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-3">
+    <SectionCard
+      icon={ShoppingCart}
+      color={meaningColors.expense}
+      title={t.expenses.title}
+      status={data && data.expenses.length > 0 ? t.expenses.count(data.expenses.length) : undefined}
+      total={data ? formatCents(data.totals.totalCents) : undefined}
+      defaultOpen={!data || data.expenses.length === 0}
+      actions={
+        <>
+          <AddButton
+            to={`/month/${month}/expenses/new`}
+            label={t.expenses.add}
+            icon={addActions.expense.icon}
+            color={addActions.expense.color}
+          />
+          <AddButton
+            to={`/month/${month}/expenses/new?kind=cash`}
+            label={t.expenses.addCashWithdrawal}
+            icon={addActions.cash.icon}
+            color={addActions.cash.color}
+          />
+        </>
+      }
+    >
+      <div className="flex flex-col gap-3">
         {isPending && <p className="text-sm text-muted-foreground">Loading…</p>}
         {isError && <p className="text-sm text-destructive">Expenses could not be loaded.</p>}
         {data && data.expenses.length === 0 && (
@@ -43,33 +61,35 @@ export function ExpensesSection({ month }: { month: string }) {
             <ExpenseTotalsList totals={data.totals} />
           </>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </SectionCard>
   )
 }
 
 function ExpenseRow({ expense }: { expense: Expense }) {
   const title = expense.description ?? expense.category.name
   return (
-    <li className="flex items-start gap-3 py-3">
-      <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-        <span className="flex flex-wrap items-center gap-2">
-          <Link to={`/expenses/${expense.id}/edit`} className="font-medium hover:underline">
-            {title}
-          </Link>
+    <ListRow
+      label={title}
+      title={
+        <Link to={`/expenses/${expense.id}/edit`} className="hover:underline">
+          {title}
+        </Link>
+      }
+      date={formatDate(expense.date)}
+      chips={
+        <>
           {expense.isCashWithdrawal ? (
             <Badge variant="outline">{t.expenses.cashWithdrawal}</Badge>
           ) : (
             expense.description && <Badge variant="secondary">{expense.category.name}</Badge>
           )}
           {expense.paidWithCard && <Badge variant="secondary">{t.labels.withCard}</Badge>}
-        </span>
-        <span className="text-sm text-muted-foreground">
-          {formatDate(expense.date)} · {expense.paidFrom.name}
-        </span>
-      </div>
-      <span className="font-medium tabular-nums">{formatCents(expense.amountCents)}</span>
-    </li>
+        </>
+      }
+      amount={formatCents(expense.amountCents)}
+      details={<span>{expense.paidFrom.name}</span>}
+    />
   )
 }
 

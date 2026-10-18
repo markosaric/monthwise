@@ -306,6 +306,27 @@
         }
       }
     },
+    "/api/dashboard": {
+      "get": {
+        "tags": [
+          "Dashboard"
+        ],
+        "summary": "How the current month is going: key figures, what is still to pay and coming up, and section summaries.",
+        "operationId": "GetDashboard",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DashboardResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/cards": {
       "get": {
         "tags": [
@@ -8258,6 +8279,28 @@
           "LoanPayment"
         ]
       },
+      "DashboardCardPaymentsResponse": {
+        "required": [
+          "monthTotalCents",
+          "count",
+          "cardsWithInstallments"
+        ],
+        "type": "object",
+        "properties": {
+          "monthTotalCents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "count": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "cardsWithInstallments": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
       "DashboardCardsResponse": {
         "required": [
           "hasAnyCards",
@@ -8280,6 +8323,311 @@
             "items": {
               "$ref": "#/components/schemas/AccountBalanceResponse"
             }
+          }
+        }
+      },
+      "DashboardItemKind": {
+        "enum": [
+          "Bill",
+          "LoanPayment",
+          "CardPayment",
+          "Input"
+        ]
+      },
+      "DashboardItemResponse": {
+        "required": [
+          "kind",
+          "name",
+          "date",
+          "amountCents"
+        ],
+        "type": "object",
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/DashboardItemKind"
+          },
+          "name": {
+            "type": "string"
+          },
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "amountCents": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "DashboardLoansResponse": {
+        "required": [
+          "activeCount",
+          "monthlyPaymentCents",
+          "remainingCents",
+          "hasOverdue"
+        ],
+        "type": "object",
+        "properties": {
+          "activeCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "monthlyPaymentCents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "remainingCents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "hasOverdue": {
+            "type": "boolean"
+          }
+        }
+      },
+      "DashboardMonthResponse": {
+        "required": [
+          "month",
+          "inputsCents",
+          "outputsCents"
+        ],
+        "type": "object",
+        "properties": {
+          "month": {
+            "type": "string"
+          },
+          "inputsCents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "outputsCents": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "DashboardOutputsByKindResponse": {
+        "required": [
+          "billsCents",
+          "expensesCents",
+          "loanPaymentsCents",
+          "cardPaymentsCents"
+        ],
+        "type": "object",
+        "properties": {
+          "billsCents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "expensesCents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "loanPaymentsCents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "cardPaymentsCents": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "DashboardRecurringBillsResponse": {
+        "required": [
+          "activeCount",
+          "notIssuedThisMonth"
+        ],
+        "type": "object",
+        "properties": {
+          "activeCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "notIssuedThisMonth": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "DashboardResponse": {
+        "required": [
+          "month",
+          "today",
+          "inputs",
+          "outputs",
+          "monthResultCents",
+          "previousMonthResultCents",
+          "stillToPay",
+          "nextDue",
+          "comingUp",
+          "outputsByKind",
+          "lastSixMonths",
+          "loans",
+          "cardPayments",
+          "sharedCosts",
+          "recurringBills"
+        ],
+        "type": "object",
+        "properties": {
+          "month": {
+            "type": "string"
+          },
+          "today": {
+            "type": "string",
+            "format": "date"
+          },
+          "inputs": {
+            "$ref": "#/components/schemas/DashboardTotalsResponse"
+          },
+          "outputs": {
+            "$ref": "#/components/schemas/DashboardTotalsResponse"
+          },
+          "monthResultCents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "previousMonthResultCents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "stillToPay": {
+            "$ref": "#/components/schemas/DashboardStillToPayResponse"
+          },
+          "nextDue": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/DashboardItemResponse"
+              }
+            ]
+          },
+          "comingUp": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DashboardItemResponse"
+            }
+          },
+          "outputsByKind": {
+            "$ref": "#/components/schemas/DashboardOutputsByKindResponse"
+          },
+          "lastSixMonths": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DashboardMonthResponse"
+            }
+          },
+          "loans": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/DashboardLoansResponse"
+              }
+            ]
+          },
+          "cardPayments": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/DashboardCardPaymentsResponse"
+              }
+            ]
+          },
+          "sharedCosts": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/DashboardSharedCostsResponse"
+              }
+            ]
+          },
+          "recurringBills": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/DashboardRecurringBillsResponse"
+              }
+            ]
+          }
+        }
+      },
+      "DashboardSharedCostsResponse": {
+        "required": [
+          "outstandingCents",
+          "participantsOwing",
+          "hasOverdue"
+        ],
+        "type": "object",
+        "properties": {
+          "outstandingCents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "participantsOwing": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "hasOverdue": {
+            "type": "boolean"
+          }
+        }
+      },
+      "DashboardStillToPayResponse": {
+        "required": [
+          "totalCents",
+          "count",
+          "overdueCents",
+          "overdueCount"
+        ],
+        "type": "object",
+        "properties": {
+          "totalCents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "count": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "overdueCents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "overdueCount": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "DashboardTotalsResponse": {
+        "required": [
+          "totalCents",
+          "doneCents",
+          "previousMonthTotalCents"
+        ],
+        "type": "object",
+        "properties": {
+          "totalCents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "doneCents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "previousMonthTotalCents": {
+            "type": "integer",
+            "format": "int64"
           }
         }
       },
@@ -10643,6 +10991,9 @@
     },
     {
       "name": "Shared costs"
+    },
+    {
+      "name": "Dashboard"
     },
     {
       "name": "Cards"

@@ -54,6 +54,8 @@ public static class DependencyInjection
         services.AddScoped<GetCashFlowChartHandler>();
         services.AddScoped<GetMonthlyReportHandler>();
 
+        services.AddScoped<Dashboard.GetDashboardHandler>();
+
         services.AddScoped<LoanLedger>();
         services.AddScoped<LoanInputChecker>();
         services.AddScoped<GetLoansHandler>();

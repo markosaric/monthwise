@@ -1,12 +1,11 @@
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { cardTexts } from '@/components/cards/texts'
 import { aCard, zaba } from '@/test/cardFixtures'
 import { aMonth } from '@/test/cashFlowFixtures'
 import { aLoan, aLoanMonth, aPayment, bankLoan, lease } from '@/test/loanFixtures'
 import { noShare } from '@/components/sharedCosts/shareModel'
 import { renderRoute } from '@/test/renderRoute'
-import { healthy, json, stubApi } from '@/test/stubApi'
+import { json, stubApi } from '@/test/stubApi'
 import { endMonthOf, paymentCountOf, toLoanRequest } from './loanFormModel'
 import { loanTexts } from './texts'
 
@@ -233,6 +232,8 @@ describe('Expenses on the Month screen', () => {
     })
     renderRoute(`/month/${month}`)
 
+    // All loan payments of the month are paid, so the section starts collapsed (design refresh FR-15).
+    await userEvent.click(await screen.findByRole('button', { name: `Expand ${t.expenses.title}` }))
     await userEvent.click(await screen.findByRole('checkbox', { name: /Example flat/ }))
     await waitFor(() =>
       expect(
@@ -242,7 +243,7 @@ describe('Expenses on the Month screen', () => {
   })
 })
 
-describe('Loans screen and Dashboard widget', () => {
+describe('Loans screen', () => {
   it('shows an empty state with Add loan', async () => {
     stubApi({ 'GET /api/loans': () => json([]) })
     renderRoute('/loans')
@@ -254,63 +255,48 @@ describe('Loans screen and Dashboard widget', () => {
     )
   })
 
-  it('is not shown on the Dashboard without loans', async () => {
-    const fetchMock = stubApi({
-      ...healthy,
-      'GET /api/cards/dashboard': () => json({ hasAnyCards: false, cards: [], balances: [] }),
-      'GET /api/loans/dashboard': () =>
-        json({
-          hasAnyLoans: false,
-          loans: [],
-          totalMonthlyPaymentCents: 0,
-          totalRemainingCents: 0,
-        }),
-    })
-    renderRoute('/')
-
-    // Both widgets load together; once the Cards widget shows its data, the loans call is answered too.
-    expect(await screen.findByText(cardTexts.dashboardNoCards)).toBeInTheDocument()
-    expect(
-      fetchMock.mock.calls.some(([request]) =>
-        (request as Request).url.endsWith('/api/loans/dashboard'),
-      ),
-    ).toBe(true)
-    expect(screen.queryByRole('link', { name: t.actions.viewAll })).not.toBeInTheDocument()
-  })
-
-  it('shows totals and highlights an overdue loan', async () => {
+  it('shows key figures, a card per loan with its progress, and paid and remaining amounts', async () => {
     stubApi({
-      ...healthy,
-      'GET /api/cards/dashboard': () => json({ hasAnyCards: false, cards: [], balances: [] }),
-      'GET /api/loans/dashboard': () =>
-        json({
-          hasAnyLoans: true,
-          loans: [
-            aLoan(),
-            aLoan({
-              id: 'loan-2',
-              name: 'Car lease',
-              hasOverduePayment: true,
-              remainingAmountCents: 300000,
-            }),
-          ],
-          totalMonthlyPaymentCents: 100000,
-          totalRemainingCents: 750000,
-        }),
+      'GET /api/loans': () =>
+        json([
+          aLoan(),
+          aLoan({
+            id: 'loan-2',
+            name: 'Car lease',
+            hasOverduePayment: true,
+            currentMonthlyPaymentCents: 50000,
+            nextPaymentDate: '2026-10-25',
+            paymentsPaid: 6,
+            paymentCount: 24,
+            paidAmountCents: 300000,
+            remainingAmountCents: 300000,
+          }),
+        ]),
     })
-    renderRoute('/')
+    renderRoute('/loans')
 
-    const overdue = await screen.findByRole('link', { name: /Car lease/ })
-    expect(overdue.closest('li')).toHaveAttribute('data-highlighted', 'true')
+    const figures = await screen.findByRole('region', { name: 'Key figures' })
+    expect(within(figures).getByText(t.figures.activeLoans).parentElement).toHaveTextContent('2')
+    expect(within(figures).getByText(t.widget.totalMonthly).parentElement).toHaveTextContent(
+      '1.000,00 €',
+    )
+    expect(within(figures).getByText(t.figures.stillToRepay).parentElement).toHaveTextContent(
+      '7.500,00 €',
+    )
+    // The earliest next payment.
+    expect(within(figures).getByText(t.labels.nextPayment).parentElement).toHaveTextContent(
+      '25.10.2026',
+    )
+
+    const lease = screen.getByRole('link', { name: /Car lease/ })
+    expect(lease).toHaveAttribute('href', '/loans/loan-2')
+    expect(lease.closest('li')).toHaveAttribute('data-highlighted', 'true')
+    expect(within(lease).getByRole('progressbar')).toHaveAttribute('aria-valuenow', '6')
+    expect(lease).toHaveTextContent('6 of 24 paid')
     expect(screen.getByRole('link', { name: /Example flat/ }).closest('li')).not.toHaveAttribute(
       'data-highlighted',
     )
-    expect(overdue).toHaveAttribute('href', '/loans/loan-2')
-    expect(screen.getByText(t.widget.totalMonthly).nextElementSibling).toHaveTextContent(
-      '1.000,00 €',
-    )
-    expect(screen.getByText(t.widget.totalRemaining).nextElementSibling).toHaveTextContent(
-      '7.500,00 €',
-    )
+    expect(screen.getByText(t.figures.paidAndRemaining)).toBeInTheDocument()
+    expect(screen.getByText('3.000,00 € paid · 3.000,00 € remaining')).toBeInTheDocument()
   })
 })

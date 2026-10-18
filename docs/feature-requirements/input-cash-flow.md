@@ -253,3 +253,15 @@ The **monthly cash flow report** (FR-13) also lists the month's loan payments gr
 category, account and loan, with totals (expected, paid and all), and shows the **month
 result**: total inputs minus total outputs. The comparison with the previous month covers
 outputs and the month result too.
+
+## Appendix 2: Account balances move from the Dashboard to the Cards screen
+
+- **Date:** 2026-10-18
+- **Branch:** `feat/design_refresh`
+- **Changes:** FR-11, Appendix 1 (where the balances are shown)
+
+The current balance, the expected balance at the end of the month and the hint to add a starting
+balance are **no longer shown on the Dashboard**. They are shown, unchanged, for each account in
+the **Accounts** part of the **Cards** screen (see [design-refresh.md](design-refresh.md) FR-9 and
+FR-12). Where FR-11, Appendix 1 or the acceptance criteria say "the Dashboard" for balances, read
+"the Cards screen". How the balances are calculated does not change.

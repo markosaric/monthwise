@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { cardTypes, type CardStatus } from '@/api/cards'
 import { aCard, visaIssuer, zaba } from '@/test/cardFixtures'
@@ -25,13 +25,13 @@ const lists = {
   'GET /api/cards': () => json([primaryAccount]),
 }
 
-describe('Dashboard cards widget', () => {
+describe('Accounts on the Cards screen', () => {
   it('asks to set up cards when there are none', async () => {
     stubApi({
       ...healthy,
       'GET /api/cards/dashboard': () => json({ hasAnyCards: false, cards: [] }),
     })
-    renderRoute('/')
+    renderRoute('/cards')
 
     expect(await screen.findByText(cardTexts.dashboardNoCards)).toBeInTheDocument()
     expect(screen.getByRole('link', { name: cardTexts.setUpCards })).toHaveAttribute(
@@ -45,7 +45,7 @@ describe('Dashboard cards widget', () => {
       ...healthy,
       'GET /api/cards/dashboard': () => json({ hasAnyCards: true, cards: [] }),
     })
-    renderRoute('/')
+    renderRoute('/cards')
 
     expect(await screen.findByText(cardTexts.dashboardNoValidCards)).toBeInTheDocument()
   })
@@ -59,15 +59,36 @@ describe('Dashboard cards widget', () => {
           cards: [aCard({ isPrimary: true, type: 'Debit', name: 'Tekući' })],
         }),
     })
-    renderRoute('/')
+    renderRoute('/cards')
 
     expect(await screen.findByText('Tekući')).toBeInTheDocument()
     expect(screen.getByText('•••• 1111')).toBeInTheDocument()
     expect(screen.getByText(cardTexts.primary)).toBeInTheDocument()
-    // Issuer, bank, type, valid through and limit stay off the Dashboard (Appendix 1).
+    // Issuer, bank, type, valid through and limit stay off the accounts list (Appendix 1).
     expect(screen.queryByText(/Visa · ZaBa/)).not.toBeInTheDocument()
     expect(screen.queryByText(/Valid through/)).not.toBeInTheDocument()
     expect(screen.queryByText(/Limit/)).not.toBeInTheDocument()
+  })
+})
+
+describe('Settings screen', () => {
+  it('shows grouped tiles with counts, including Recurring bills', async () => {
+    stubApi({
+      'GET /api/cards': () => json([aCard(), aCard({ id: 'card-2', name: 'Savings' })]),
+      'GET /api/payers': () => json([]),
+      'GET /api/recurring-bills': () => json([]),
+    })
+    renderRoute('/settings')
+
+    const accounts = screen.getByRole('region', { name: 'Accounts' })
+    expect(await within(accounts).findByText('2 cards')).toBeInTheDocument()
+    const moneyIn = screen.getByRole('region', { name: 'Money in' })
+    expect(await within(moneyIn).findByText('0 payers')).toBeInTheDocument()
+    const moneyOut = screen.getByRole('region', { name: 'Money out' })
+    expect(within(moneyOut).getByRole('link', { name: /Recurring bills/ })).toHaveAttribute(
+      'href',
+      '/recurring-bills',
+    )
   })
 })
 

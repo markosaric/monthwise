@@ -5,6 +5,18 @@ Personal home finance app for tracking monthly income and expenses, credit card 
 Starting document with the domain, data model and architecture: [docs/INIT.md](docs/INIT.md).
 Architecture decisions: [docs/decisions](docs/decisions/README.md). Working practices: [CONTRIBUTING.md](CONTRIBUTING.md).
 
+## Screenshots
+
+Shown with made-up data.
+
+**Dashboard**: how the current month is going.
+
+![Dashboard](docs/images/dashboard.jpg)
+
+**Month**: inputs, bills, expenses, loan and card payments of a month.
+
+![Month](docs/images/month.jpg)
+
 ## Development process
 
 Every feature goes through the same steps on its own branch (details and rules in

@@ -270,3 +270,19 @@ described in [credit-card-installments.md](credit-card-installments.md) FR-1 and
 
 **Why:** card purchases and installments are collected per billing period and paid in one card
 payment from an account on a known date, so each card needs these attributes.
+
+## Appendix 3: Cards and accounts move from the Dashboard to the Cards screen
+
+- **Date:** 2026-10-18
+- **Branch:** `feat/design_refresh`
+- **Changes:** FR-9, FR-10, FR-11 (where statuses are highlighted), Appendix 1
+
+The **Cards** widget is removed from the Dashboard (see
+[design-refresh.md](design-refresh.md) FR-9). Everything it showed moves to a new **Accounts** part
+at the top of the **Cards** screen (see [design-refresh.md](design-refresh.md) FR-12):
+
+- Where FR-9, FR-10 and Appendix 1 say "the Dashboard" or "the widget", read "the Accounts part of
+  the Cards screen". Which cards appear, the order, what each entry shows, the empty states and
+  opening a card's details are unchanged.
+- FR-11: Blocked, Expired and Expiring soon are highlighted on the Cards screen and in Settings.
+- The empty state action **Set up cards** still opens the Cards and accounts section in Settings.

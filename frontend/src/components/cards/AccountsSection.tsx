@@ -1,5 +1,5 @@
 import { Link } from 'react-router'
-import { useDashboardCards } from '@/api/cards'
+import type { DashboardCards } from '@/api/cards'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -13,16 +13,24 @@ import { CardSummary } from './CardSummary'
 import { cardTexts } from './texts'
 
 /**
- * Dashboard widget: all valid cards with their balances, or a message to set cards up (FR-9, FR-10;
- * balances: input cash flow FR-11).
+ * The Accounts part of the Cards screen: all valid cards and accounts with their current and
+ * expected end-of-month balances, or a message to set cards up (card settings FR-9, FR-10 and
+ * Appendix 3; input cash flow FR-11 and Appendix 2). It was the Dashboard Cards widget before the
+ * design refresh (FR-12) and keeps its rules.
  */
-export function CardsWidget() {
-  const { data, isPending, isError } = useDashboardCards()
-
+export function AccountsSection({
+  data,
+  isPending,
+  isError,
+}: {
+  data: DashboardCards | undefined
+  isPending: boolean
+  isError: boolean
+}) {
   return (
-    <Card className="max-w-2xl">
+    <Card>
       <CardHeader>
-        <CardTitle>{cardTexts.dashboardTitle}</CardTitle>
+        <CardTitle className="text-base font-semibold">{cardTexts.dashboardTitle}</CardTitle>
         {data?.hasAnyCards && (
           <CardAction>
             <Button asChild variant="ghost" size="sm">

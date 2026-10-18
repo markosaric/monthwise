@@ -15,6 +15,8 @@ import { PaymentChangeDialog } from '@/components/loans/PaymentChangeDialog'
 import { messageOf } from '@/components/loans/messageOf'
 import { PaymentRow } from '@/components/loans/PaymentRow'
 import { loanTexts } from '@/components/loans/texts'
+import { meaningColors, sectionColors } from '@/components/design/colors'
+import { ProgressBar } from '@/components/design/ProgressBar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -58,6 +60,28 @@ function LoanDetailsView({ details }: { details: LoanDetails }) {
           {loan.needsAccount && <Badge variant="destructive">{t.labels.needsAccount}</Badge>}
           {loan.hasOverduePayment && <Badge variant="destructive">{t.labels.overdue}</Badge>}
         </div>
+
+        <Card>
+          <CardContent className="flex flex-col gap-2">
+            <div className="flex flex-wrap items-baseline justify-between gap-2">
+              <span className="font-heading text-2xl font-bold tabular-nums">
+                {formatCents(loan.remainingAmountCents)}
+              </span>
+              <span className="text-sm text-muted-foreground">
+                {t.figures.paidOf(loan.paymentsPaid, loan.paymentCount)}
+              </span>
+            </div>
+            <ProgressBar
+              label={t.figures.paidOf(loan.paymentsPaid, loan.paymentCount)}
+              value={loan.paymentsPaid}
+              max={loan.paymentCount}
+              color={loan.hasOverduePayment ? meaningColors.problem : sectionColors.loans}
+            />
+            <span className="text-xs text-muted-foreground">
+              {t.figures.stillToRepay} · {formatCents(loan.paidAmountCents)} {t.figures.paid}
+            </span>
+          </CardContent>
+        </Card>
 
         <dl className="grid grid-cols-1 gap-x-6 gap-y-3 text-sm sm:grid-cols-[auto_1fr]">
           <Row label={t.fields.category}>

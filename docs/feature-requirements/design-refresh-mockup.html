@@ -1,0 +1,601 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Monthwise design mock-up</title>
+<!--
+  Drawing for docs/feature-requirements/design-refresh.md: left menu (FR-6 to FR-8),
+  Dashboard (FR-9 to FR-11), Cards (FR-12), quick actions (FR-14) and FR-15 to FR-20.
+  A static mock-up, not app code. All amounts are made up.
+-->
+<style>
+  :root {
+    --bg: #f6f7fb; --surface: #ffffff; --text: #1d2130; --muted: #6b7085; --border: #e6e8f0;
+    --dashboard: #6366f1; --month: #3b82f6; --cashflow: #14b8a6; --cards: #8b5cf6;
+    --loans: #f97316; --shared: #ec4899; --savings: #22c55e; --settings: #64748b;
+    --accent: #14b8a6; --danger: #dc2626; --danger-bg: #fef2f2; --income: #16a34a; --output: #ea580c; --amber: #f59e0b;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+         font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .page { max-width: 1200px; margin: 0 auto; padding: 24px 16px 48px; }
+  h1 { font: 700 26px/1.2 Georgia, "Times New Roman", serif; margin: 0 0 4px; }
+  .intro { color: var(--muted); margin: 0 0 16px; }
+  .controls { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+  .controls button { font: inherit; padding: 6px 12px; border-radius: 8px; border: 1px solid var(--border);
+                     background: var(--surface); cursor: pointer; }
+  .controls button[aria-pressed="true"] { background: var(--text); color: #fff; border-color: var(--text); }
+
+  /* App frame */
+  .app { display: flex; height: 600px; border: 1px solid var(--border); border-radius: 14px;
+         overflow: hidden; background: var(--bg); box-shadow: 0 8px 30px rgba(20,24,40,.08); }
+  .menu { width: 232px; flex-shrink: 0; background: var(--surface); border-right: 1px solid var(--border);
+          display: flex; flex-direction: column; transition: width .2s ease; }
+  .app.collapsed .menu { width: 72px; }
+  .menu-head { display: flex; align-items: center; gap: 10px; padding: 16px 14px; }
+  .logo { width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0; display: grid; place-items: center;
+          color: #fff; font: 700 18px Georgia, serif;
+          background: linear-gradient(135deg, var(--dashboard), var(--shared)); }
+  .brand { font: 700 19px Georgia, serif; white-space: nowrap; }
+  .toggle { margin-left: auto; width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--border);
+            background: var(--surface); display: grid; place-items: center; cursor: pointer; color: var(--muted); flex-shrink: 0; position: relative; }
+  .toggle:hover { color: var(--text); background: var(--bg); }
+  .app.collapsed .menu-head { flex-direction: column; padding: 16px 0; }
+  .app.collapsed .toggle { margin-left: 0; }
+  .app.collapsed .brand, .app.collapsed .label { display: none; }
+
+  nav ul { list-style: none; margin: 4px 0 0; padding: 0 10px; display: flex; flex-direction: column; gap: 2px; }
+  nav a { position: relative; display: flex; align-items: center; gap: 12px; padding: 7px 8px; border-radius: 10px;
+          color: var(--muted); text-decoration: none; white-space: nowrap; }
+  nav a:hover { background: var(--bg); color: var(--text); }
+  .icon { width: 34px; height: 34px; border-radius: 9px; display: grid; place-items: center; flex-shrink: 0;
+          color: var(--c); background: color-mix(in srgb, var(--c) 14%, white); }
+  nav a.active { color: var(--text); font-weight: 600; background: color-mix(in srgb, var(--c) 10%, white); }
+  nav a.active .icon { color: #fff; background: var(--c); }
+  nav a.active::before { content: ""; position: absolute; left: -10px; top: 8px; bottom: 8px; width: 4px;
+                         border-radius: 0 4px 4px 0; background: var(--c); }
+  .app.collapsed nav a { justify-content: center; }
+
+  /* Tooltip in collapsed state */
+  .app.collapsed [data-tip]:hover::after { content: attr(data-tip); position: absolute; left: calc(100% + 10px);
+      top: 50%; transform: translateY(-50%); background: var(--text); color: #fff; font-size: 13px; font-weight: 500;
+      padding: 4px 8px; border-radius: 6px; white-space: nowrap; z-index: 5; }
+
+  /* System status: only shown when there is a problem */
+  .status { margin: auto 10px 12px; padding: 10px 12px; border-radius: 10px; background: var(--danger-bg);
+            border: 1px solid #fecaca; color: var(--danger); font-size: 13px; position: relative; }
+  .status strong { display: block; font-size: 13px; }
+  .status .row { display: flex; gap: 8px; align-items: flex-start; }
+  .app.healthy .status { display: none; }
+  .app.collapsed .status { padding: 8px 0; display: grid; place-items: center; }
+  .app.collapsed.healthy .status { display: none; }
+  .app.collapsed .status .text { display: none; }
+
+  /* Content area */
+  main { flex: 1; padding: 24px 28px; overflow: auto; min-width: 0; }
+  .view { display: none; } .view.shown { display: block; }
+  .view-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+  main h2 { font: 700 24px Georgia, serif; margin: 0; }
+  .sub { color: var(--muted); font-size: 13px; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 16px;
+          box-shadow: 0 2px 8px rgba(20,24,40,.04); min-width: 0; }
+  .card h3 { margin: 0 0 12px; font: 700 16px Georgia, serif; }
+  a.card { color: inherit; text-decoration: none; display: block; } a.card:hover { border-color: #cfd3e0; }
+  .grid { display: grid; gap: 12px; margin-bottom: 12px; }
+  .g4 { grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); }
+  .g2 { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+  .kpi .top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+  .ico { width: 32px; height: 32px; border-radius: 9px; display: grid; place-items: center; color: var(--c);
+         background: color-mix(in srgb, var(--c) 16%, white); font-weight: 700; flex-shrink: 0; }
+  .ico.solid { color: #fff; background: var(--c); }
+  .pill { font-size: 12px; font-weight: 600; padding: 1px 8px; border-radius: 999px; font-style: normal; }
+  .pill.up { color: #0f766e; background: #ccfbf1; } .pill.down { color: var(--danger); background: #fee2e2; }
+  .num { display: block; font: 700 26px/1.2 Georgia, serif; font-variant-numeric: tabular-nums; }
+  .num.big { font-size: 44px; }
+  .label { color: var(--muted); font-size: 13px; }
+  .neg { color: var(--danger); }
+  .highlight { background: var(--accent); color: #fff; border: 0; display: flex; gap: 16px; align-items: center; }
+  .highlight b { font: 700 20px Georgia, serif; display: block; }
+  .highlight .ico { background: rgba(255,255,255,.2); color: #fff; width: 48px; height: 48px; font-size: 22px; }
+  .overview { display: grid; grid-template-columns: minmax(180px, 1fr) 2fr; gap: 20px; align-items: end; }
+  .cmp { margin-top: 18px; display: flex; flex-direction: column; gap: 8px; font-size: 13px; }
+  .cmp b { font-weight: 600; }
+  .arrow { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 6px; margin-right: 8px; font-size: 11px; }
+  .arrow.up { background: #dcfce7; color: var(--income); } .arrow.down { background: #fee2e2; color: var(--danger); }
+  .bars { display: flex; align-items: flex-end; gap: 12px; height: 170px; }
+  .bar { flex: 1; display: flex; flex-direction: column; height: 100%; justify-content: flex-end; }
+  .bar .pair { display: flex; gap: 3px; align-items: flex-end; flex: 1; }
+  .bar i { flex: 1; border-radius: 5px 5px 0 0; display: block; }
+  .bar small { text-align: center; color: var(--muted); font-size: 11px; margin-top: 4px; }
+  .legend { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 10px; font-size: 13px; color: var(--muted); }
+  .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; }
+  .list { list-style: none; margin: 0; padding: 0; }
+  .list li { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-top: 1px solid var(--border); font-size: 14px; }
+  .list li:first-child { border-top: 0; }
+  .list .amt { margin-left: auto; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--c); flex-shrink: 0; display: inline-block; }
+  .ring-wrap { display: flex; gap: 20px; align-items: center; flex-wrap: wrap; }
+  .ring { width: 130px; height: 130px; border-radius: 50%; position: relative; flex-shrink: 0;
+          background: conic-gradient(var(--output) 0 46%, var(--amber) 46% 64%, var(--loans) 64% 88%, var(--cards) 88% 100%); }
+  .ring::after { content: ""; position: absolute; inset: 22px; border-radius: 50%; background: var(--surface); }
+  .ring-legend { display: grid; gap: 6px; font-size: 13px; }
+  .ring-legend span { display: flex; align-items: center; gap: 8px; }
+  .ring-legend b { margin-left: auto; padding-left: 12px; font-variant-numeric: tabular-nums; }
+  .tiles { grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); }
+  .tile { display: flex !important; gap: 12px; align-items: center; }
+  .tile b { font-weight: 700; display: block; }
+  .acct { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; }
+  .acct + .acct { border-top: 1px solid var(--border); padding-top: 12px; margin-top: 12px; }
+  .acct .name { font-weight: 600; }
+  .badge { font-size: 12px; padding: 1px 8px; border-radius: 999px; background: #eef2ff; color: var(--dashboard); }
+  .badge.ok { background: #dcfce7; color: var(--income); } .badge.warn { background: #fef3c7; color: #b45309; }
+  .mono { font-family: ui-monospace, Menlo, monospace; color: var(--muted); font-size: 13px; }
+  .bal { margin-left: auto; text-align: right; font-variant-numeric: tabular-nums; }
+  .bal b { font-size: 17px; } .bal .exp { color: var(--muted); font-size: 13px; }
+  .hint { flex-basis: 100%; font-size: 12px; color: #b45309; }
+  .gone { margin-top: 12px; padding: 10px 14px; border: 1px dashed #cbd0dd; border-radius: 12px; color: var(--muted); font-size: 13px; }
+  .app { height: auto; min-height: 600px; }
+  @media (max-width: 720px) { .overview { grid-template-columns: 1fr; } .num.big { font-size: 36px; } }
+
+  /* Quick actions (FR-14) */
+  .quick { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; }
+  .qa { display: flex; align-items: center; gap: 10px; padding: 8px 14px 8px 8px; border-radius: 12px; flex-shrink: 0;
+        background: var(--surface); border: 1px solid var(--border); color: var(--text); text-decoration: none; font-weight: 600; font-size: 14px; }
+  .qa:hover { background: color-mix(in srgb, var(--c) 8%, white); border-color: color-mix(in srgb, var(--c) 40%, white); }
+  .qa-ico { width: 36px; height: 36px; border-radius: 10px; display: grid; place-items: center; color: var(--c);
+            background: color-mix(in srgb, var(--c) 16%, white); }
+  @media (max-width: 720px) {
+    .quick { flex-wrap: nowrap; overflow-x: auto; }
+    .qa { flex-direction: column; gap: 4px; padding: 0; border: 0; background: none; font-size: 11px; font-weight: 500; width: 64px; text-align: center; }
+    .qa-ico { width: 48px; height: 48px; border-radius: 50%; }
+  }
+  .quick.icons .qa { padding: 0; border: 0; background: none; position: relative; }
+  .quick.icons .qa-ico { width: 44px; height: 44px; border-radius: 12px; transition: transform .15s; }
+  .quick.icons .qa:hover .qa-ico, .quick.icons .qa:focus-visible .qa-ico { transform: translateY(-2px); box-shadow: 0 4px 10px color-mix(in srgb, var(--c) 30%, transparent); }
+  .quick.icons .qa::after { content: attr(data-label); position: absolute; top: calc(100% + 6px); left: 50%; transform: translateX(-50%);
+      background: var(--text); color: #fff; font-size: 12px; font-weight: 500; padding: 3px 8px; border-radius: 6px; white-space: nowrap;
+      opacity: 0; pointer-events: none; transition: opacity .15s 0s; z-index: 5; }
+  .quick.icons .qa:hover::after { opacity: 1; transition-delay: 1s; }
+  .quick.icons .qa:focus-visible::after { opacity: 1; }
+  .quick.icons { gap: 12px; margin-bottom: 18px; }
+  @media (max-width: 720px) { .quick.icons .qa { width: auto; } .quick.icons .qa-ico { border-radius: 50%; } }
+  /* Screens of FR-15 to FR-20 */
+  .sec-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-left: 8px; }
+  .qa.sm { padding: 4px 10px 4px 4px; font-size: 13px; gap: 6px; border-radius: 10px; }
+  .qa.sm .qa-ico { width: 26px; height: 26px; border-radius: 7px; } .qa.sm svg { width: 15px; height: 15px; }
+  .section-head { flex-wrap: wrap; }
+  @media (max-width: 720px) { .qa.sm { flex-direction: row; width: auto; font-size: 12px; } .qa.sm .qa-ico { width: 26px; height: 26px; border-radius: 7px; } }
+  .month-nav { display: flex; align-items: center; gap: 8px; }
+  .arrow-btn { width: 30px; height: 30px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); font-size: 18px; cursor: pointer; }
+  .progress-row { display: grid; grid-template-columns: 130px 1fr 60px; gap: 12px; align-items: center; font-size: 13px; padding: 4px 0; }
+  .progress { height: 8px; border-radius: 99px; background: #eef0f5; overflow: hidden; display: flex; }
+  .progress i { display: block; height: 100%; border-radius: 99px; }
+  .section { margin-bottom: 10px; border-left: 4px solid var(--c); }
+  .section-head { display: flex; align-items: center; gap: 10px; }
+  .section-head h3 { margin: 0; } .section-head .total { margin-left: auto; font-variant-numeric: tabular-nums; }
+  .section-head .chev { color: var(--muted); }
+  .section .rows { margin-top: 8px; }
+  .rows li { flex-wrap: wrap; }
+  .tick { width: 22px; height: 22px; border-radius: 50%; border: 2px solid #c9cdd8; background: none; color: #fff; font-size: 12px; padding: 0; cursor: pointer; }
+  .tick.done { background: var(--income); border-color: var(--income); }
+  .chip { font-size: 12px; padding: 1px 8px; border-radius: 999px; background: #eef0f5; color: var(--muted); }
+  .chip.ok { background: #dcfce7; color: var(--income); } .chip.bad { background: #fee2e2; color: var(--danger); }
+  .more { flex-basis: 100%; padding-left: 32px; font-size: 12px; color: var(--muted); }
+  .toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 12px; }
+  .seg { display: inline-flex; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 3px; }
+  .seg button { border: 0; background: none; padding: 5px 12px; border-radius: 8px; font: inherit; font-size: 13px; cursor: pointer; }
+  .seg button.on { background: var(--text); color: #fff; }
+  .filter-btn { border: 1px solid var(--border); background: var(--surface); border-radius: 10px; padding: 6px 12px; font: inherit; font-size: 13px; }
+  .chip-x { font-size: 12px; padding: 3px 10px; border-radius: 999px; background: #e0f2f1; color: #0f766e; }
+  .bars.tall { height: 220px; }
+  .bar .stack { flex: 1; align-self: stretch; display: flex; flex-direction: column; justify-content: flex-end; }
+  .bar .stack i { flex: none; border-radius: 0; } .bar .stack i:first-child { border-radius: 5px 5px 0 0; }
+  .loan-head { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+  .loan-head b { display: inline; } .loan-head .label { display: block; }
+  .loan-head .total { margin-left: auto; text-align: right; font: 700 18px Georgia, serif; }
+  .loan-head .total small { display: block; font: 400 12px system-ui, sans-serif; color: var(--muted); }
+  .loan-foot { display: flex; justify-content: space-between; font-size: 13px; color: var(--muted); margin-top: 8px; }
+  .loan.bad { border-color: #fecaca; background: #fffafa; }
+  .hbar { display: grid; grid-template-columns: 160px 1fr; gap: 12px; align-items: center; font-size: 13px; margin: 6px 0; }
+  .hbar-track { display: flex; height: 14px; border-radius: 6px; overflow: hidden; background: #eef0f5; }
+  .hbar-track i { display: block; height: 100%; }
+  .avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--c); color: #fff; display: grid; place-items: center; font: 700 18px Georgia, serif; flex-shrink: 0; }
+  .list.mini { margin-top: 10px; } .list.mini li { font-size: 13px; padding: 6px 0; }
+  h4.group { margin: 16px 0 8px; font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+  .tile .count { margin-left: auto; font-size: 12px; color: var(--muted); white-space: nowrap; align-self: flex-start; }
+  .tiles a.tile div { min-width: 0; }
+  @media (max-width: 720px) { .progress-row { grid-template-columns: 1fr 50px; } .progress-row span:first-child { grid-column: 1 / -1; } .hbar { grid-template-columns: 90px 1fr; } }
+
+  .notes { margin-top: 20px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 12px 18px; }
+  .notes h2 { font: 700 18px Georgia, serif; margin: 8px 0; }
+  .notes li { margin: 4px 0; }
+
+  @media (max-width: 720px) {
+    .app { height: 560px; }
+    .app:not(.collapsed) .menu { width: 200px; }
+    main { padding: 16px; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+  <h1>Design mock-up</h1>
+  <p class="intro">Drawing for <a href="design-refresh.md">design-refresh.md</a>: left menu, quick actions and every screen except Savings. Select a screen in the menu, use the menu toggle, or the buttons below to see a system problem.</p>
+
+  <div class="controls" role="group" aria-label="Demo state">
+    <button type="button" data-status="healthy" aria-pressed="true">Everything healthy</button>
+    <button type="button" data-status="api" aria-pressed="false">API unreachable</button>
+    <button type="button" data-status="db" aria-pressed="false">Database unhealthy</button>
+  </div>
+
+  <div class="app healthy" id="app">
+    <aside class="menu">
+      <div class="menu-head">
+        <div class="logo" aria-hidden="true">M</div>
+        <span class="brand">Monthwise</span>
+        <button class="toggle" id="toggle" type="button" aria-expanded="true" aria-controls="main-nav"
+                aria-label="Collapse menu" data-tip="Expand menu">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/><path id="chev" d="m16 15-3-3 3-3"/></svg>
+        </button>
+      </div>
+
+      <nav id="main-nav" aria-label="Main">
+        <ul>
+          <li><a href="#" class="active" data-view="dashboard" style="--c:var(--dashboard)" data-tip="Dashboard"><span class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg></span><span class="label">Dashboard</span></a></li>
+          <li><a href="#" data-view="month" style="--c:var(--month)" data-tip="Month"><span class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></svg></span><span class="label">Month</span></a></li>
+          <li><a href="#" data-view="cashflow" style="--c:var(--cashflow)" data-tip="Cash flow"><span class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M18 17V9M13 17V5M8 17v-3"/></svg></span><span class="label">Cash flow</span></a></li>
+          <li><a href="#" data-view="cards" style="--c:var(--cards)" data-tip="Cards"><span class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg></span><span class="label">Cards</span></a></li>
+          <li><a href="#" data-view="loans" style="--c:var(--loans)" data-tip="Loans"><span class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 22h18M6 18v-7M10 18v-7M14 18v-7M18 18v-7M12 2l8 5H4z"/></svg></span><span class="label">Loans</span></a></li>
+          <li><a href="#" data-view="shared" style="--c:var(--shared)" data-tip="Shared costs"><span class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></span><span class="label">Shared costs</span></a></li>
+          <li><a href="#" style="--c:var(--savings)" data-tip="Savings"><span class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 5c-1.5 0-2.8 1.4-3 2-3.5-1.5-11-.3-11 5 0 1.8 0 3 2 4.5V20h4v-2h3v2h4v-4c1-.5 1.7-1 2-2h2v-4h-2c0-1-.5-1.5-1-2V5z"/><path d="M2 9v1c0 1.1.9 2 2 2h1"/></svg></span><span class="label">Savings</span></a></li>
+          <li><a href="#" data-view="settings" style="--c:var(--settings)" data-tip="Settings"><span class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-2.82 1.17V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-2.82-1.17l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 3.26 14H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.17-2.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 10 3.26V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 2.82 1.17l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 20.74 10H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span><span class="label">Settings</span></a></li>
+        </ul>
+      </nav>
+
+      <div class="status" role="status" id="status" data-tip="API unreachable">
+        <div class="row">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3z"/><path d="M12 9v4M12 17h.01"/></svg>
+          <div class="text"><strong>System problem</strong><span id="status-text">API unreachable</span></div>
+        </div>
+      </div>
+    </aside>
+
+    <main>
+      <!-- Dashboard (FR-9 to FR-11) -->
+      <section class="view shown" id="view-dashboard" aria-label="Dashboard">
+        <div class="view-head"><h2>October 2026</h2><span class="sub">How is this month going?</span></div>
+        <div class="quick icons" role="group" aria-label="Quick actions"><a href="#" class="qa" style="--c:var(--income)" aria-label="Add income" data-label="Add income"><span class="qa-ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/></svg></span></a><a href="#" class="qa" style="--c:var(--output)" aria-label="Add bill" data-label="Add bill"><span class="qa-ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 17.5v-11"/></svg></span></a><a href="#" class="qa" style="--c:var(--amber)" aria-label="Add expense" data-label="Add expense"><span class="qa-ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg></span></a><a href="#" class="qa" style="--c:var(--cashflow)" aria-label="Cash withdrawal" data-label="Cash withdrawal"><span class="qa-ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/></svg></span></a><a href="#" class="qa" style="--c:var(--cards)" aria-label="Add purchase" data-label="Add purchase"><span class="qa-ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg></span></a></div>
+
+        <div class="grid g4">
+          <a href="#" class="card kpi" style="--c:var(--income)"><div class="top"><span class="ico">↓</span><em class="pill up">▲ 4%</em></div><span class="num">€3,250.00</span><span class="label">Inputs · €2,900.00 received</span></a>
+          <a href="#" class="card kpi" style="--c:var(--output)"><div class="top"><span class="ico">↑</span><em class="pill down">▲ 9%</em></div><span class="num">€2,480.00</span><span class="label">Outputs · €1,915.00 paid</span></a>
+          <a href="#" class="card kpi" style="--c:var(--accent)"><div class="top"><span class="ico">=</span><em class="pill down">▼ 12%</em></div><span class="num">€770.00</span><span class="label">Month result</span></a>
+          <a href="#" class="card kpi" style="--c:var(--amber)"><div class="top"><span class="ico">!</span></div><span class="num">€565.00</span><span class="label">Still to pay · 4 items</span></a>
+        </div>
+
+        <div class="grid g2">
+          <div class="card highlight">
+            <span class="ico">✓</span>
+            <div><b>Next: Electricity €64.20 on 22 Oct</b><span>3 more bills and payments due this month.</span></div>
+          </div>
+          <div class="card">
+            <h3>Coming up · next 7 days</h3>
+            <ul class="list">
+              <li><span class="dot" style="--c:var(--output)"></span>Electricity<span class="sub">22 Oct</span><span class="amt" style="color:var(--output)">−€64.20</span></li>
+              <li><span class="dot" style="--c:var(--loans)"></span>Car loan<span class="sub">25 Oct</span><span class="amt" style="color:var(--output)">−€310.00</span></li>
+              <li><span class="dot" style="--c:var(--income)"></span>Contribution from Ana<span class="sub">26 Oct</span><span class="amt" style="color:var(--income)">+€150.00</span></li>
+              <li><span class="dot" style="--c:var(--cards)"></span>Visa Gold payment<span class="sub">28 Oct</span><span class="amt" style="color:var(--output)">−€120.80</span></li>
+            </ul>
+          </div>
+        </div>
+
+        <a href="#" class="card" style="margin-bottom:12px">
+          <div class="overview">
+            <div>
+              <h3>Month result</h3>
+              <span class="num big">€770.00</span>
+              <span class="label">Inputs minus outputs this month</span>
+              <div class="cmp">
+                <span><span class="arrow up">▲</span><b style="color:var(--income)">4% more inputs</b> than September</span>
+                <span><span class="arrow down">▲</span><b style="color:var(--danger)">9% more outputs</b> than September</span>
+              </div>
+            </div>
+            <div>
+              <div class="bars" aria-hidden="true">
+                <div class="bar"><div class="pair"><i style="height:68%;background:var(--income)"></i><i style="height:60%;background:var(--output)"></i></div><small>May</small></div>
+                <div class="bar"><div class="pair"><i style="height:72%;background:var(--income)"></i><i style="height:78%;background:var(--output)"></i></div><small>Jun</small></div>
+                <div class="bar"><div class="pair"><i style="height:66%;background:var(--income)"></i><i style="height:57%;background:var(--output)"></i></div><small>Jul</small></div>
+                <div class="bar"><div class="pair"><i style="height:88%;background:var(--income)"></i><i style="height:64%;background:var(--output)"></i></div><small>Aug</small></div>
+                <div class="bar"><div class="pair"><i style="height:70%;background:var(--income)"></i><i style="height:69%;background:var(--output)"></i></div><small>Sep</small></div>
+                <div class="bar"><div class="pair"><i style="height:80%;background:var(--income)"></i><i style="height:61%;background:var(--output)"></i></div><small>Oct</small></div>
+              </div>
+              <div class="legend"><span><i style="background:var(--income)"></i>Inputs</span><span><i style="background:var(--output)"></i>Outputs</span></div>
+            </div>
+          </div>
+        </a>
+
+        <div class="grid g2">
+          <div class="card">
+            <h3>This month's outputs by kind</h3>
+            <div class="ring-wrap">
+              <div class="ring" aria-hidden="true"></div>
+              <div class="ring-legend">
+                <span><i class="dot" style="--c:var(--output)"></i>Bills<b>€1,140.80</b></span>
+                <span><i class="dot" style="--c:var(--amber)"></i>Expenses<b>€446.40</b></span>
+                <span><i class="dot" style="--c:var(--loans)"></i>Loan payments<b>€595.20</b></span>
+                <span><i class="dot" style="--c:var(--cards)"></i>Card payments<b>€297.60</b></span>
+              </div>
+            </div>
+          </div>
+          <div class="grid tiles" style="margin:0">
+            <a href="#" class="card tile" style="--c:var(--loans)"><span class="ico solid">L</span><div><b>€595.20 / month</b><span class="label">Loans · €18,400 to repay</span></div></a>
+            <a href="#" class="card tile" style="--c:var(--cards)"><span class="ico solid">C</span><div><b>€297.60</b><span class="label">Card payments · 2 cards</span></div></a>
+            <a href="#" class="card tile" style="--c:var(--shared)"><span class="ico solid">S</span><div><b>€150.00</b><span class="label">Shared costs · 1 owes</span></div></a>
+            <a href="#" class="card tile" style="--c:var(--month)"><span class="ico solid">R</span><div><b>9 bills</b><span class="label">Recurring · €640/month</span></div></a>
+          </div>
+        </div>
+        <p class="gone">Not on the Dashboard any more: the Cards widget with current, expected and starting balances (now on Cards) and the System status card (now in the menu, only on a problem).</p>
+      </section>
+
+      <!-- Cards screen (FR-12) -->
+      <section class="view" id="view-cards" aria-label="Cards">
+        <div class="view-head"><h2>Cards</h2><span class="sub">Accounts, balances and installments</span></div>
+        <div class="grid g4">
+          <div class="card kpi" style="--c:var(--cards)"><div class="top"><span class="ico">€</span></div><span class="num">€2,340.15</span><span class="label">Current balance</span></div>
+          <div class="card kpi" style="--c:var(--cards)"><div class="top"><span class="ico">→</span></div><span class="num" style="color:var(--muted)">€2,516.95</span><span class="label">Expected at end of month</span></div>
+          <div class="card kpi" style="--c:var(--output)"><div class="top"><span class="ico">↑</span></div><span class="num">€297.60</span><span class="label">Card payments this month</span></div>
+          <div class="card kpi" style="--c:var(--amber)"><div class="top"><span class="ico">#</span></div><span class="num">€1,180.00</span><span class="label">Installments left</span></div>
+        </div>
+        <div class="grid g2">
+          <div class="card">
+            <h3>Accounts</h3>
+            <div class="acct"><span class="name">Main account</span><span class="badge">Primary</span><span class="badge ok">Active</span><span class="mono">HR•• •••• 4821</span>
+              <span class="bal"><b>€1,640.35</b><br><span class="exp">Expected €1,385.15</span></span></div>
+            <div class="acct"><span class="name">Savings account</span><span class="badge ok">Active</span><span class="mono">HR•• •••• 1180</span>
+              <span class="bal"><b>€700.00</b><br><span class="exp">Expected €850.00</span></span></div>
+            <div class="acct"><span class="name">Visa Gold</span><span class="badge warn">Expiring soon</span><span class="mono">•••• 3307</span>
+              <span class="bal"><b class="neg">−€0.20</b><br><span class="exp">Expected €281.80</span></span>
+              <span class="hint">No starting balance yet. Add one so the balance matches your bank.</span></div>
+          </div>
+          <div class="card">
+            <h3>Current and expected balance</h3>
+            <div class="bars" aria-hidden="true">
+              <div class="bar"><div class="pair"><i style="height:100%;background:var(--cards)"></i><i style="height:84%;background:color-mix(in srgb, var(--cards) 35%, white)"></i></div><small>Main</small></div>
+              <div class="bar"><div class="pair"><i style="height:43%;background:var(--cards)"></i><i style="height:53%;background:color-mix(in srgb, var(--cards) 35%, white)"></i></div><small>Savings</small></div>
+              <div class="bar"><div class="pair"><i style="height:2%;background:var(--cards)"></i><i style="height:18%;background:color-mix(in srgb, var(--cards) 35%, white)"></i></div><small>Visa Gold</small></div>
+            </div>
+            <div class="legend"><span><i style="background:var(--cards)"></i>Current</span><span><i style="background:color-mix(in srgb, var(--cards) 35%, white)"></i>Expected at end of month</span></div>
+          </div>
+        </div>
+        <div class="card">
+          <h3>Cards with installments</h3>
+          <ul class="list">
+            <li><span class="dot" style="--c:var(--cards)"></span>Visa Gold<span class="sub">Statement 15. · Due 28.</span><span class="amt">Next €120.80</span></li>
+            <li><span class="dot" style="--c:var(--cards)"></span>Mastercard<span class="sub">Statement 1. · Due 12.</span><span class="amt">Next €176.80</span></li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- Month (FR-15) -->
+      <section class="view" id="view-month" aria-label="Month">
+        <div class="view-head"><div class="month-nav"><button class="arrow-btn" aria-label="Previous month">‹</button><h2>October 2026</h2><button class="arrow-btn" aria-label="Next month">›</button></div><span class="sub">All inputs and outputs of the month</span></div>
+        
+        <div class="grid g4">
+          <div class="card kpi" style="--c:var(--income)"><div class="top"><span class="ico">↓</span></div><span class="num">€3,250.00</span><span class="label">Inputs · €2,900.00 received</span></div>
+          <div class="card kpi" style="--c:var(--output)"><div class="top"><span class="ico">↑</span></div><span class="num">€2,480.00</span><span class="label">Outputs · €1,915.00 paid</span></div>
+          <div class="card kpi" style="--c:var(--accent)"><div class="top"><span class="ico">=</span></div><span class="num">€770.00</span><span class="label">Month result</span></div>
+          <div class="card kpi" style="--c:var(--danger)"><div class="top"><span class="ico">!</span></div><span class="num neg">€565.00</span><span class="label">Still to pay · 1 overdue</span></div>
+        </div>
+        <div class="card" style="margin-bottom:12px">
+          <div class="progress-row"><span>Inputs received</span><div class="progress"><i style="width:89%;background:var(--income)"></i></div><span class="sub">3 of 4</span></div>
+          <div class="progress-row"><span>Outputs paid</span><div class="progress"><i style="width:77%;background:var(--output)"></i></div><span class="sub">14 of 18</span></div>
+        </div>
+
+        <div class="card section" style="--c:var(--income)">
+          <div class="section-head"><span class="ico">↓</span><h3>Income</h3><span class="sub">3 of 4 received</span><span class="sec-actions"><a href="#" class="qa sm" style="--c:var(--income)"><span class="qa-ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/></svg></span><span>Add input</span></a></span><b class="total">€3,250.00</b><span class="chev">▾</span></div>
+          <ul class="list rows">
+            <li><button class="tick done" aria-label="Received">✓</button>Salary<span class="sub">10 Oct</span><span class="chip ok">Received</span><span class="amt">€2,600.00</span></li>
+            <li><button class="tick done" aria-label="Received">✓</button>Salary add-on<span class="sub">10 Oct</span><span class="chip ok">Received</span><span class="amt">€300.00</span></li>
+            <li><button class="tick" aria-label="Mark received"></button>Contribution from Ana<span class="sub">26 Oct</span><span class="chip">Expected</span><span class="amt">€150.00</span></li>
+          </ul>
+        </div>
+        <div class="card section" style="--c:var(--output)">
+          <div class="section-head"><span class="ico">≡</span><h3>Bills</h3><span class="sub">6 of 9 paid</span><span class="sec-actions"><a href="#" class="qa sm" style="--c:var(--output)"><span class="qa-ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 17.5v-11"/></svg></span><span>Add bill</span></a><a href="#" class="qa sm" style="--c:var(--month)"><span class="qa-ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m17 2 4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14"/><path d="m7 22-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/></svg></span><span>Add recurring bills</span></a></span><b class="total">€1,140.80</b><span class="chev">▾</span></div>
+          <ul class="list rows">
+            <li><button class="tick" aria-label="Mark paid"></button>Water<span class="sub">15 Oct</span><span class="chip bad">Overdue</span><span class="amt">€38.40</span></li>
+            <li><button class="tick" aria-label="Mark paid"></button>Electricity<span class="sub">22 Oct</span><span class="chip">Expected</span><span class="amt">€64.20</span></li>
+            <li class="expanded"><button class="tick done" aria-label="Paid">✓</button>Internet<span class="sub">5 Oct</span><span class="chip ok">Paid</span><span class="amt">€29.99</span>
+              <span class="more">Utilities · Paid from Main account · Shared with Ana, 1 of 2</span></li>
+          </ul>
+        </div>
+        <div class="card section collapsed" style="--c:var(--amber)">
+          <div class="section-head"><span class="ico">🛒</span><h3>Expenses</h3><span class="sub">All paid</span><span class="sec-actions"><a href="#" class="qa sm" style="--c:var(--amber)"><span class="qa-ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg></span><span>Add expense</span></a><a href="#" class="qa sm" style="--c:var(--cashflow)"><span class="qa-ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/></svg></span><span>Cash withdrawal</span></a></span><b class="total">€446.40</b><span class="chev">▸</span></div>
+        </div>
+        <div class="card section" style="--c:var(--loans)">
+          <div class="section-head"><span class="ico">⌂</span><h3>Loan payments</h3><span class="sub">1 of 2 paid</span><b class="total">€595.20</b><span class="chev">▾</span></div>
+          <ul class="list rows">
+            <li><button class="tick" aria-label="Mark paid"></button>Car loan<span class="sub">25 Oct</span><span class="chip">Expected</span><span class="amt">€310.00</span></li>
+          </ul>
+        </div>
+        <div class="card section collapsed" style="--c:var(--cards)">
+          <div class="section-head"><span class="ico">▭</span><h3>Card payments</h3><span class="sub">0 of 2 paid</span><b class="total">€297.60</b><span class="chev">▸</span></div>
+        </div>
+      </section>
+
+      <!-- Cash flow (FR-16) -->
+      <section class="view" id="view-cashflow" aria-label="Cash flow">
+        <div class="view-head"><h2>Cash flow</h2><span class="sub">Last 12 months</span></div>
+        <div class="grid g4">
+          <div class="card kpi" style="--c:var(--income)"><div class="top"><span class="ico">↓</span></div><span class="num">€38,920.00</span><span class="label">Inputs</span></div>
+          <div class="card kpi" style="--c:var(--output)"><div class="top"><span class="ico">↑</span></div><span class="num">€33,410.00</span><span class="label">Outputs</span></div>
+          <div class="card kpi" style="--c:var(--cashflow)"><div class="top"><span class="ico">=</span></div><span class="num">€5,510.00</span><span class="label">Result</span></div>
+          <div class="card kpi" style="--c:var(--cashflow)"><div class="top"><span class="ico">⌀</span></div><span class="num">€459.17</span><span class="label">Average per month</span></div>
+        </div>
+        <div class="toolbar">
+          <div class="seg"><button>This month</button><button class="on">Last 12 months</button><button>This year</button></div>
+          <button class="filter-btn">⚲ Filters · 1</button>
+          <span class="chip-x">Account: Main account ✕</span>
+        </div>
+        <div class="card" style="margin-bottom:12px">
+          <h3>Inputs and outputs</h3>
+          <div class="bars tall" aria-hidden="true">
+            <div class="bar"><div class="pair"><div class="stack"><i style="height:0%;background:color-mix(in srgb, var(--income) 35%, white)"></i><i style="height:70%;background:var(--income)"></i></div><div class="stack"><i style="height:0%;background:color-mix(in srgb, var(--output) 35%, white)"></i><i style="height:64%;background:var(--output)"></i></div></div><small>Nov</small></div>
+            <div class="bar"><div class="pair"><div class="stack"><i style="height:0%;background:color-mix(in srgb, var(--income) 35%, white)"></i><i style="height:82%;background:var(--income)"></i></div><div class="stack"><i style="height:0%;background:color-mix(in srgb, var(--output) 35%, white)"></i><i style="height:88%;background:var(--output)"></i></div></div><small>Dec</small></div>
+            <div class="bar"><div class="pair"><div class="stack"><i style="height:0%;background:color-mix(in srgb, var(--income) 35%, white)"></i><i style="height:66%;background:var(--income)"></i></div><div class="stack"><i style="height:0%;background:color-mix(in srgb, var(--output) 35%, white)"></i><i style="height:60%;background:var(--output)"></i></div></div><small>Jan</small></div>
+            <div class="bar"><div class="pair"><div class="stack"><i style="height:0%;background:color-mix(in srgb, var(--income) 35%, white)"></i><i style="height:68%;background:var(--income)"></i></div><div class="stack"><i style="height:0%;background:color-mix(in srgb, var(--output) 35%, white)"></i><i style="height:58%;background:var(--output)"></i></div></div><small>Feb</small></div>
+            <div class="bar"><div class="pair"><div class="stack"><i style="height:0%;background:color-mix(in srgb, var(--income) 35%, white)"></i><i style="height:72%;background:var(--income)"></i></div><div class="stack"><i style="height:0%;background:color-mix(in srgb, var(--output) 35%, white)"></i><i style="height:70%;background:var(--output)"></i></div></div><small>Mar</small></div>
+            <div class="bar"><div class="pair"><div class="stack"><i style="height:0%;background:color-mix(in srgb, var(--income) 35%, white)"></i><i style="height:70%;background:var(--income)"></i></div><div class="stack"><i style="height:0%;background:color-mix(in srgb, var(--output) 35%, white)"></i><i style="height:62%;background:var(--output)"></i></div></div><small>Apr</small></div>
+            <div class="bar"><div class="pair"><div class="stack"><i style="height:0%;background:color-mix(in srgb, var(--income) 35%, white)"></i><i style="height:68%;background:var(--income)"></i></div><div class="stack"><i style="height:0%;background:color-mix(in srgb, var(--output) 35%, white)"></i><i style="height:60%;background:var(--output)"></i></div></div><small>May</small></div>
+            <div class="bar"><div class="pair"><div class="stack"><i style="height:0%;background:color-mix(in srgb, var(--income) 35%, white)"></i><i style="height:72%;background:var(--income)"></i></div><div class="stack"><i style="height:0%;background:color-mix(in srgb, var(--output) 35%, white)"></i><i style="height:78%;background:var(--output)"></i></div></div><small>Jun</small></div>
+            <div class="bar"><div class="pair"><div class="stack"><i style="height:0%;background:color-mix(in srgb, var(--income) 35%, white)"></i><i style="height:66%;background:var(--income)"></i></div><div class="stack"><i style="height:0%;background:color-mix(in srgb, var(--output) 35%, white)"></i><i style="height:57%;background:var(--output)"></i></div></div><small>Jul</small></div>
+            <div class="bar"><div class="pair"><div class="stack"><i style="height:0%;background:color-mix(in srgb, var(--income) 35%, white)"></i><i style="height:74%;background:var(--income)"></i></div><div class="stack"><i style="height:0%;background:color-mix(in srgb, var(--output) 35%, white)"></i><i style="height:77%;background:var(--output)"></i></div></div><small>Aug</small></div>
+            <div class="bar"><div class="pair"><div class="stack"><i style="height:0%;background:color-mix(in srgb, var(--income) 35%, white)"></i><i style="height:76%;background:var(--income)"></i></div><div class="stack"><i style="height:0%;background:color-mix(in srgb, var(--output) 35%, white)"></i><i style="height:69%;background:var(--output)"></i></div></div><small>Sep</small></div>
+            <div class="bar"><div class="pair"><div class="stack"><i style="height:9%;background:color-mix(in srgb, var(--income) 35%, white)"></i><i style="height:71%;background:var(--income)"></i></div><div class="stack"><i style="height:14%;background:color-mix(in srgb, var(--output) 35%, white)"></i><i style="height:47%;background:var(--output)"></i></div></div><small>Oct</small></div>
+          </div>
+          <div class="legend"><span><i style="background:var(--income)"></i>Inputs received</span><span><i style="background:color-mix(in srgb, var(--income) 35%, white)"></i>Inputs expected</span><span><i style="background:var(--output)"></i>Outputs paid</span><span><i style="background:color-mix(in srgb, var(--output) 35%, white)"></i>Outputs expected</span></div>
+        </div>
+        <div class="card">
+          <h3>Months</h3>
+          <ul class="list">
+            <li>October 2026<span class="sub">€3,250 in · €2,480 out</span><span class="amt" style="color:var(--income)">+€770.00 ›</span></li>
+            <li>September 2026<span class="sub">€3,120 in · €2,270 out</span><span class="amt" style="color:var(--income)">+€850.00 ›</span></li>
+            <li>August 2026<span class="sub">€3,050 in · €3,190 out</span><span class="amt" style="color:var(--danger)">−€140.00 ›</span></li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- Loans (FR-18) -->
+      <section class="view" id="view-loans" aria-label="Loans">
+        <div class="view-head"><h2>Loans</h2><div class="seg"><button class="on">Active</button><button>Closed</button></div></div>
+        <div class="grid g4">
+          <div class="card kpi" style="--c:var(--loans)"><div class="top"><span class="ico">#</span></div><span class="num">2</span><span class="label">Active loans</span></div>
+          <div class="card kpi" style="--c:var(--loans)"><div class="top"><span class="ico">↻</span></div><span class="num">€595.20</span><span class="label">Monthly payments</span></div>
+          <div class="card kpi" style="--c:var(--loans)"><div class="top"><span class="ico">⌂</span></div><span class="num">€18,400.00</span><span class="label">Still to repay</span></div>
+          <div class="card kpi" style="--c:var(--loans)"><div class="top"><span class="ico">→</span></div><span class="num">€310.00</span><span class="label">Next payment · 25 Oct</span></div>
+        </div>
+        <div class="grid g2">
+          <div class="card loan" style="--c:var(--loans)">
+            <div class="loan-head"><span class="ico solid">⌂</span><div><b>Car loan</b><span class="label">Bank loan · next 25 Oct</span></div><b class="total">€310.00<small>/month</small></b></div>
+            <div class="progress"><i style="width:30%;background:var(--loans)"></i></div>
+            <div class="loan-foot"><span>18 of 60 paid</span><span>€13,020.00 to repay</span></div>
+          </div>
+          <div class="card loan bad" style="--c:var(--danger)">
+            <div class="loan-head"><span class="ico solid">⌂</span><div><b>Washing machine lease</b> <span class="chip bad">Overdue</span><span class="label">Lease · due 15 Oct</span></div><b class="total">€285.20<small>/month</small></b></div>
+            <div class="progress"><i style="width:55%;background:var(--danger)"></i></div>
+            <div class="loan-foot"><span>11 of 20 paid</span><span>€5,380.00 to repay</span></div>
+          </div>
+        </div>
+        <div class="card">
+          <h3>Paid and remaining per loan</h3>
+          <div class="hbar"><span>Car loan</span><div class="hbar-track"><i style="width:30%;background:var(--loans)"></i><i style="width:70%;background:color-mix(in srgb, var(--loans) 25%, white)"></i></div></div>
+          <div class="hbar"><span>Washing machine lease</span><div class="hbar-track"><i style="width:55%;background:var(--loans)"></i><i style="width:45%;background:color-mix(in srgb, var(--loans) 25%, white)"></i></div></div>
+          <div class="legend"><span><i style="background:var(--loans)"></i>Paid</span><span><i style="background:color-mix(in srgb, var(--loans) 25%, white)"></i>Remaining</span></div>
+        </div>
+      </section>
+
+      <!-- Shared costs (FR-19) -->
+      <section class="view" id="view-shared" aria-label="Shared costs">
+        <div class="view-head"><h2>Shared costs</h2><span class="sub">October 2026</span></div>
+        <div class="grid g4">
+          <div class="card kpi" style="--c:var(--shared)"><div class="top"><span class="ico">€</span></div><span class="num">€212.80</span><span class="label">Outstanding</span></div>
+          <div class="card kpi" style="--c:var(--danger)"><div class="top"><span class="ico">!</span></div><span class="num neg">€82.00</span><span class="label">Overdue</span></div>
+          <div class="card kpi" style="--c:var(--income)"><div class="top"><span class="ico">✓</span></div><span class="num">€168.00</span><span class="label">Received this month</span></div>
+          <div class="card kpi" style="--c:var(--shared)"><div class="top"><span class="ico">☺</span></div><span class="num">2</span><span class="label">Participants</span></div>
+        </div>
+        <div class="grid g2">
+          <div class="card person" style="--c:var(--shared)">
+            <div class="loan-head"><span class="avatar">A</span><div><b>Ana</b><span class="label">3 shared costs</span></div><b class="total neg">€150.00<small>outstanding</small></b></div>
+            <div class="progress"><i style="width:55%;background:var(--shared)"></i></div>
+            <div class="loan-foot"><span>€168.00 of €318.00 received</span></div>
+            <ul class="list mini">
+              <li>Mortgage<span class="sub">1 of 2 · 50%</span><span class="amt">€250.00</span></li>
+              <li>Utilities<span class="sub">1 of 2 · 50%</span><span class="amt">€53.00</span></li>
+              <li>Internet<span class="sub">1 of 2 · 50%</span><span class="amt">€15.00</span></li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>Outstanding contributions</h3>
+            <ul class="list rows">
+              <li><button class="tick" aria-label="Mark received"></button>Ana · Water<span class="sub">15 Oct</span><span class="chip bad">Overdue</span><span class="amt">€19.20</span></li>
+              <li><button class="tick" aria-label="Mark received"></button>Marko · Parking<span class="sub">1 Oct</span><span class="chip bad">Overdue</span><span class="amt">€62.80</span></li>
+              <li><button class="tick" aria-label="Mark received"></button>Ana · Mortgage<span class="sub">26 Oct</span><span class="chip">Expected</span><span class="amt">€130.80</span></li>
+            </ul>
+            <div class="hbar" style="margin-top:12px"><span>Ana</span><div class="hbar-track"><i style="width:53%;background:var(--income)"></i><i style="width:47%;background:var(--shared)"></i></div></div>
+            <div class="hbar"><span>Marko</span><div class="hbar-track"><i style="width:0%"></i><i style="width:100%;background:var(--shared)"></i></div></div>
+            <div class="legend"><span><i style="background:var(--income)"></i>Received</span><span><i style="background:var(--shared)"></i>Outstanding</span></div>
+          </div>
+        </div>
+        <p class="gone">Participants are managed at the end of the screen (add, edit, archive).</p>
+      </section>
+
+      <!-- Settings (FR-20) -->
+      <section class="view" id="view-settings" aria-label="Settings">
+        <div class="view-head"><h2>Settings</h2></div>
+        <h4 class="group">Accounts</h4>
+        <div class="grid tiles">
+          <a href="#" class="card tile" style="--c:var(--cards)"><span class="ico solid">▭</span><div><b>Cards and accounts</b><span class="label">Cards, bank accounts and billing</span></div><span class="count">4 cards</span></a>
+        </div>
+        <h4 class="group">Money in</h4>
+        <div class="grid tiles">
+          <a href="#" class="card tile" style="--c:var(--income)"><span class="ico solid">☺</span><div><b>Payers</b><span class="label">Who pays your inputs</span></div><span class="count">5 payers</span></a>
+          <a href="#" class="card tile" style="--c:var(--income)"><span class="ico solid">#</span><div><b>Input categories</b><span class="label">Kinds of income</span></div><span class="count">6</span></a>
+        </div>
+        <h4 class="group">Money out</h4>
+        <div class="grid tiles">
+          <a href="#" class="card tile" style="--c:var(--amber)"><span class="ico solid">🛒</span><div><b>Expense categories</b><span class="label">Bills, expenses and purchases</span></div><span class="count">12</span></a>
+          <a href="#" class="card tile" style="--c:var(--loans)"><span class="ico solid">⌂</span><div><b>Loan categories</b><span class="label">Kinds of loans and leases</span></div><span class="count">3</span></a>
+          <a href="#" class="card tile" style="--c:var(--month)"><span class="ico solid">↻</span><div><b>Recurring bills</b><span class="label">Bills that arrive every month</span></div><span class="count">9 active</span></a>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="notes">
+    <h2>What the drawing shows</h2>
+    <ul>
+      <li><b>Left menu (FR-6 to FR-8):</b> one toggle button collapses the menu to coloured icons and expands it again. System status appears at the bottom only on a problem (use the buttons above the drawing).</li>
+      <li><b>Dashboard (FR-9 to FR-11):</b> four key figures with the change against last month, a highlight card with the next due payment, Coming up for the next 7 days, the month result with a 6-month chart, outputs by kind, and small cards for Loans, Card payments, Shared costs and Recurring bills. No balances and no list of cards.</li>
+      <li><b>Cards (FR-12):</b> select <i>Cards</i> in the menu. The accounts with current and expected balances, status and the starting balance hint moved here from the Dashboard, with totals and a balance chart, followed by the cards with installments.</li>
+      <li><b>Quick actions (FR-14):</b> coloured icon buttons at the top of the Dashboard; rest the pointer on one for about a second to see its label. On Month the same buttons stay inside their sections.</li>
+      <li><b>Month, Cash flow, Loans, Shared costs, Settings (FR-15 to FR-20):</b> select them in the menu. Savings is not drawn. All amounts are made up.</li>
+    </ul>
+  </div>
+</div>
+
+<script>
+  const app = document.getElementById('app');
+  const toggle = document.getElementById('toggle');
+  const chev = document.getElementById('chev');
+  toggle.addEventListener('click', () => {
+    const collapsed = app.classList.toggle('collapsed');
+    toggle.setAttribute('aria-expanded', String(!collapsed));
+    toggle.setAttribute('aria-label', collapsed ? 'Expand menu' : 'Collapse menu');
+    chev.setAttribute('d', collapsed ? 'm14 9 3 3-3 3' : 'm16 15-3-3 3-3');
+  });
+
+  document.querySelectorAll('nav a').forEach(link => {
+    link.addEventListener('click', event => {
+      event.preventDefault();
+      if (!link.dataset.view) return;
+      document.querySelectorAll('nav a').forEach(a => a.classList.toggle('active', a === link));
+      document.querySelectorAll('.view').forEach(v => v.classList.toggle('shown', v.id === 'view-' + link.dataset.view));
+    });
+  });
+  document.querySelectorAll('main a').forEach(a => a.addEventListener('click', e => e.preventDefault()));
+
+  const messages = { api: 'API unreachable', db: 'Database unhealthy' };
+  document.querySelectorAll('[data-status]').forEach(button => {
+    button.addEventListener('click', () => {
+      const state = button.dataset.status;
+      document.querySelectorAll('[data-status]').forEach(b => b.setAttribute('aria-pressed', String(b === button)));
+      app.classList.toggle('healthy', state === 'healthy');
+      if (messages[state]) {
+        document.getElementById('status-text').textContent = messages[state];
+        document.getElementById('status').dataset.tip = messages[state];
+      }
+    });
+  });
+</script>
+</body>
+</html>

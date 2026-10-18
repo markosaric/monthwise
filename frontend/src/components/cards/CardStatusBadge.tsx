@@ -17,7 +17,9 @@ export function CardStatusBadge({ status }: { status: CardStatus }) {
     <Badge
       variant={variants[status]}
       className={cn(
-        status === 'ExpiringSoon' && 'border-amber-500 text-amber-700 dark:text-amber-400',
+        status === 'Active' && 'bg-green-100 text-green-800',
+        status === 'ExpiringSoon' &&
+          'border-amber-500 bg-amber-50 text-amber-700 dark:text-amber-400',
         status === 'Archived' && 'text-muted-foreground',
       )}
     >

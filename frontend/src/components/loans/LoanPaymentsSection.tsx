@@ -1,5 +1,7 @@
 import { useMonthLoanPayments, type LoanPaymentTotals } from '@/api/loans'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Landmark } from 'lucide-react'
+import { sectionColors } from '@/components/design/colors'
+import { SectionCard } from '@/components/design/SectionCard'
 import { OwnPartTotal } from '@/components/sharedCosts/SharedMarkers'
 import { formatCents } from '@/lib/money'
 import { cn } from '@/lib/utils'
@@ -11,13 +13,19 @@ const t = loanTexts.expenses
 /** The Loan payments part of the Month screen: the month's loan payments, Paid check boxes and totals (FR-4, FR-5). */
 export function LoanPaymentsSection({ month }: { month: string }) {
   const { data, isPending, isError } = useMonthLoanPayments(month)
+  const paid = data?.payments.filter((p) => p.isPaid).length ?? 0
+  const all = data?.payments.length ?? 0
 
   return (
-    <Card className="max-w-3xl">
-      <CardHeader>
-        <CardTitle>{t.title}</CardTitle>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-3">
+    <SectionCard
+      icon={Landmark}
+      color={sectionColors.loans}
+      title={t.title}
+      status={data && all > 0 ? t.paidOf(paid, all) : undefined}
+      total={data ? formatCents(data.totals.totalCents) : undefined}
+      defaultOpen={!data || all === 0 || paid < all}
+    >
+      <div className="flex flex-col gap-3">
         {isPending && <p className="text-sm text-muted-foreground">Loading…</p>}
         {isError && <p className="text-sm text-destructive">Loan payments could not be loaded.</p>}
         {data && data.payments.length === 0 && (
@@ -37,8 +45,8 @@ export function LoanPaymentsSection({ month }: { month: string }) {
             <OwnPartTotal cents={data.ownPartCents} shown={data.payments.some((p) => p.share)} />
           </>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </SectionCard>
   )
 }
 
