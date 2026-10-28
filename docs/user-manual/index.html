@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Monthwise user manual</title>
+<style>
+  :root { --bg:#f5f6fa; --card:#fff; --text:#1a1a1f; --muted:#5d6170; --line:#e3e5ec; --accent:#6d4aff; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#16171c; --card:#1f2128; --text:#ececf1; --muted:#a3a6b3; --line:#30333d; --accent:#a48bff; } }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font:16px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, sans-serif; }
+  main { max-width:920px; margin:0 auto; padding:32px 16px 64px; }
+  h1 { font:700 2.2rem/1.2 Georgia, serif; margin:0 0 4px; }
+  h2 { font:700 1.45rem/1.3 Georgia, serif; margin:48px 0 8px; padding-top:8px; border-top:1px solid var(--line); }
+  .lead { color:var(--muted); margin:0 0 24px; }
+  nav.toc { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:16px 20px; }
+  nav.toc ol { margin:0; padding-left:20px; columns:2; column-gap:32px; }
+  nav.toc li { margin:0 0 4px; break-inside:avoid; }
+  a { color:var(--accent); }
+  figure { margin:16px 0 8px; }
+  figure img { width:100%; height:auto; display:block; border:1px solid var(--line); border-radius:12px; box-shadow:0 4px 18px rgba(0,0,0,.06); }
+  figure.phone img { max-width:320px; margin:0 auto; }
+  figcaption { color:var(--muted); font-size:.875rem; margin-top:6px; text-align:center; }
+  ul, ol { padding-left:22px; }
+  li { margin:4px 0; }
+  .tip { background:var(--card); border-left:4px solid var(--accent); border-radius:8px; padding:10px 14px; margin:16px 0; }
+  kbd, .ui { font-weight:600; }
+  @media (max-width:600px) { nav.toc ol { columns:1; } h1 { font-size:1.8rem; } }
+</style>
+</head>
+<body>
+<main>
+<h1>Monthwise user manual</h1>
+<p class="lead">A short guide to the home finance app. All screenshots show made-up data.</p>
+
+<nav class="toc" aria-label="Contents">
+<ol>
+  <li><a href="#start">Getting started</a></li>
+  <li><a href="#dashboard">Dashboard</a></li>
+  <li><a href="#month">Month</a></li>
+  <li><a href="#cashflow">Cash flow</a></li>
+  <li><a href="#cards">Cards and installments</a></li>
+  <li><a href="#loans">Loans and leasing</a></li>
+  <li><a href="#shared">Shared costs</a></li>
+  <li><a href="#settings">Settings</a></li>
+  <li><a href="#phone">On the phone</a></li>
+</ol>
+</nav>
+
+<h2 id="start">1. Getting started</h2>
+<p>Use the menu on the left to move between screens. The button next to the logo collapses the menu to icons. Set the app up once, in this order:</p>
+<ol>
+  <li><span class="ui">Settings → Cards and accounts</span>: add your bank accounts and payment cards. Mark your main current account as <em>Primary</em> and give it a starting balance so balances match your bank.</li>
+  <li><span class="ui">Settings → Recurring bills</span>: add the bills that arrive every month (electricity, internet, building reserve…).</li>
+  <li><span class="ui">Loans</span>: add your loans and leases once; their monthly payments then appear on their own.</li>
+  <li><span class="ui">Month → Add input</span>: add your salary as a <em>Recurring</em> input so it shows up every month.</li>
+</ol>
+<p>Amounts are in euros. Anything Monthwise can calculate (installments, loan payments, card payments, contributions) is calculated for you and only needs to be ticked off.</p>
+
+<h2 id="dashboard">2. Dashboard</h2>
+<p>The home screen answers “how is this month going?”.</p>
+<figure><img src="images/dashboard.jpg" alt="Dashboard with inputs, outputs, month result, overdue warning and charts"><figcaption>Dashboard</figcaption></figure>
+<ul>
+  <li><strong>Quick add buttons</strong> under the title: add an input, bill, expense, cash withdrawal or card purchase.</li>
+  <li><strong>Four tiles</strong>: inputs (and how much is received), outputs (and how much is paid), the month result, and what is still to pay.</li>
+  <li><strong>Red banner</strong>: appears only when something is overdue. Open the Month screen to pay it.</li>
+  <li><strong>Coming up</strong>: payments and inputs due in the next 7 days.</li>
+  <li><strong>Charts</strong>: inputs vs. outputs of the last six months and this month's outputs by kind. The tiles at the bottom link to loans, cards, shared costs and recurring bills.</li>
+</ul>
+
+<h2 id="month">3. Month</h2>
+<p>The working screen: everything that comes in and goes out in one month. Use the arrows next to the title to move between months.</p>
+<figure><img src="images/month.jpg" alt="Month screen with income, bills, expenses, loan payments and card payments"><figcaption>Month: income, bills, expenses, loan and card payments</figcaption></figure>
+<ul>
+  <li><strong>Tick the circle</strong> in front of a row to mark it <em>Received</em> or <em>Paid</em>. Overdue rows are marked in red.</li>
+  <li><strong>Income</strong>: <span class="ui">Add input</span> for salary and other inputs. Contributions from people who share costs with you are grouped under their name.</li>
+  <li><strong>Bills</strong>: <span class="ui">Add recurring bills</span> creates this month's bills from your recurring list; open a bill to enter the amount and dates once it arrives. <span class="ui">Add bill</span> adds a one-off bill.</li>
+  <li><strong>Expenses</strong>: one-off spending such as groceries. <span class="ui">Cash withdrawal</span> records cash taken from an account.</li>
+  <li><strong>Loan payments</strong> and <strong>Card payments</strong> are filled in automatically from your loans and card purchases.</li>
+  <li>Click a row's arrow to see details and to edit or delete it.</li>
+</ul>
+<figure><img src="images/new-input.jpg" alt="Add input form"><figcaption>Adding an input. Turn on <em>Recurring</em> for salary and other regular income.</figcaption></figure>
+<p class="tip">A bill or expense paid with a credit or charge card is not taken from your account straight away: it becomes part of that card's next card payment.</p>
+
+<h2 id="cashflow">4. Cash flow</h2>
+<p>Shows inputs and outputs over time: <span class="ui">This month</span> (day by day), <span class="ui">Last 12 months</span> or <span class="ui">This year</span>. Use <span class="ui">Filters</span> to narrow by payer, account or category, and <span class="ui">Show as table</span> for the numbers. Click a month in the list for its monthly report.</p>
+<figure><img src="images/cash-flow.jpg" alt="Cash flow chart for the current month"><figcaption>Cash flow</figcaption></figure>
+
+<h2 id="cards">5. Cards and installments</h2>
+<p>The <span class="ui">Cards</span> screen shows the balance of each account now and at the end of the month, and every card that allows installments.</p>
+<figure><img src="images/cards.jpg" alt="Cards screen with account balances and cards with installments"><figcaption>Cards</figcaption></figure>
+<ul>
+  <li><span class="ui">Add purchase</span>: choose the card, amount and date. Turn on <em>In monthly installments</em> and set the number of installments; Monthwise spreads the amount over the card payments.</li>
+  <li>Open a card to see its upcoming card payments month by month and its purchases with what remains to be charged.</li>
+  <li>A card payment is ticked off as paid on the Month screen or on the card itself.</li>
+</ul>
+<figure><img src="images/card-installments.jpg" alt="Card detail with monthly card payments"><figcaption>One card: statement and payment day, upcoming card payments, purchases</figcaption></figure>
+
+<h2 id="loans">6. Loans and leasing</h2>
+<p>All bank loans and leases with monthly payment, progress and what is left to repay. <span class="ui">Add loan</span> asks for the lender, start month, payment day, monthly amount and number of payments (and a residual value for a lease).</p>
+<figure><img src="images/loans.jpg" alt="Loans and leasing overview"><figcaption>Loans and leasing</figcaption></figure>
+<p>Open a loan to see each payment. <span class="ui">Add payment change</span> records a new monthly amount or payment day from a given month (e.g. after a rate change). <span class="ui">Close loan</span> ends a loan that is paid off early.</p>
+<figure><img src="images/loan-details.jpg" alt="Loan detail with payments"><figcaption>One loan with its payments</figcaption></figure>
+<p class="tip">Payments by <em>standing order</em> are marked paid automatically on their date. Payments by <em>bill</em> wait until you tick them.</p>
+
+<h2 id="shared">7. Shared costs</h2>
+<p>For costs you split with someone (a partner or flatmate). Add the person under <span class="ui">Add participant</span>, then set their share on a recurring bill or loan. Each month Monthwise calculates what they owe you and lists it here and as an expected input on the Month screen. Tick a contribution when you receive the money.</p>
+<figure><img src="images/shared-costs.jpg" alt="Shared costs with outstanding contributions per participant"><figcaption>Shared costs</figcaption></figure>
+
+<h2 id="settings">8. Settings</h2>
+<p>Lists the app uses everywhere: cards and accounts, payers, input categories, expense categories, loan categories and recurring bills. Add your own entries next to the starting ones. A category that is already in use cannot be deleted; hide it instead.</p>
+<figure><img src="images/settings.jpg" alt="Settings overview"><figcaption>Settings</figcaption></figure>
+<p>Card numbers and IBANs are stored encrypted and shown only on request.</p>
+
+<h2 id="phone">9. On the phone</h2>
+<p>Monthwise works in a phone browser too. The menu moves to a bar at the bottom of the screen; everything else works the same.</p>
+<figure class="phone"><img src="images/mobile-dashboard.jpg" alt="Dashboard on a phone"><figcaption>Dashboard on a phone</figcaption></figure>
+<p class="lead" style="margin-top:32px">The <span class="ui">Savings</span> screen is not built yet.</p>
+</main>
+</body>
+</html>
