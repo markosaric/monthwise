@@ -1,3 +1,7 @@
+# Development database. Its own project name keeps it apart from the Docker one-click
+# (deploy/docker, project "monthwise"), so both can run on the same computer.
+name: monthwise-dev
+
 services:
   db:
     image: postgres:17
@@ -19,3 +23,5 @@ services:
 
 volumes:
   monthwise-db-data:
+    # The name it had before the project was renamed, so existing development data stays.
+    name: monthwise_monthwise-db-data

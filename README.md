@@ -101,7 +101,7 @@ docker compose ps        # monthwise-db should be "healthy"
 ```
 
 PostgreSQL keeps running in the background. Stop it with `docker compose stop`; data stays in the
-`monthwise-db-data` Docker volume.
+`monthwise_monthwise-db-data` Docker volume.
 
 ### 4. Give the API the database password
 
