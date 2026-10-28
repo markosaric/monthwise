@@ -173,6 +173,12 @@ describe('Bills on the Month screen', () => {
   })
 
   it('prefills the due date of a not issued bill from its hint and issues it', async () => {
+    // The issue date defaults to today; keep it before the due date hint.
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date('2026-10-15T12:00:00'))
+    onTestFinished(() => {
+      vi.useRealTimers()
+    })
     const fetchMock = stubApi({
       ...lists,
       'GET /api/bills/bill-2': () => json(aNotIssuedBill()),
