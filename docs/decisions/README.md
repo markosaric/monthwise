@@ -10,3 +10,4 @@ when a decision changes, add a new record that supersedes the old one instead of
 | [0003](0003-openapi-generated-client.md) | OpenAPI as the contract, generated TypeScript client | Accepted |
 | [0004](0004-same-origin-dev-proxy.md) | Same origin in development via the Vite proxy | Accepted |
 | [0005](0005-encrypted-sensitive-data.md) | Card numbers and IBANs encrypted in the application | Accepted |
+| [0006](0006-single-release-api-serves-frontend.md) | One release in which the API serves the front-end | Accepted |

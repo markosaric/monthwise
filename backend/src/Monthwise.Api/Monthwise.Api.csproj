@@ -24,7 +24,21 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <PackageReference Include="Scalar.AspNetCore" />
+    <PackageReference Include="Serilog.Extensions.Logging" />
+    <PackageReference Include="Serilog.Sinks.File" />
   </ItemGroup>
+
+  <!--
+    Release build: `dotnet publish -p:FrontendDist=<path to frontend/dist>` copies the built
+    front-end into wwwroot, so the API serves it (ADR 0006).
+  -->
+  <Target Name="PublishFrontend" AfterTargets="Publish" Condition="'$(FrontendDist)' != ''">
+    <Error Condition="!Exists('$(FrontendDist)/index.html')" Text="FrontendDist '$(FrontendDist)' has no index.html; run 'npm run build' in frontend first." />
+    <ItemGroup>
+      <FrontendFile Include="$(FrontendDist)/**/*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(FrontendFile)" DestinationFiles="@(FrontendFile->'$(PublishDir)wwwroot/%(RecursiveDir)%(Filename)%(Extension)')" />
+  </Target>
 
   <ItemGroup>
     <InternalsVisibleTo Include="Monthwise.Api.Tests" />

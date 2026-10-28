@@ -9,6 +9,7 @@ import {
 } from 'lucide-react'
 import { Link } from 'react-router'
 import { useInputCategories, usePayers } from '@/api/cashFlow'
+import { useHealth } from '@/api/health'
 import { useCards } from '@/api/cards'
 import { useExpenseCategories, useRecurringBills } from '@/api/expenses'
 import { useLoanCategories } from '@/api/loans'
@@ -44,6 +45,7 @@ export function SettingsPage() {
   const { data: expenseCategories } = useExpenseCategories()
   const { data: loanCategories } = useLoanCategories()
   const { data: recurringBills } = useRecurringBills()
+  const { data: health } = useHealth()
 
   const groups: { title: string; tiles: Tile[] }[] = [
     {
@@ -146,6 +148,9 @@ export function SettingsPage() {
           </ul>
         </section>
       ))}
+      {health?.version && (
+        <p className="text-xs text-muted-foreground">Monthwise version {health.version}</p>
+      )}
     </div>
   )
 }

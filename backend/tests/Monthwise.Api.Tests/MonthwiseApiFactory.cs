@@ -6,8 +6,12 @@ using Microsoft.Extensions.Logging;
 
 namespace Monthwise.Api.Tests;
 
-/// <summary>Runs the API in memory against the given PostgreSQL connection string.</summary>
-public sealed class MonthwiseApiFactory(string connectionString, bool migrateOnStartup) : WebApplicationFactory<Program>
+/// <summary>
+/// Runs the API in memory against the given PostgreSQL connection string, optionally serving a
+/// front-end from <paramref name="webRoot"/> as a release does.
+/// </summary>
+public sealed class MonthwiseApiFactory(string connectionString, bool migrateOnStartup, string? webRoot = null)
+    : WebApplicationFactory<Program>
 {
     /// <summary>Made-up keys for tests only. Every factory uses the same ones (the EF model caches the cipher).</summary>
     public static readonly string TestEncryptionKey = Convert.ToBase64String(Enumerable.Repeat((byte)7, 32).ToArray());
@@ -26,6 +30,11 @@ public sealed class MonthwiseApiFactory(string connectionString, bool migrateOnS
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Testing");
+        if (webRoot is not null)
+        {
+            builder.UseWebRoot(webRoot);
+        }
+
         builder.UseSetting("ConnectionStrings:Monthwise", connectionString);
         builder.UseSetting("Database:MigrateOnStartup", migrateOnStartup.ToString());
         builder.UseSetting("SensitiveData:ActiveKeyId", "test");

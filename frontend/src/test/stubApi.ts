@@ -16,4 +16,12 @@ export function stubApi(handlers: ApiHandlers) {
   return fetchMock
 }
 
-export const healthy = { 'GET /api/health': () => json({ status: 'Healthy', database: 'Healthy' }) }
+export const healthy = {
+  'GET /api/health': () =>
+    json({
+      status: 'Healthy',
+      database: 'Healthy',
+      migrations: 'Applied',
+      version: '1.0.0+abc1234',
+    }),
+}

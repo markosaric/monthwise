@@ -1,11 +1,14 @@
 using System.Reflection;
 using System.Text.Json.Serialization;
 using Monthwise.Api.Endpoints;
+using Monthwise.Api.Hosting;
 using Monthwise.Application;
 using Monthwise.Infrastructure;
 using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Configuration.AddConfigurationFolder();
+builder.Logging.AddFileLogging(builder.Configuration);
 
 builder.Services
     .AddApplication()
@@ -20,6 +23,7 @@ builder.Services.ConfigureHttpJsonOptions(options =>
     options.SerializerOptions.NumberHandling = JsonNumberHandling.Strict;
 });
 builder.Services.AddOpenApi();
+builder.Services.AddProxyHosting(builder.Configuration);
 
 // Authentication (ASP.NET Core Identity, cookie) is added in its own feature plan.
 
@@ -32,8 +36,11 @@ if (Assembly.GetEntryAssembly()?.GetName().Name != "GetDocument.Insider")
     app.Services.EnsureSensitiveDataKeys();
 }
 
+app.UseProxyHosting();
 app.UseExceptionHandler();
 app.UseStatusCodePages();
+app.UseMigrationGate();
+app.UseFrontend();
 
 if (app.Environment.IsDevelopment())
 {
@@ -43,13 +50,22 @@ if (app.Environment.IsDevelopment())
 
 if (app.Configuration.GetValue<bool>("Database:MigrateOnStartup"))
 {
+    // A release waits for its database; if it never answers, stop so the service manager
+    // (Docker, launchd, Task Scheduler, Container Apps) starts Monthwise again.
+    var waitSeconds = app.Configuration.GetValue<int>("Database:StartupWaitSeconds");
+    if (waitSeconds > 0 && !await app.Services.WaitForDatabaseAsync(TimeSpan.FromSeconds(waitSeconds)))
+    {
+        app.Logger.LogCritical("The database did not answer within Database:StartupWaitSeconds; stopping");
+        return 1;
+    }
+
     try
     {
         await app.Services.MigrateDatabaseAsync();
     }
     catch (Exception ex) when (ex is not OperationCanceledException)
     {
-        // Keep the API up so /api/health can report the database as unhealthy.
+        // Keep the API up so /api/health can report the failure; the migration gate stops other calls.
         app.Logger.LogError(ex, "Applying database migrations failed");
     }
 }
@@ -65,6 +81,7 @@ api.MapSharedCostEndpoints();
 api.MapDashboardEndpoints();
 
 await app.RunAsync();
+return 0;
 
 /// <summary>Entry point; public so integration tests can use WebApplicationFactory.</summary>
 public partial class Program;

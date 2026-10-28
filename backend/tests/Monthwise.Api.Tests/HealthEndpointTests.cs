@@ -24,6 +24,8 @@ public class HealthEndpointTests
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.Equal("Healthy", body.GetProperty("status").GetString());
         Assert.Equal("Healthy", body.GetProperty("database").GetString());
+        Assert.Equal("Applied", body.GetProperty("migrations").GetString());
+        Assert.StartsWith("0.0.0-dev", body.GetProperty("version").GetString(), StringComparison.Ordinal);
     }
 
     [Fact]
@@ -38,5 +40,7 @@ public class HealthEndpointTests
         Assert.Equal(HttpStatusCode.ServiceUnavailable, response.StatusCode);
         Assert.Equal("Unhealthy", body.GetProperty("status").GetString());
         Assert.Equal("Unhealthy", body.GetProperty("database").GetString());
+        Assert.Equal("Pending", body.GetProperty("migrations").GetString());
+        Assert.False(string.IsNullOrEmpty(body.GetProperty("version").GetString()));
     }
 }

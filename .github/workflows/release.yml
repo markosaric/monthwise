@@ -1,0 +1,112 @@
+name: Release
+
+# A release is a version tag on main, e.g. v1.2.0 (FR-2). It publishes the image to GHCR and the
+# native and Docker packages as a GitHub Release, all built from the same commit.
+on:
+  push:
+    tags: ['v*.*.*']
+
+permissions:
+  contents: write
+  packages: write
+
+env:
+  # Official EDB PostgreSQL binaries for the Windows native service, repacked with a checksum.
+  POSTGRES_WINDOWS: 17.6-1
+
+jobs:
+  image:
+    name: Image
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Version
+        run: |
+          echo "VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
+          echo "COMMIT=${GITHUB_SHA::7}" >> "$GITHUB_ENV"
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          build-args: |
+            VERSION=${{ env.VERSION }}
+            COMMIT=${{ env.COMMIT }}
+          tags: |
+            ghcr.io/${{ github.repository }}:${{ env.VERSION }}
+            ghcr.io/${{ github.repository }}:latest
+
+  native:
+    name: Native ${{ matrix.runtime }}
+    strategy:
+      matrix:
+        include:
+          # macOS packages are built on macOS so the executable gets its (ad hoc) code signature.
+          - { runtime: osx-arm64, os: macos-latest }
+          - { runtime: osx-x64, os: macos-latest }
+          - { runtime: win-x64, os: ubuntu-latest }
+          - { runtime: linux-x64, os: ubuntu-latest }
+          - { runtime: linux-arm64, os: ubuntu-latest }
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: backend/global.json
+      - name: Build the front-end
+        working-directory: frontend
+        run: npm ci && npm run build
+      - name: Publish
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          dotnet publish backend/src/Monthwise.Api/Monthwise.Api.csproj -c Release -r ${{ matrix.runtime }} \
+            --self-contained -o "out/app" -p:Version="$version" -p:SourceRevisionId="${GITHUB_SHA::7}" \
+            -p:FrontendDist="$PWD/frontend/dist" -p:OpenApiGenerateDocuments=false
+          (cd out/app && zip -qr "../monthwise-$version-${{ matrix.runtime }}.zip" .)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: native-${{ matrix.runtime }}
+          path: out/monthwise-*.zip
+
+  release:
+    name: GitHub Release
+    needs: [image, native]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - name: Docker and native scripts
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          (cd deploy/docker && zip -q "../../dist/monthwise-docker-$version.zip" compose.yml monthwise.sh monthwise.ps1 Monthwise.command Monthwise.cmd)
+          cp deploy/native/monthwise.sh dist/monthwise-native-macos.sh
+          cp deploy/native/monthwise.ps1 dist/monthwise-native-windows.ps1
+      - name: PostgreSQL for Windows
+        run: |
+          curl --fail --location --silent --show-error -o pg.zip \
+            "https://get.enterprisedb.com/postgresql/postgresql-$POSTGRES_WINDOWS-windows-x64-binaries.zip"
+          # Only the server and command line tools: leave out pgAdmin, StackBuilder and the docs.
+          zip -q -d pg.zip 'pgsql/pgAdmin 4/*' 'pgsql/StackBuilder/*' 'pgsql/doc/*' || true
+          mv pg.zip "dist/postgresql-$POSTGRES_WINDOWS-win-x64.zip"
+      - name: Checksums
+        working-directory: dist
+        run: sha256sum ./* | sed 's| \./| |' > SHA256SUMS && cat SHA256SUMS
+      - name: Create the release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release create "$GITHUB_REF_NAME" dist/* --title "Monthwise ${GITHUB_REF_NAME#v}" --generate-notes

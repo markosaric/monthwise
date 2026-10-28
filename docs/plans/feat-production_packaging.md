@@ -51,17 +51,17 @@ checks that it starts.
 ### Key rules from the requirements
 | Requirement | Rule used in this plan |
 |---|---|
-| FR-1 | The API serves `wwwroot` (the built front-end) with `UseDefaultFiles`/`UseStaticFiles`. `MapFallbackToFile("index.html")` answers every non-`/api` path, so deep links and refreshes work. `/api/{**rest}` that matches no endpoint answers `404` problem details. `index.html` is sent with `Cache-Control: no-cache`; hashed assets under `/assets` are cached for a year. Scalar and `/openapi` stay mapped only in Development (as today). |
+| FR-1 | The API serves `wwwroot` (the built front-end) with `UseDefaultFiles`/`UseStaticFiles`. A middleware handles requests no endpoint matched: under `/api` it answers `404` problem details, elsewhere a GET of a path without a file extension answers `index.html`, so deep links and refreshes work. (A `MapFallback` catch-all route was tried first, but it won over some longer API routes such as `/loans/{id}/payments/{month}/{kind}/contribution/received`.) `index.html` is sent with `Cache-Control: no-cache`; hashed assets under `/assets` are cached for a year. Scalar and `/openapi` stay mapped only in Development (as today). |
 | FR-2 | One release = one git tag `vX.Y.Z`. The build sets `Version` from the tag, and the .NET SDK adds the commit to `InformationalVersion` (`1.2.0+<sha>`). The same `dotnet publish` output goes into the Docker image and into the native packages. Builds outside a tag are `0.0.0-dev+<sha>`. |
 | FR-2, FR-4 | `GET /api/health` gets `version` (the informational version) and `migrations` (`Applied`, `Pending` or `Failed`). The Settings screen shows the version in a small "About" line under the tiles, read from the health response. |
-| FR-3 | Releases run with `Database:MigrateOnStartup=true`. EF Core applies all pending migrations in one transaction (EF Core 9+ default; this is checked by a test), so a failure leaves the database as it was. On failure the migration state is `Failed`, health answers `503`, and a small middleware answers `503` problem details for every `/api` call except `/api/health`, so the screens show the existing "API not reachable" state instead of working on an old schema. |
+| FR-3 | Releases run with `Database:MigrateOnStartup=true`. EF Core 10 runs each migration in its own transaction (the single transaction of EF Core 9 was reverted, and an outer transaction is not supported), so when a migration fails, the migrations applied in that run are reverted to the last one applied before it, and the database is left as it was. A release first waits for its database (`Database:StartupWaitSeconds`, 60 in a release, 0 in development) and stops with exit code 1 when it never answers, so Docker, launchd, Task Scheduler or Container Apps start it again (e.g. PostgreSQL still starting after login). On failure the migration state is `Failed`, health answers `503`, and a small middleware answers `503` problem details for every `/api` call except `/api/health`, so the screens show the existing "API not reachable" state instead of working on an old schema. |
 | FR-5 | A **configuration folder** per installation, given by `MONTHWISE_CONFIG_DIR` (or `--config-dir`). The API loads `<dir>/settings.json` (optional, non-secret settings) and every file in `<dir>/secrets/` as one setting through key-per-file configuration (file name `SensitiveData__HashKey` = setting `SensitiveData:HashKey`). The same mechanism is used on all three targets. Default address on the own computer: `http://localhost:8080` (Docker port mapping and native `ASPNETCORE_URLS`). `deploy/settings.example.json` and `deploy/secrets.example/` hold placeholders only. |
-| FR-6 | Secrets: `postgres_password`, `ConnectionStrings__Monthwise`, `SensitiveData__ActiveKeyId`, `SensitiveData__EncryptionKeys__k1`, `SensitiveData__HashKey`. The start and install scripts create them only when the `secrets` folder is missing **and** no database exists yet; with an existing database and missing secrets they stop and tell the user to put the saved values back (new keys would make card numbers unreadable). Files are `chmod 600` in a `700` folder on macOS and limited to the current user with `icacls` on Windows. After creating them the script prints the folder and asks the user to copy the values into their password manager. On Azure the deploy script creates them once in Key Vault; Container Apps mounts them as secret files in `/config/secrets`. |
-| FR-7 | Production logging: `Information`, EF commands at `Warning`, sensitive data logging stays off. Docker: the `json-file` driver with `max-size: 10m`, `max-file: 3`. Native: a daily rolling file in `<data>/logs`, 14 files kept (`Serilog.Extensions.Logging.File`, enabled only when `Logging:File:Path` is set). Azure: Container Apps console logs (Log Analytics, 30 days). |
+| FR-6 | Secrets: `postgres_password`, `ConnectionStrings__Monthwise`, `SensitiveData__ActiveKeyId`, `SensitiveData__EncryptionKeys__k1`, `SensitiveData__HashKey`. The start and install scripts create them only when the `secrets` folder is missing **and** no database exists yet; with an existing database and missing secrets they stop and tell the user to put the saved values back (new keys would make card numbers unreadable). On macOS the `Monthwise` folder is `700`; native secret files are `600`, while Docker's are `644` below that folder so the containers (other user ids) can read them. On Windows the `Monthwise` folder is limited to the current user with `icacls`. After creating them the script prints the folder and asks the user to copy the values into their password manager. On Azure the deploy script creates them once in Key Vault; Container Apps mounts them as secret files in `/config/secrets`. |
+| FR-7 | Production logging: `Information`, EF commands at `Warning`, sensitive data logging stays off. Docker: the `json-file` driver with `max-size: 10m`, `max-file: 3`. Native: a daily rolling file in `<data>/logs`, 14 files kept (`Serilog.Extensions.Logging` with `Serilog.Sinks.File`, enabled only when `Logging:File:Path` is set, with the levels of `Logging:LogLevel`). Azure: Container Apps console logs (Log Analytics, 30 days). |
 | FR-8 | Docker data: the named volume `monthwise-pgdata`, never removed by stop or update; `monthwise remove --data` asks for confirmation before deleting it. The database container is not published to the host, so it never conflicts with the development database on port 5432. Both containers use `restart: unless-stopped`. |
 | FR-9 | Native: an own PostgreSQL 17 cluster in `<data>/pgdata`, listening on `127.0.0.1:5442` only (no clash with the development database on 5432). macOS uses the binaries of Homebrew `postgresql@17`; Windows uses the official EDB binaries zip (pinned version and SHA-256), installed in the user folder without admin rights. Both PostgreSQL and the API start at login: two launchd agents on macOS, two Task Scheduler logon tasks on Windows (run hidden with `conhost --headless`). |
 | FR-10 | Azure Container Apps (Consumption, minimum 0 replicas, so it costs nothing while unused and the first request after a quiet spell takes a few seconds; maximum 1 replica) with HTTPS-only ingress (`allowInsecure: false`), PostgreSQL Flexible Server B1ms in the chosen EU region (default West Europe) with SSL required, Key Vault for the secrets with the app's managed identity, and a monthly budget alert (`Microsoft.Consumption/budgets`) with the user's email. The image is pulled from GHCR with a read-only token stored as a Container Apps secret. `UseForwardedHeaders` (proto and for) is enabled when `Hosting:BehindProxy=true`, so redirects and secure cookies see HTTPS. |
-| FR-11 | Login and its authorization come from the login feature: this plan only keeps `/api/health` anonymous. The smoke check that a protected endpoint answers `401` is added by the login feature, which is merged after this branch. Own computer: Docker publishes `127.0.0.1:8080:8080` and native binds `http://127.0.0.1:8080`. `monthwise network on` changes this to all addresses (`0.0.0.0`) and prints a warning; `monthwise network off` changes it back. Data Protection keys (used by the login cookie) are stored in the database, so a restart or a second Azure replica does not sign the user out, unless the login feature already does this. |
+| FR-11 | Login and its authorization come from the login feature: this plan only keeps `/api/health` anonymous. The smoke check that a protected endpoint answers `401` is added by the login feature, which is merged after this branch. Own computer: Docker publishes `127.0.0.1:8080:8080` and native binds `http://127.0.0.1:8080`. `monthwise network on` changes this to all addresses (`0.0.0.0`) and prints a warning; `monthwise network off` changes it back. Data Protection keys (used by the login cookie) must survive a restart so the user is not signed out; storing them is part of the login feature, because Infrastructure must not reference ASP.NET Core (architecture test). |
 | NFR-5 | Image for `linux/amd64` and `linux/arm64`; native packages for `osx-arm64`, `osx-x64`, `win-x64`, `linux-x64` and `linux-arm64`, self-contained, so no .NET runtime is needed on the computer. |
 | NFR-6 | CI job `release` on every pull request and push to `main`: builds the image, starts it with a throwaway database and made-up secrets, and runs the smoke checks (below). |
 
@@ -76,22 +76,23 @@ checks that it starts.
 
 ### Getting a release onto the computer
 The repository is private, so the packages are not public downloads. The user signs in once with
-the GitHub CLI (`gh auth login`); the scripts use `gh release download` for the packages and
-`gh auth token` for `docker login ghcr.io`. Updates use the same sign-in.
+the GitHub CLI (`gh auth login`, plus `gh auth refresh --scopes read:packages` for the image);
+the scripts use `gh release download` for the packages and `gh auth token` for
+`docker login ghcr.io`. Updates use the same sign-in. Azure gets its own token with only
+`read:packages`, never the user's `gh` token.
 
 - Domain / data model changes: none.
 - API changes (endpoints, DTOs):
   - `HealthResponse` gets `Version` (string) and `Migrations` (`Applied` | `Pending` | `Failed`);
     the OpenAPI document and the generated client are updated.
   - Static files, SPA fallback, API 404 fallback, the migration gate, the configuration folder,
-    the file log, forwarded headers and Data Protection key storage in `Program.cs` and
-    Infrastructure `DependencyInjection`.
+    the startup wait for the database, the file log and forwarded headers in `Program.cs`,
+    `Hosting/` and Infrastructure `DependencyInjection`.
 - Front-end changes (pages, components):
-  - Settings screen: an "About" line with the version from `useHealth`.
+  - Settings screen: a "Monthwise version …" line from `useHealth`.
+  - The menu's system status shows "Database update failed" when migrations failed.
   - No change to API calls: they already use relative `/api` URLs (ADR 0004).
-- Database migrations:
-  - `AddDataProtectionKeys`: the `data_protection_keys` table (only if the login feature has not
-    added it).
+- Database migrations: none.
 
 ### Repository layout
 ```
@@ -106,15 +107,18 @@ deploy/
     Monthwise.cmd                Windows start icon (calls monthwise.ps1 start -Open)
     monthwise.sh, monthwise.ps1  start | stop | update | status | logs | network | remove
   native/
-    install.sh, install.ps1      one-step install (PostgreSQL cluster, release, logon start)
-    monthwise.sh, monthwise.ps1  start | stop | update | status | logs | network | uninstall
-    macos/*.plist.template       launchd agents for PostgreSQL and the API
+    monthwise.sh, monthwise.ps1  install | start | stop | update | status | logs | network | uninstall
+                                 (macOS writes its two launchd agents itself; Windows registers
+                                 two Task Scheduler logon tasks)
+  smoke-test.sh                  health, front-end and API 404 checks, used by CI
   azure/
     main.bicep                   Container Apps, PostgreSQL, Key Vault, Log Analytics, budget
     deploy.sh                    one step: secrets (first time), Bicep deployment, wait for health
 .github/workflows/
   ci.yml                         + release smoke job
-  release.yml                    on tag v*: GHCR image, native and Docker packages, GitHub Release
+  release.yml                    on tag v*: GHCR image, native packages (macOS ones built on macOS
+                                 for the code signature), Docker package, install scripts,
+                                 PostgreSQL for Windows and SHA256SUMS as a GitHub Release
 docs/decisions/0006-single-release-api-serves-frontend.md
 ```
 
@@ -131,14 +135,13 @@ docs/decisions/0006-single-release-api-serves-frontend.md
    middleware, `Version` and `Migrations` in the health response, OpenAPI document and client
    regenerated, version on the Settings screen.
 5. **Logging and proxy (FR-7, FR-10):** production log levels, optional rolling file log,
-   forwarded headers behind `Hosting:BehindProxy`, Data Protection keys in the database with
-   migration (if needed).
+   forwarded headers behind `Hosting:BehindProxy`, the startup wait for the database.
 6. **Release build (FR-2, NFR-5):** `Dockerfile` and `.dockerignore` (non-root user, port 8080,
    `HEALTHCHECK` on `/api/health`), version from the tag, native `dotnet publish` per runtime with
    the front-end included.
 7. **Docker one-click (FR-8, FR-11):** `compose.yml`, `monthwise.sh`/`.ps1`, the start icons, first-start
    secret creation, the readiness wait and opening the browser, and the network switch.
-8. **Native background service (FR-9, FR-11):** install scripts for macOS and Windows, PostgreSQL
+8. **Native background service (FR-9, FR-11):** `monthwise.sh install` / `monthwise.ps1 install` for macOS and Windows, PostgreSQL
    cluster setup, logon start, the `monthwise` command, update with the previous version kept for
    going back, uninstall that keeps the data.
 9. **Azure (FR-10):** `main.bicep` and `deploy.sh` (works in Azure Cloud Shell), first-time secrets
@@ -162,13 +165,13 @@ docs/decisions/0006-single-release-api-serves-frontend.md
   - `/api/does-not-exist` answers `404` problem details, never HTML.
   - Health contains the version and the migration state; with the state `Failed` health answers
     `503` and `/api/cards` answers `503` problem details.
-  - Applying migrations is one transaction: a failing last migration leaves the earlier pending
-    ones unapplied (test database).
+  - A failing last migration reverts the earlier ones applied in the same run (test database with
+    a table that the last migration creates).
   - `/scalar` and `/openapi` are not mapped outside Development.
 - Front-end tests: the Settings screen shows the version from the health response.
-- CI smoke checks (Docker image with a throwaway database): health becomes `Healthy` within 30
-  seconds; `/` and `/month` return the front-end; `/api/does-not-exist` returns `404` JSON; a
-  the logs contain no made-up secret value.
+- CI smoke checks (`deploy/smoke-test.sh` against the Docker image with a throwaway database):
+  health becomes `Healthy` within 60 seconds; `/` and `/month` return the front-end;
+  `/api/does-not-exist` returns `404` JSON; the logs contain no made-up secret value.
 - Manual checks:
   - On a Mac (Apple silicon) and a Windows 11 PC: Docker one-click first start creates the secrets,
     opens `http://localhost:8080`, comes back after a Docker restart, update keeps the data, and

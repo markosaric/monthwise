@@ -6,5 +6,7 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
     <AnalysisLevel>latest-recommended</AnalysisLevel>
+    <!-- Release builds pass -p:Version=X.Y.Z from the git tag; the SDK appends the commit. -->
+    <Version>0.0.0-dev</Version>
   </PropertyGroup>
 </Project>
