@@ -125,5 +125,7 @@ jobs:
             fi
           done
       - name: Logs on failure
-        if: failure()
-        run: docker compose --project-name monthwise --file deploy/docker/compose.yml --env-file "$RUNNER_TEMP/monthwise/compose.env" logs
+        if: failure() && hashFiles('deploy/docker/compose.yml') != ''
+        run: |
+          [ -f "$RUNNER_TEMP/monthwise/compose.env" ] || exit 0   # failed before Monthwise was started
+          docker compose --project-name monthwise --file deploy/docker/compose.yml --env-file "$RUNNER_TEMP/monthwise/compose.env" logs

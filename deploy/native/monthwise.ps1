@@ -117,14 +117,14 @@ function Register-LogonTask([string] $Name, [string] $Program, [string] $Argumen
         -Principal $principal -Force | Out-Null
 }
 
-function Test-Postgres {
+function Test-PostgresServer {
     & (Join-Path $PgBin 'pg_isready.exe') -h 127.0.0.1 -p $PgPort -q
     return $LASTEXITCODE -eq 0
 }
 
 function Start-Monthwise {
     Start-ScheduledTask -TaskName $PgTask
-    for ($i = 0; $i -lt 30 -and -not (Test-Postgres); $i++) { Start-Sleep -Seconds 1 }
+    for ($i = 0; $i -lt 30 -and -not (Test-PostgresServer); $i++) { Start-Sleep -Seconds 1 }
     Start-ScheduledTask -TaskName $AppTask
 }
 
@@ -135,7 +135,7 @@ function Stop-App {
         Stop-Process -Force
 }
 
-function Stop-Postgres {
+function Stop-PostgresServer {
     Stop-ScheduledTask -TaskName $PgTask -ErrorAction SilentlyContinue
     if (Test-Path (Join-Path $PgData 'postmaster.pid')) {
         & (Join-Path $PgBin 'pg_ctl.exe') stop -D $PgData -m fast *> $null
@@ -187,7 +187,7 @@ function Install-Monthwise([string] $Version) {
     Register-LogonTask $PgTask (Join-Path $PgBin 'postgres.exe') "-D `"$PgData`""
     Register-LogonTask $AppTask $AppExe "--config-dir `"$ConfigDir`""
     Start-ScheduledTask -TaskName $PgTask
-    for ($i = 0; $i -lt 30 -and -not (Test-Postgres); $i++) { Start-Sleep -Seconds 1 }
+    for ($i = 0; $i -lt 30 -and -not (Test-PostgresServer); $i++) { Start-Sleep -Seconds 1 }
     $env:PGPASSWORD = Get-Content (Join-Path $SecretsDir 'postgres_password') -Raw
     $exists = & (Join-Path $PgBin 'psql.exe') -h 127.0.0.1 -p $PgPort -U monthwise -d postgres -tAc `
         "SELECT 1 FROM pg_database WHERE datname = 'monthwise'"
@@ -233,7 +233,7 @@ switch ($Command) {
     }
     'stop' {
         Stop-App
-        Stop-Postgres
+        Stop-PostgresServer
         Write-Host 'Monthwise is stopped until you log in again or run: monthwise.ps1 start'
     }
     'update' { Update-Monthwise $(if ($Argument) { $Argument } else { 'latest' }) }
@@ -261,7 +261,7 @@ switch ($Command) {
     }
     'uninstall' {
         Stop-App
-        Stop-Postgres
+        Stop-PostgresServer
         Unregister-ScheduledTask -TaskName $AppTask -Confirm:$false -ErrorAction SilentlyContinue
         Unregister-ScheduledTask -TaskName $PgTask -Confirm:$false -ErrorAction SilentlyContinue
         foreach ($folder in @($AppDir, (Join-Path $NativeDir 'app.previous'), (Join-Path $NativeDir 'app.new'))) {
