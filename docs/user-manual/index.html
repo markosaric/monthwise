@@ -25,6 +25,11 @@
   li { margin:4px 0; }
   .tip { background:var(--card); border-left:4px solid var(--accent); border-radius:8px; padding:10px 14px; margin:16px 0; }
   kbd, .ui { font-weight:600; }
+  h3 { font:700 1.1rem/1.3 Georgia, serif; margin:28px 0 6px; }
+  code { font:.9em ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; background:var(--card); border:1px solid var(--line); border-radius:5px; padding:1px 5px; overflow-wrap:anywhere; }
+  table { width:100%; border-collapse:collapse; margin:12px 0; font-size:.94rem; }
+  th, td { text-align:left; vertical-align:top; padding:6px 8px; border-bottom:1px solid var(--line); }
+  .table-wrap { overflow-x:auto; }
   @media (max-width:600px) { nav.toc ol { columns:1; } h1 { font-size:1.8rem; } }
 </style>
 </head>
@@ -44,6 +49,7 @@
   <li><a href="#shared">Shared costs</a></li>
   <li><a href="#settings">Settings</a></li>
   <li><a href="#phone">On the phone</a></li>
+  <li><a href="#install">Installing Monthwise</a></li>
 </ol>
 </nav>
 
@@ -115,6 +121,65 @@
 <h2 id="phone">9. On the phone</h2>
 <p>Monthwise works in a phone browser too. The menu moves to a bar at the bottom of the screen; everything else works the same.</p>
 <figure class="phone"><img src="images/mobile-dashboard.jpg" alt="Dashboard on a phone"><figcaption>Dashboard on a phone</figcaption></figure>
+<h2 id="install">10. Installing Monthwise</h2>
+<p>Monthwise runs in one of three ways. All three use the same version of the app, and its data can move between them.</p>
+<div class="table-wrap"><table>
+<tr><th>Way</th><th>Best for</th><th>Cost</th></tr>
+<tr><td><a href="#install-docker">Docker one-click</a></td><td>Starting out on your Mac or Windows PC; the same package later runs on an always-on machine</td><td>€0</td></tr>
+<tr><td><a href="#install-native">Native background service</a></td><td>Your Mac or Windows PC without Docker; starts by itself when you log in</td><td>€0</td></tr>
+<tr><td><a href="#install-azure">Azure</a></td><td>Reaching Monthwise from anywhere over HTTPS, once login exists</td><td>about €15–20 per month after the free first year</td></tr>
+</table></div>
+<p>Every way needs the <a href="https://cli.github.com/">GitHub CLI</a>, because the Monthwise repository is private. Sign in once with <code>gh auth login</code>, then allow it to download the app image with <code>gh auth refresh --scopes read:packages</code>.</p>
+<div class="tip"><strong>Your secrets.</strong> On the first start Monthwise creates a database password and two encryption keys for card numbers and IBANs, and shows the folder they are in. Copy the files in that folder into your password manager straight away. Without them the stored card numbers and IBANs can never be read again, for example on a new computer. Monthwise never creates new keys for a database that already exists.</div>
+
+<h3 id="install-docker">Docker one-click</h3>
+<ol>
+  <li>Install <a href="https://www.docker.com/products/docker-desktop/">Docker Desktop</a> (Mac or Windows) or <a href="https://orbstack.dev/">OrbStack</a> (Mac, lighter). Both are free for personal use.</li>
+  <li>Download the package: <code>gh release download --repo markosaric/monthwise --pattern "monthwise-docker-*.zip"</code>, and unzip it into a folder you keep, for example <em>Documents/Monthwise</em>.</li>
+  <li><strong>Mac:</strong> double-click <code>Monthwise.command</code>. The first time, macOS may ask you to allow it: right-click it, choose <span class="ui">Open</span> and confirm. Drag it to the Dock to keep it there.<br><strong>Windows:</strong> double-click <code>Monthwise.cmd</code>, and pin it to the taskbar or the Start menu.</li>
+  <li>Monthwise starts, waits until it is ready and opens <code>http://localhost:8080</code>. In Safari, <span class="ui">File → Add to Dock</span> (in Edge or Chrome, <span class="ui">Install app</span>) gives it its own icon and window.</li>
+</ol>
+<p>After the first start, Monthwise comes back by itself whenever Docker starts. Other commands, run in the package folder (<code>./monthwise.sh</code> on a Mac, <code>.\monthwise.ps1</code> in PowerShell on Windows):</p>
+<div class="table-wrap"><table>
+<tr><th>Command</th><th>What it does</th></tr>
+<tr><td><code>stop</code></td><td>Stops Monthwise. The data is kept.</td></tr>
+<tr><td><code>update</code> (or <code>update 1.2.0</code>)</td><td>Downloads the newest (or the given) version and restarts with all data kept.</td></tr>
+<tr><td><code>status</code> / <code>logs</code></td><td>Shows whether it runs and its version, or the last log lines.</td></tr>
+<tr><td><code>network on</code> / <code>network off</code></td><td>Allows or stops connections from other devices, for example your phone through Tailscale. Off by default.</td></tr>
+<tr><td><code>remove</code> (<code>remove --data</code> on a Mac, <code>remove -Data</code> on Windows)</td><td>Removes Monthwise from Docker and keeps the data, unless you ask for the data to go too and type <code>DELETE</code>.</td></tr>
+</table></div>
+<p><strong>Where things are.</strong> The data is in the Docker volume <code>monthwise-pgdata</code>. The secrets and settings are in <em>~/Library/Application Support/Monthwise/docker</em> on a Mac and in <em>%LOCALAPPDATA%\Monthwise\docker</em> on Windows. Only your user account can open that folder.</p>
+
+<h3 id="install-native">Native background service</h3>
+<p>Monthwise and its own PostgreSQL database run in the background without Docker and start when you log in. The database listens on port 5442, so it never clashes with a development database.</p>
+<ol>
+  <li><strong>Mac:</strong> install <a href="https://brew.sh">Homebrew</a>, then <code>gh release download --repo markosaric/monthwise --pattern monthwise-native-macos.sh</code> and run <code>bash monthwise-native-macos.sh install</code>. It installs PostgreSQL 17 with Homebrew.</li>
+  <li><strong>Windows:</strong> <code>gh release download --repo markosaric/monthwise --pattern monthwise-native-windows.ps1</code>, then in PowerShell run <code>powershell -ExecutionPolicy Bypass -File .\monthwise-native-windows.ps1 install</code>. PostgreSQL comes with the release; no administrator rights are needed.</li>
+  <li>Open <code>http://localhost:8080</code> and add it to the Dock or the taskbar as above.</li>
+</ol>
+<p>The installer copies its script into the Monthwise folder: <em>~/Library/Application Support/Monthwise/native/monthwise.sh</em> on a Mac, <em>%LOCALAPPDATA%\Monthwise\native\monthwise.ps1</em> on Windows. It takes <code>start</code>, <code>stop</code>, <code>update</code>, <code>status</code>, <code>logs</code> and <code>network on|off</code> like the Docker commands, and <code>uninstall</code>. If a new version does not start, <code>update</code> goes back to the previous one by itself. <code>uninstall</code> keeps the data, secrets and logs unless you add <code>--data</code> (Mac) or <code>-Data</code> (Windows) and type <code>DELETE</code>.</p>
+<p><strong>Where things are</strong>, in that same <em>native</em> folder: <em>pgdata</em> (the database), <em>config/secrets</em> (the secrets), <em>config/settings.json</em> (the settings) and <em>logs</em> (one log file per day, the last 14 days kept).</p>
+
+<h3 id="install-azure">Azure</h3>
+<div class="tip">Azure gives Monthwise a public HTTPS address. Use it only once login exists.</div>
+<p>One script sets up everything in an EU region (default West Europe) in the resource group <em>rg-monthwise</em>:</p>
+<div class="table-wrap"><table>
+<tr><th>Resource</th><th>What it is for</th><th>Expected cost per month</th></tr>
+<tr><td>Container App (scales to zero)</td><td>Runs Monthwise. When unused it stops, so the first page after a quiet spell takes a few seconds.</td><td>€0 within the monthly free grant</td></tr>
+<tr><td>PostgreSQL Flexible Server, Burstable B1ms</td><td>The database, with 7 days of automatic backups</td><td>€0 for 12 months on a new account, then about €13–15 plus storage</td></tr>
+<tr><td>Key Vault</td><td>The database password and the encryption keys</td><td>a few cents</td></tr>
+<tr><td>Log Analytics</td><td>The log, kept 30 days</td><td>€0 at household use</td></tr>
+<tr><td>Budget alert</td><td>Emails you at 80 % of the budget (default 25) and when the month is forecast to go over it</td><td>€0</td></tr>
+</table></div>
+<p>Azure pay-as-you-go has no hard spending cap; the budget alert is created with the first deployment so you are warned in time.</p>
+<ol>
+  <li>Create a GitHub token with only the <em>read:packages</em> scope (GitHub → Settings → Developer settings → Personal access tokens), so Azure can download the app image.</li>
+  <li>In <a href="https://shell.azure.com">Azure Cloud Shell</a> (Bash), or anywhere with the Azure CLI signed in, get the <em>deploy/azure</em> folder of the repository and run:<br>
+  <code>GHCR_USERNAME=&lt;your GitHub user&gt; GHCR_TOKEN=&lt;the token&gt; BUDGET_EMAIL=&lt;your email&gt; ./deploy.sh 1.2.0</code></li>
+  <li>The script prints the address of Monthwise and, the first time, how to copy the encryption keys from Key Vault into your password manager.</li>
+</ol>
+<p>To update, run the same command with the new version. The data and the secrets are kept. To see the log: <code>az containerapp logs show -g rg-monthwise -n ca-monthwise</code>.</p>
+
 <p class="lead" style="margin-top:32px">The <span class="ui">Savings</span> screen is not built yet.</p>
 </main>
 </body>

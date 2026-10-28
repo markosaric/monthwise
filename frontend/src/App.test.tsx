@@ -33,6 +33,20 @@ describe('app shell', () => {
     alerts.forEach((alert) => expect(alert).toHaveTextContent('Database unhealthy'))
   })
 
+  it('shows a failed database update in the menu and on phones', async () => {
+    stubHealth(503, {
+      status: 'Unhealthy',
+      database: 'Healthy',
+      migrations: 'Failed',
+      version: '1.0.0',
+    })
+
+    renderRoute('/')
+
+    const alerts = await screen.findAllByRole('alert')
+    alerts.forEach((alert) => expect(alert).toHaveTextContent('Database update failed'))
+  })
+
   it('shows the API as unreachable when the request fails', async () => {
     vi.stubGlobal(
       'fetch',

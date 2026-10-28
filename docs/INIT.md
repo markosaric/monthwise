@@ -147,10 +147,11 @@ Key rules:
 | Tests | xUnit (domain + API), Vitest (front-end) | calculation logic (installments, monthly summary, card reconciliation) is covered by unit tests |
 | Charts | Recharts | income vs. expense trend, debt over time |
 | Local dev | Docker Compose for PostgreSQL | one command to start the database |
+| Release | One version for Docker one-click, a native background service (macOS, Windows) and Azure Container Apps; the API serves the built front-end | see [production-packaging.md](feature-requirements/production-packaging.md) and [ADR 0006](decisions/0006-single-release-api-serves-frontend.md) |
 
 Back-end layering: **Domain** (entities and pure calculation logic, no dependencies) → **Application** (use cases, DTOs, validation) → **Infrastructure** (EF Core, PostgreSQL) → **Api** (endpoints, auth).
 
-Hosting and importing history from Numbers are out of scope for now.
+Importing history from Numbers is out of scope for now.
 
 ### Repository structure
 
@@ -169,6 +170,8 @@ Hosting and importing history from Numbers are out of scope for now.
   Monthwise.sln
 /docs                            INIT.md, decisions (ADR)
 docker-compose.yml               PostgreSQL for local development
+Dockerfile                       release image: the API serving the built front-end
+/deploy                          Docker one-click, native service and Azure scripts, smoke test
 ```
 
 ## 5. MVP screens

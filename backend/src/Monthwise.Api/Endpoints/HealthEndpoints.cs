@@ -1,5 +1,7 @@
 using Microsoft.Extensions.Diagnostics.HealthChecks;
+using Monthwise.Api.Hosting;
 using Monthwise.Infrastructure;
+using Monthwise.Infrastructure.Persistence;
 
 namespace Monthwise.Api.Endpoints;
 
@@ -10,7 +12,7 @@ internal static class HealthEndpoints
         routes.MapGet("/health", GetHealthAsync)
             .WithName("GetHealth")
             .WithTags("Health")
-            .WithSummary("Reports whether the API and its database are reachable.")
+            .WithSummary("Reports whether the API and its database work, the migration state and the running version.")
             .Produces<HealthResponse>(StatusCodes.Status200OK)
             .Produces<HealthResponse>(StatusCodes.Status503ServiceUnavailable);
 
@@ -19,6 +21,7 @@ internal static class HealthEndpoints
 
     private static async Task<Microsoft.AspNetCore.Http.HttpResults.JsonHttpResult<HealthResponse>> GetHealthAsync(
         HealthCheckService healthChecks,
+        DatabaseMigrationState migrationState,
         CancellationToken cancellationToken)
     {
         var report = await healthChecks.CheckHealthAsync(cancellationToken);
@@ -26,8 +29,16 @@ internal static class HealthEndpoints
             ? ToStatus(entry.Status)
             : HealthStatusValue.Unhealthy;
 
-        var response = new HealthResponse(ToStatus(report.Status), database);
-        var statusCode = report.Status == HealthStatus.Unhealthy
+        var migrations = migrationState.Status switch
+        {
+            MigrationStatus.Applied => MigrationStatusValue.Applied,
+            MigrationStatus.Failed => MigrationStatusValue.Failed,
+            _ => MigrationStatusValue.Pending,
+        };
+        var status = migrations == MigrationStatusValue.Failed ? HealthStatusValue.Unhealthy : ToStatus(report.Status);
+
+        var response = new HealthResponse(status, database, migrations, AppVersion.Current);
+        var statusCode = status == HealthStatusValue.Unhealthy
             ? StatusCodes.Status503ServiceUnavailable
             : StatusCodes.Status200OK;
 
@@ -42,7 +53,12 @@ internal static class HealthEndpoints
     };
 }
 
-internal sealed record HealthResponse(HealthStatusValue Status, HealthStatusValue Database);
+/// <summary>Only states and the version: the health address is reachable without login and shows no household data.</summary>
+internal sealed record HealthResponse(
+    HealthStatusValue Status,
+    HealthStatusValue Database,
+    MigrationStatusValue Migrations,
+    string Version);
 
 [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter<HealthStatusValue>))]
 internal enum HealthStatusValue
@@ -50,4 +66,12 @@ internal enum HealthStatusValue
     Healthy,
     Degraded,
     Unhealthy,
+}
+
+[System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter<MigrationStatusValue>))]
+internal enum MigrationStatusValue
+{
+    Pending,
+    Applied,
+    Failed,
 }

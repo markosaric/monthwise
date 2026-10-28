@@ -1,0 +1,52 @@
+# Monthwise Docker one-click (FR-8): PostgreSQL and the Monthwise release.
+# Started by monthwise.sh / monthwise.ps1 with --env-file <config folder>/compose.env, which sets
+# MONTHWISE_CONFIG_DIR, MONTHWISE_IMAGE, MONTHWISE_BIND and MONTHWISE_PORT. Secrets are files in
+# <config folder>/secrets, never in this file.
+name: monthwise
+
+services:
+  db:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: monthwise
+      POSTGRES_USER: monthwise
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+    secrets:
+      - postgres_password
+    volumes:
+      - monthwise-pgdata:/var/lib/postgresql/data
+    # Not published to the computer: only the app container reaches the database.
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U monthwise -d monthwise"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    logging: &logging
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+
+  app:
+    image: ${MONTHWISE_IMAGE:-ghcr.io/markosaric/monthwise:latest}
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      MONTHWISE_CONFIG_DIR: /config
+    volumes:
+      - ${MONTHWISE_CONFIG_DIR:?run monthwise start, which sets the configuration folder}:/config:ro
+    ports:
+      # 127.0.0.1 by default: only this computer can connect (FR-11). `monthwise network on` sets 0.0.0.0.
+      - "${MONTHWISE_BIND:-127.0.0.1}:${MONTHWISE_PORT:-8080}:8080"
+    logging: *logging
+
+secrets:
+  postgres_password:
+    file: ${MONTHWISE_CONFIG_DIR}/secrets/postgres_password
+
+volumes:
+  monthwise-pgdata:
+    name: monthwise-pgdata

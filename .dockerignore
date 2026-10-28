@@ -1,0 +1,17 @@
+# Only the sources the release image needs; never local secrets or private data.
+**/node_modules
+**/bin
+**/obj
+**/dist
+**/TestResults
+**/.vs
+**/.vite
+.git
+.github
+.vscode
+.env*
+data/
+docs/
+deploy/
+backend/tests/
+**/*.numbers

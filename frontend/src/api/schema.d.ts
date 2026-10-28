@@ -11,7 +11,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Reports whether the API and its database are reachable. */
+        /** Reports whether the API and its database work, the migration state and the running version. */
         get: operations["GetHealth"];
         put?: never;
         post?: never;
@@ -2009,6 +2009,8 @@ export interface components {
         HealthResponse: {
             status: components["schemas"]["HealthStatusValue"];
             database: components["schemas"]["HealthStatusValue"];
+            migrations: components["schemas"]["MigrationStatusValue"];
+            version: string;
         };
         /** @enum {unknown} */
         HealthStatusValue: "Healthy" | "Degraded" | "Unhealthy";
@@ -2303,6 +2305,8 @@ export interface components {
             isPredefined: boolean;
             isHidden: boolean;
         };
+        /** @enum {unknown} */
+        MigrationStatusValue: "Pending" | "Applied" | "Failed";
         MonthBillsResponse: {
             month: string;
             bills: components["schemas"]["BillResponse"][];

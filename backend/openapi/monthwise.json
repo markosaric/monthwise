@@ -10,7 +10,7 @@
         "tags": [
           "Health"
         ],
-        "summary": "Reports whether the API and its database are reachable.",
+        "summary": "Reports whether the API and its database work, the migration state and the running version.",
         "operationId": "GetHealth",
         "responses": {
           "200": {
@@ -8794,7 +8794,9 @@
       "HealthResponse": {
         "required": [
           "status",
-          "database"
+          "database",
+          "migrations",
+          "version"
         ],
         "type": "object",
         "properties": {
@@ -8803,6 +8805,12 @@
           },
           "database": {
             "$ref": "#/components/schemas/HealthStatusValue"
+          },
+          "migrations": {
+            "$ref": "#/components/schemas/MigrationStatusValue"
+          },
+          "version": {
+            "type": "string"
           }
         }
       },
@@ -9920,6 +9928,13 @@
             "type": "boolean"
           }
         }
+      },
+      "MigrationStatusValue": {
+        "enum": [
+          "Pending",
+          "Applied",
+          "Failed"
+        ]
       },
       "MonthBillsResponse": {
         "required": [

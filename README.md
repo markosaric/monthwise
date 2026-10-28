@@ -206,6 +206,43 @@ their own made-up encryption keys.
   secrets matches `.env`.
 - **API stops on startup with "SensitiveData:… is missing":** create the encryption keys (step 5).
 
+## Building a release
+
+A release is one version of Monthwise in which the API serves the built front-end
+([ADR 0006](docs/decisions/0006-single-release-api-serves-frontend.md)). Installing and running it
+(Docker one-click, native background service, Azure) is described in the user manual, chapter
+"Installing Monthwise".
+
+**Publishing a release:** tag a commit on `main` with its version and push the tag. The
+[release workflow](.github/workflows/release.yml) builds the image `ghcr.io/markosaric/monthwise`
+(linux/amd64 and arm64), the native packages for macOS, Windows and Linux, the Docker package and
+the install scripts, and attaches them to a GitHub Release with `SHA256SUMS`.
+
+```bash
+git switch main && git pull --rebase
+git tag v1.0.0 && git push origin v1.0.0
+```
+
+**Building locally:**
+
+```bash
+# Release image (the same Dockerfile CI uses)
+docker build --build-arg VERSION=1.0.0 --build-arg COMMIT=$(git rev-parse --short HEAD) -t monthwise .
+
+# Native package for one runtime (osx-arm64, osx-x64, win-x64, linux-x64, linux-arm64)
+(cd frontend && npm ci && npm run build)
+dotnet publish backend/src/Monthwise.Api/Monthwise.Api.csproj -c Release -r osx-arm64 --self-contained \
+  -o out/osx-arm64 -p:Version=1.0.0 -p:FrontendDist="$PWD/frontend/dist" -p:OpenApiGenerateDocuments=false
+
+# Smoke checks against a running release
+deploy/smoke-test.sh http://localhost:8080
+```
+
+A release reads its settings and secrets from a configuration folder (`--config-dir` or
+`MONTHWISE_CONFIG_DIR`): `settings.json` and one file per secret in `secrets/`. Examples with
+placeholder values are in [deploy/settings.example.json](deploy/settings.example.json) and
+[deploy/secrets.example](deploy/secrets.example).
+
 ## Everyday commands
 
 | Where | Command | What it does |
@@ -221,5 +258,7 @@ their own made-up encryption keys.
 ```
 backend/    .NET 10 solution: Domain, Application, Infrastructure, Api (+ tests)
 frontend/   React + TypeScript app (Vite)
-docs/       INIT.md, feature requirements, feature plans, architecture decisions
+docs/       INIT.md, feature requirements, feature plans, architecture decisions, user manual
+deploy/     Docker one-click, native background service and Azure scripts, smoke test
+Dockerfile  release image: the API serving the built front-end
 ```

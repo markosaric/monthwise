@@ -78,3 +78,54 @@ jobs:
         run: npm test
       - name: Build
         run: npm run build
+
+  release:
+    name: Release package
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Check deployment scripts
+        run: |
+          shellcheck deploy/docker/monthwise.sh deploy/docker/Monthwise.command deploy/native/monthwise.sh \
+            deploy/azure/deploy.sh deploy/smoke-test.sh
+          pwsh -NoProfile -Command '
+            # The scripts talk to the user (Write-Host) and change state only when asked to.
+            $results = Invoke-ScriptAnalyzer -Path deploy -Recurse -Severity Warning,Error `
+              -ExcludeRule PSAvoidUsingWriteHost,PSUseShouldProcessForStateChangingFunctions
+            $results | Format-Table -AutoSize
+            if ($results) { exit 1 }'
+      - name: Check Azure template
+        run: az bicep build --file deploy/azure/main.bicep --stdout > /dev/null
+      - name: Build the release image
+        run: docker build --build-arg VERSION=0.0.0-ci --build-arg COMMIT=${GITHUB_SHA::7} -t monthwise:ci .
+      - name: Start it with Docker one-click and made-up secrets
+        run: |
+          config="$RUNNER_TEMP/monthwise"
+          mkdir -p "$config/secrets"
+          printf 'MONTHWISE_CONFIG_DIR=%s\nMONTHWISE_IMAGE=monthwise:ci\n' "$config" > "$config/compose.env"
+          password=$(openssl rand -hex 24)
+          printf '%s' "$password" > "$config/secrets/postgres_password"
+          printf 'Host=db;Port=5432;Database=monthwise;Username=monthwise;Password=%s' "$password" \
+            > "$config/secrets/ConnectionStrings__Monthwise"
+          printf 'k1' > "$config/secrets/SensitiveData__ActiveKeyId"
+          openssl rand -base64 32 | tr -d '\n' > "$config/secrets/SensitiveData__EncryptionKeys__k1"
+          openssl rand -base64 32 | tr -d '\n' > "$config/secrets/SensitiveData__HashKey"
+          docker compose --project-name monthwise --file deploy/docker/compose.yml --env-file "$config/compose.env" up --detach
+      - name: Smoke checks
+        run: deploy/smoke-test.sh http://localhost:8080
+      - name: No secret in the logs
+        run: |
+          docker compose --project-name monthwise --file deploy/docker/compose.yml \
+            --env-file "$RUNNER_TEMP/monthwise/compose.env" logs > "$RUNNER_TEMP/logs.txt"
+          for secret in "$RUNNER_TEMP"/monthwise/secrets/*; do
+            value=$(cat "$secret")
+            [ ${#value} -ge 16 ] || continue   # the key id "k1" is not a secret
+            if grep -qF -- "$value" "$RUNNER_TEMP/logs.txt"; then
+              echo "$(basename "$secret") appears in the logs"; exit 1
+            fi
+          done
+      - name: Logs on failure
+        if: failure() && hashFiles('deploy/docker/compose.yml') != ''
+        run: |
+          [ -f "$RUNNER_TEMP/monthwise/compose.env" ] || exit 0   # failed before Monthwise was started
+          docker compose --project-name monthwise --file deploy/docker/compose.yml --env-file "$RUNNER_TEMP/monthwise/compose.env" logs

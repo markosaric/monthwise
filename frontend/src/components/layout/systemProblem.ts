@@ -8,6 +8,7 @@ export function useSystemProblem(): string | null {
   const { data, isPending, isError } = useHealth()
   if (isPending) return null
   if (isError) return 'API unreachable'
+  if (data.migrations === 'Failed') return 'Database update failed'
   if (data.database !== 'Healthy') {
     return data.database === 'Degraded' ? 'Database degraded' : 'Database unhealthy'
   }

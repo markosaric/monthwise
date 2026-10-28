@@ -77,6 +77,7 @@ describe('Settings screen', () => {
       'GET /api/cards': () => json([aCard(), aCard({ id: 'card-2', name: 'Savings' })]),
       'GET /api/payers': () => json([]),
       'GET /api/recurring-bills': () => json([]),
+      ...healthy,
     })
     renderRoute('/settings')
 
@@ -89,6 +90,7 @@ describe('Settings screen', () => {
       'href',
       '/recurring-bills',
     )
+    expect(await screen.findByText('Monthwise version 1.0.0+abc1234')).toBeInTheDocument()
   })
 })
 

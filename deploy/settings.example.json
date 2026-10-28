@@ -1,0 +1,13 @@
+{
+  "Urls": "http://127.0.0.1:8080",
+  "Database": {
+    "MigrateOnStartup": true,
+    "StartupWaitSeconds": 60
+  },
+  "Logging": {
+    "File": {
+      "Path": "/path/to/Monthwise/logs",
+      "RetainedDays": 14
+    }
+  }
+}
