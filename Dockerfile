@@ -15,6 +15,8 @@ ARG TARGETARCH
 ARG VERSION=0.0.0-dev
 ARG COMMIT=
 WORKDIR /src/backend
+# The analyzer settings (e.g. migrations are generated code) live in the root .editorconfig.
+COPY .editorconfig /src/
 COPY backend/global.json backend/Directory.Build.props backend/Directory.Packages.props backend/Monthwise.sln ./
 COPY backend/src/Monthwise.Domain/Monthwise.Domain.csproj src/Monthwise.Domain/
 COPY backend/src/Monthwise.Application/Monthwise.Application.csproj src/Monthwise.Application/
