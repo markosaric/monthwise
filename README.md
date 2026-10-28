@@ -5,17 +5,32 @@ Personal home finance app for tracking monthly income and expenses, credit card 
 Starting document with the domain, data model and architecture: [docs/INIT.md](docs/INIT.md).
 Architecture decisions: [docs/decisions](docs/decisions/README.md). Working practices: [CONTRIBUTING.md](CONTRIBUTING.md).
 
-## Screenshots
+## User manual
 
-Shown with made-up data.
+A short guide to every screen, with screenshots of made-up data:
+[docs/user-manual/index.html](docs/user-manual/index.html). GitHub shows HTML files as source, so
+open the file in a browser from your clone (or download it with its `images/` folder).
 
-**Dashboard**: how the current month is going.
+**Dashboard**: how the current month is going, what is overdue and what is coming up.
 
-![Dashboard](docs/images/dashboard.jpg)
+![Dashboard](docs/user-manual/images/dashboard.jpg)
 
-**Month**: inputs, bills, expenses, loan and card payments of a month.
+**Month**: inputs, bills, expenses, loan and card payments of a month; tick a row when it is
+received or paid.
 
-![Month](docs/images/month.jpg)
+![Month](docs/user-manual/images/month.jpg)
+
+**Cards**: account balances now and at month end, and cards with purchases in installments.
+
+![Cards](docs/user-manual/images/cards.jpg)
+
+**Loans and leasing**: monthly payments, progress and what is left to repay.
+
+![Loans and leasing](docs/user-manual/images/loans.jpg)
+
+**Shared costs**: what people who share bills and loans with you still owe.
+
+![Shared costs](docs/user-manual/images/shared-costs.jpg)
 
 ## Development process
 
@@ -49,6 +64,7 @@ plan of the branch making the change links and repeats that appendix.
 | [feature-requirements/](docs/feature-requirements) | What a feature must do: attributes, functional and non-functional requirements, acceptance criteria; later changes as appendices | Before the plan, one per feature |
 | [plans/](docs/plans) | How a feature is built: scope, design, steps, tests; links its requirements ([template](docs/plans/_TEMPLATE.md)) | After the requirements, one per branch |
 | [decisions/](docs/decisions/README.md) | Architecture decision records (ADRs): one decision with its context and consequences | When a choice shapes the code base beyond one feature |
+| [user-manual/](docs/user-manual/index.html) | Short user manual of the app with screenshots (made-up data) | Updated when a screen changes noticeably |
 
 ## Initial development setup
 
