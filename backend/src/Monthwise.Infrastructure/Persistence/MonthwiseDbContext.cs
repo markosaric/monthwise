@@ -4,6 +4,7 @@ using Monthwise.Domain.CardPurchases;
 using Monthwise.Domain.Cards;
 using Monthwise.Domain.CashFlow;
 using Monthwise.Domain.Common;
+using Monthwise.Domain.DataTransfer;
 using Monthwise.Domain.Expenses;
 using Monthwise.Domain.Loans;
 using Monthwise.Domain.SharedCosts;
@@ -40,6 +41,9 @@ public sealed class MonthwiseDbContext(DbContextOptions<MonthwiseDbContext> opti
     public DbSet<Bill> Bills => Set<Bill>();
     public DbSet<Expense> Expenses => Set<Expense>();
     public DbSet<Participant> Participants => Set<Participant>();
+    public DbSet<DataTransferRecord> DataTransferLog => Set<DataTransferRecord>();
+    public DbSet<BackupReminder> BackupReminders => Set<BackupReminder>();
+    public DbSet<SafetyCopy> SafetyCopies => Set<SafetyCopy>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -69,6 +73,9 @@ public sealed class MonthwiseDbContext(DbContextOptions<MonthwiseDbContext> opti
         modelBuilder.ApplyConfiguration(new BillConfiguration());
         modelBuilder.ApplyConfiguration(new ExpenseConfiguration());
         modelBuilder.ApplyConfiguration(new ParticipantConfiguration());
+        modelBuilder.ApplyConfiguration(new DataTransferRecordConfiguration());
+        modelBuilder.ApplyConfiguration(new BackupReminderConfiguration());
+        modelBuilder.ApplyConfiguration(new SafetyCopyConfiguration());
     }
 
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)

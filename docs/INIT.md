@@ -125,6 +125,12 @@ share columns        share_participant_id → participant?, share_count? (2–4)
 balance_snapshot     id, account_id, date, balance_cents   (savings balances; card and current account
                      balances are balance_entry)
 user                 id, email, household_id, role
+data_transfer_log    id, occurred_at, kind (Export|Import|SafetyCopy|SafetyCopyRestore), user_name?, succeeded,
+                     file_name?, release, file_created_at?, message?
+                     (installation tables, not household data: never exported, never replaced by an import;
+                     see docs/feature-requirements/backup-and-restore.md and ADR 0007)
+data_backup_settings id (always 1), reminder_enabled, reminder_interval_days (7|14|30|60|90), reminder_dismissed_at?
+data_safety_copy     id (always 1), created_at, release, content (the data before the newest import, encrypted)
 ```
 
 Key rules:

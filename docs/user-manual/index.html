@@ -50,6 +50,7 @@
   <li><a href="#settings">Settings</a></li>
   <li><a href="#phone">On the phone</a></li>
   <li><a href="#install">Installing Monthwise</a></li>
+  <li><a href="#data">Data and backups</a></li>
 </ol>
 </nav>
 
@@ -117,6 +118,7 @@
 <p>Lists the app uses everywhere: cards and accounts, payers, input categories, expense categories, loan categories and recurring bills. Add your own entries next to the starting ones. A category that is already in use cannot be deleted; hide it instead.</p>
 <figure><img src="images/settings.jpg" alt="Settings overview"><figcaption>Settings</figcaption></figure>
 <p>Card numbers and IBANs are stored encrypted and shown only on request.</p>
+<p>The <span class="ui">Data and backups</span> tile, in the <em>Data</em> group, exports and imports all your data; see <a href="#data">Data and backups</a>.</p>
 
 <h2 id="phone">9. On the phone</h2>
 <p>Monthwise works in a phone browser too. The menu moves to a bar at the bottom of the screen; everything else works the same.</p>
@@ -129,6 +131,7 @@
 <tr><td><a href="#install-native">Native background service</a></td><td>Your Mac or Windows PC without Docker; starts by itself when you log in</td><td>€0</td></tr>
 <tr><td><a href="#install-azure">Azure</a></td><td>Reaching Monthwise from anywhere over HTTPS, once login exists</td><td>about €15–20 per month after the free first year</td></tr>
 </table></div>
+<p>To move Monthwise from one way to another, export your data on the old one and import it on the new one (see <a href="#data">Data and backups</a>).</p>
 <p>Every way needs the <a href="https://cli.github.com/">GitHub CLI</a>, because the Monthwise repository is private. Sign in once with <code>gh auth login</code>, then allow it to download the app image with <code>gh auth refresh --scopes read:packages</code>.</p>
 <div class="tip"><strong>Your secrets.</strong> On the first start Monthwise creates a database password and two encryption keys for card numbers and IBANs, and shows the folder they are in. Copy the files in that folder into your password manager straight away. Without them the stored card numbers and IBANs can never be read again, for example on a new computer. Monthwise never creates new keys for a database that already exists.</div>
 
@@ -179,6 +182,29 @@
   <li>The script prints the address of Monthwise and, the first time, how to copy the encryption keys from Key Vault into your password manager.</li>
 </ol>
 <p>To update, run the same command with the new version. The data and the secrets are kept. To see the log: <code>az containerapp logs show -g rg-monthwise -n ca-monthwise</code>.</p>
+
+<h2 id="data">11. Data and backups</h2>
+<p><span class="ui">Settings → Data and backups</span> saves all your data to one file on your device and brings it back from such a file. The top of the section shows when you last exported and imported.</p>
+<h3 id="data-export">Export</h3>
+<ol>
+  <li>Choose <span class="ui">Export data</span> and enter a password for the file twice (at least 6 characters).</li>
+  <li>The file downloads, named for example <code>monthwise-export-2026-10-31-0815.monthwise</code>.</li>
+</ol>
+<div class="tip"><strong>Keep the file and its password safe.</strong> The file holds all your financial data, including the full card numbers and IBANs, and nothing in it can be read without the password. Monthwise does not keep the password: put it in your password manager. A file whose password is lost cannot be imported by anyone.</div>
+<h3 id="data-import">Import</h3>
+<ol>
+  <li>Choose <span class="ui">Import data</span>, pick an export file and enter its password, then <span class="ui">Check file</span>. Nothing changes yet.</li>
+  <li>Monthwise shows when the file was made and how many cards, loans, inputs, card purchases, bills and expenses it holds, next to what is in Monthwise now.</li>
+  <li>Type <code>REPLACE</code> and choose <span class="ui">Replace all data</span>. An import always replaces <em>all</em> data; it never adds the file to what is there.</li>
+</ol>
+<p>Right before an import Monthwise keeps a <strong>safety copy</strong> of the current data. If the import was a mistake, choose <span class="ui">Bring back</span> under <em>Safety copy</em>. If an import fails, nothing is changed. Files from older versions of Monthwise can be imported; a file from a newer version asks you to update Monthwise first. While an import runs, other screens wait a moment.</p>
+<h3 id="data-reminder">Reminder and history</h3>
+<p>The Dashboard reminds you to export when you have not done so for 30 days. Under <em>Export reminder</em> you can turn it off or choose 7, 14, 30, 60 or 90 days. <span class="ui">Dismiss</span> hides it until the next interval passes without an export.</p>
+<p>The <em>History</em> lists every export, import and safety copy with its time, file and result, including failed attempts. An import does not change the history.</p>
+<h3 id="data-move">Moving Monthwise</h3>
+<p>To move to another computer or from Docker to the native service or Azure: export on the old installation, install the new one, and import the file there. The file works even though the new installation has its own encryption keys.</p>
+<h3 id="data-azure">Azure's own backups</h3>
+<p>On Azure the database also keeps 7 days of automatic backups. In the Azure portal, open the PostgreSQL server in <em>rg-monthwise</em> and choose <span class="ui">Restore</span> to create a copy of the database as it was at an earlier moment, then point Monthwise to it. Use this as a second safety net; your own export files stay the main backup.</p>
 
 <p class="lead" style="margin-top:32px">The <span class="ui">Savings</span> screen is not built yet.</p>
 </main>

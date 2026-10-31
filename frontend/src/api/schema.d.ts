@@ -1485,6 +1485,142 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/data": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The last export and import, the safety copy, the export reminder and whether this user may export and import. */
+        get: operations["GetDataOverview"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/data/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Every export, import and safety copy, newest first, 50 per page. */
+        get: operations["GetDataHistory"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/data/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Exports all household data to a file protected with the given password (at least 6 characters). */
+        post: operations["ExportData"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/data/import/check": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reads an export file and shows what it holds next to what Monthwise holds now. Changes nothing. */
+        post: operations["CheckImport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/data/import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Replaces all household data with the data of an export file. Needs the confirmation word REPLACE; makes a safety copy first. */
+        post: operations["ImportData"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/data/safety-copy/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Brings back the data as it was before the newest import. Needs the confirmation word REPLACE. */
+        post: operations["RestoreSafetyCopy"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/data/reminder": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Turns the export reminder on or off and sets its interval (7, 14, 30, 60 or 90 days). */
+        put: operations["UpdateBackupReminder"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/data/reminder/dismiss": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Hides the export reminder on the Dashboard for one interval. */
+        post: operations["DismissBackupReminder"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1506,6 +1642,18 @@ export interface components {
             month: string;
             /** Format: int32 */
             added: number;
+        };
+        BackupReminderRequest: {
+            enabled: boolean;
+            /** Format: int32 */
+            intervalDays: number;
+        };
+        BackupReminderResponse: {
+            enabled: boolean;
+            /** Format: int32 */
+            intervalDays: number;
+            intervalChoices: number[];
+            isDue: boolean;
         };
         /** @enum {unknown} */
         BalanceEntryKind: "Starting" | "Correction";
@@ -1958,6 +2106,53 @@ export interface components {
             /** Format: int64 */
             previousMonthTotalCents: number;
         };
+        DataHistoryResponse: {
+            items: components["schemas"]["DataTransferResponse"][];
+            /** Format: int32 */
+            page: number;
+            /** Format: int32 */
+            pageSize: number;
+            /** Format: int32 */
+            totalCount: number;
+        };
+        DataOverviewResponse: {
+            lastExport: null | components["schemas"]["DataTransferResponse"];
+            lastImport: null | components["schemas"]["DataTransferResponse"];
+            /** Format: date-time */
+            safetyCopyCreatedAt: null | string;
+            reminder: components["schemas"]["BackupReminderResponse"];
+            canManage: boolean;
+        };
+        DataSummaryResponse: {
+            /** Format: int32 */
+            cards: number;
+            /** Format: int32 */
+            loans: number;
+            /** Format: int32 */
+            inputs: number;
+            /** Format: int32 */
+            cardPurchases: number;
+            /** Format: int32 */
+            bills: number;
+            /** Format: int32 */
+            expenses: number;
+        };
+        /** @enum {unknown} */
+        DataTransferKind: "Export" | "Import" | "SafetyCopy" | "SafetyCopyRestore";
+        DataTransferResponse: {
+            /** Format: uuid */
+            id: string;
+            /** Format: date-time */
+            occurredAt: string;
+            kind: components["schemas"]["DataTransferKind"];
+            userName: null | string;
+            succeeded: boolean;
+            fileName: null | string;
+            release: string;
+            /** Format: date-time */
+            fileCreatedAt: null | string;
+            message: null | string;
+        };
         ExpenseCategoryResponse: {
             /** Format: uuid */
             id: string;
@@ -2006,11 +2201,16 @@ export interface components {
             /** Format: uuid */
             replacementCardId: null | string;
         };
+        ExportRequest: {
+            password: null | string;
+        };
         HealthResponse: {
             status: components["schemas"]["HealthStatusValue"];
             database: components["schemas"]["HealthStatusValue"];
             migrations: components["schemas"]["MigrationStatusValue"];
             version: string;
+            /** Format: date-time */
+            dataImportedAt: null | string;
         };
         /** @enum {unknown} */
         HealthStatusValue: "Healthy" | "Degraded" | "Unhealthy";
@@ -2024,6 +2224,20 @@ export interface components {
             errors?: {
                 [key: string]: string[];
             };
+        };
+        /** Format: binary */
+        IFormFile: string;
+        ImportCheckResponse: {
+            /** Format: date-time */
+            fileCreatedAt: string;
+            fileRelease: string;
+            file: components["schemas"]["DataSummaryResponse"];
+            current: components["schemas"]["DataSummaryResponse"];
+        };
+        ImportResponse: {
+            /** Format: date-time */
+            fileCreatedAt: string;
+            summary: components["schemas"]["DataSummaryResponse"];
         };
         InputCategoryResponse: {
             /** Format: uuid */
@@ -2547,6 +2761,9 @@ export interface components {
         };
         ReversalRequest: {
             reason: null | string;
+        };
+        SafetyCopyRestoreRequest: {
+            confirmation: null | string;
         };
         /** @enum {unknown} */
         SensitiveNumberKind: "CardNumber" | "Iban";
@@ -7730,6 +7947,270 @@ export interface operations {
                 };
                 content: {
                     "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetDataOverview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DataOverviewResponse"];
+                };
+            };
+        };
+    };
+    GetDataHistory: {
+        parameters: {
+            query?: {
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DataHistoryResponse"];
+                };
+            };
+        };
+    };
+    ExportData: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExportRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/octet-stream": string;
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+        };
+    };
+    CheckImport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    file?: components["schemas"]["IFormFile"];
+                } & {
+                    password?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImportCheckResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+        };
+    };
+    ImportData: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    file?: components["schemas"]["IFormFile"];
+                } & {
+                    password?: string;
+                } & {
+                    confirmation?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImportResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    RestoreSafetyCopy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SafetyCopyRestoreRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImportResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    UpdateBackupReminder: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BackupReminderRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BackupReminderResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+        };
+    };
+    DismissBackupReminder: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BackupReminderResponse"];
                 };
             };
         };

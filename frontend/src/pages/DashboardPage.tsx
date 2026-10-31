@@ -16,6 +16,7 @@ import { Link } from 'react-router'
 import { useInstallmentCards } from '@/api/cardPurchases'
 import { useDashboard, type Dashboard, type DashboardItem } from '@/api/dashboard'
 import { formatDate } from '@/components/cards/format'
+import { ExportReminder } from '@/components/dataTransfer/ExportReminder'
 import { dashboardTexts } from '@/components/dashboard/texts'
 import { addActions } from '@/components/design/actions'
 import { ChangePill } from '@/components/design/ChangePill'
@@ -49,6 +50,7 @@ export function DashboardPage() {
         <span className="text-sm text-muted-foreground">{t.subtitle}</span>
       </header>
       <QuickActions month={data?.month} />
+      <ExportReminder />
       {isPending && <p className="text-sm text-muted-foreground">Loading…</p>}
       {isError && <p className="text-sm text-destructive">{t.loadError}</p>}
       {data && <DashboardContent data={data} />}

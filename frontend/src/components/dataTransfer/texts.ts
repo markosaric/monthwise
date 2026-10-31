@@ -1,0 +1,92 @@
+/** Texts of the Data and backups section (docs/feature-requirements/backup-and-restore.md). */
+export const dataTexts = {
+  section: 'Data and backups',
+  description: 'Export all data to a file and import it again.',
+  group: 'Data',
+  noExport: 'No export yet',
+  lastExport: 'Last export',
+  lastImport: 'Last import',
+  never: 'Never',
+  dataFrom: 'data from',
+  keepSafe:
+    'The file holds your personal financial data. Keep it somewhere safe, and keep its password in your password manager: a file whose password is lost cannot be imported by anyone.',
+  readOnly: 'Only a household admin can export and import data.',
+  export: {
+    action: 'Export data',
+    title: 'Export all data',
+    description:
+      'Choose a password for the file. You need it to import the file again; Monthwise does not keep it.',
+    password: 'Password',
+    repeat: 'Repeat password',
+    tooShort: 'The password must be at least 6 characters long.',
+    mismatch: 'The passwords are not the same.',
+    confirm: 'Export',
+    done: (fileName: string) => `Exported to ${fileName}`,
+  },
+  import: {
+    action: 'Import data',
+    title: 'Import data',
+    description: 'Choose an export file and enter its password. Nothing changes until you confirm.',
+    file: 'Export file',
+    password: 'Password',
+    check: 'Check file',
+    compareTitle: 'Replace all data?',
+    replaceWarning:
+      'Importing replaces all data in Monthwise with the data in the file. A safety copy of the current data is made first.',
+    made: (date: string, release: string) => `File made on ${date} by Monthwise ${release}.`,
+    inFile: 'In the file',
+    now: 'In Monthwise now',
+    typeWord: (word: string) => `Type ${word} to confirm`,
+    confirm: 'Replace all data',
+    done: 'Data imported.',
+  },
+  safetyCopy: {
+    title: 'Safety copy',
+    made: (date: string) => `The data as it was before the last import, from ${date}.`,
+    none: 'A safety copy is made by itself before every import.',
+    action: 'Bring back',
+    confirmTitle: 'Bring back the safety copy?',
+    confirmDescription:
+      'This replaces all data with the data from before the last import. The current data gets its own safety copy first.',
+    done: 'Safety copy brought back.',
+  },
+  reminder: {
+    title: 'Export reminder',
+    description: 'Show a reminder on the Dashboard when no export was made for a while.',
+    enabled: 'Remind me',
+    interval: 'After',
+    days: (days: number) => `${days} days`,
+    saved: 'Reminder saved.',
+    dashboard: (lastExport: string | null) =>
+      lastExport
+        ? `Your last export was on ${lastExport}.`
+        : 'You have not exported your data yet.',
+    dashboardTitle: 'Time to export your data',
+    open: 'Export now',
+    dismiss: 'Dismiss',
+  },
+  history: {
+    title: 'History',
+    empty: 'Nothing exported or imported yet.',
+    failed: 'Failed',
+    kinds: {
+      Export: 'Export',
+      Import: 'Import',
+      SafetyCopy: 'Safety copy made',
+      SafetyCopyRestore: 'Safety copy brought back',
+    },
+    by: 'by',
+    newer: 'Newer',
+    older: 'Older',
+  },
+  summary: {
+    cards: 'Cards and accounts',
+    loans: 'Loans',
+    inputs: 'Inputs',
+    cardPurchases: 'Card purchases',
+    bills: 'Bills',
+    expenses: 'Expenses',
+  },
+  cancel: 'Cancel',
+  confirmationWord: 'REPLACE',
+} as const

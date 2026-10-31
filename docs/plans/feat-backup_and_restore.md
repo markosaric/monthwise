@@ -34,7 +34,7 @@ is.
 ### Key rules from the requirements
 | Requirement | Rule used in this plan |
 |---|---|
-| FR-2, NFR-7 | The export reads **every table of the EF Core model**, except an explicit list of installation tables (`data_transfer_log`, `data_backup_settings`, `data_safety_copy`, `__EFMigrationsHistory`, and later the login tables). No per-feature export code is written, so a new feature's tables are exported without any work. An architecture test fails when an entity type is neither exported nor on the exclude list, and a round-trip test fills every exported table. |
+| FR-2, NFR-7 | The export reads **every table of the database**, except an explicit list of installation tables (`data_transfer_log`, `data_backup_settings`, `data_safety_copy`, `__ef_migrations_history`, and later the login tables). No per-feature export code is written, so a new feature's tables are exported without any work. A test fails when a table of the EF Core model is neither exported nor on the exclude list, and a round-trip test compares every table. |
 | FR-2 | The export runs in one `REPEATABLE READ`, read-only transaction, so all tables come from one moment while normal use goes on. Rows are written as JSON objects of column name to value, exactly as stored (cents as integers, dates as ISO strings, Guids as strings). |
 | FR-2 | The file holds a header (format, format version) and an encrypted body with `createdAt`, `release` (the informational version), `migration` (the id of the newest migration applied when it was made), `summary` (row counts for cards, accounts, loans, cash flow inputs, card purchases, bills, expenses and months with data) and `tables`. File name `monthwise-export-YYYY-MM-DD-HHmm.monthwise` in the installation's local time. |
 | FR-3, NFR-1 | Password at least 6 characters (checked in the front-end and the API). The key is derived with PBKDF2-HMAC-SHA256 (`Rfc2898DeriveBytes.Pbkdf2`, 600,000 iterations, 16-byte random salt); the gzip-compressed body is encrypted with AES-256-GCM (12-byte random nonce), with the header as associated data. Built into .NET, no new package. The password is never logged; requests that carry it are excluded from request logging. |
@@ -42,11 +42,11 @@ is.
 | FR-4, FR-5 | Two calls: **check** decrypts and validates the file and answers its summary next to the current summary, without changing anything; **import** repeats the checks and needs the confirmation word `REPLACE`. Both take the file as `multipart/form-data` (up to 100 MB). The file is not kept on the server between the two calls. AES-GCM cannot tell a wrong password from a changed file, so both answer one message: "The password is wrong or the file is damaged." A file without the header is "not a Monthwise export file"; a file whose tables do not match its migration is "incomplete". |
 | FR-6 | A file is accepted when its `migration` is one of the release's migrations (same or older). A newer one, or an unknown one, is refused with the release that made it. Old data is brought up to date by **the same EF Core migrations** that update a database (see "Import" below), so no extra upgrade code is written per release. Migrations are therefore never removed or squashed (written into ADR 0007). |
 | FR-7 | The import is one database transaction: any failure rolls back everything. Before it starts, the current data is exported (same format) and stored in `data_safety_copy`, encrypted with the installation's active encryption key instead of a password; only the newest row is kept. Bringing the safety copy back uses the same import (and first makes a new safety copy, so it can be undone too). |
-| FR-7 | During an import an in-process **import gate** answers `503` "An import is running" for every `/api` call except `GET /api/health` and the data section's own calls; the transaction also locks the household tables (`ACCESS EXCLUSIVE`). One replica runs on every target, so an in-process gate is enough. |
+| FR-7 | During an import an in-process **import gate** answers `503` "An import is running" for every `/api` call except `GET /api/health` and `GET /api/data`; the transaction also locks the household tables (`ACCESS EXCLUSIVE`). One replica runs on every target, so an in-process gate is enough. |
 | FR-7 | The health response gets `dataImportedAt` (the last successful import). The front-end already reads health every 30 seconds; when the value changes it invalidates all cached queries, so every open screen shows the new data. The importing screen does this at once. |
-| FR-9 | `data_transfer_log`: `id`, `occurred_at`, `kind` (`Export`, `Import`, `SafetyCopy`, `SafetyCopyRestore`), `user_id?`, `user_name?`, `succeeded`, `file_name?`, `release`, `file_created_at?`, `message?` (a plain reason for a failure, never data). Written in its own context after the work, so a failed import is still recorded. Not exported and not touched by an import. No API to edit or delete it. Shown newest first, 50 per page. |
+| FR-9 | `data_transfer_log`: `id`, `occurred_at`, `kind` (`Export`, `Import`, `SafetyCopy`, `SafetyCopyRestore`), `user_name?` (the login feature adds `user_id`), `succeeded`, `file_name?`, `release`, `file_created_at?`, `message?` (a plain reason for a failure, never data). Written in its own context after the work, so a failed import is still recorded. Not exported and not touched by an import. No API to edit or delete it. Shown newest first, 50 per page. |
 | FR-10, FR-11 | `data_backup_settings` (one row): `reminder_enabled` (default true), `reminder_interval_days` (7, 14, 30, 60 or 90; default 30), `reminder_dismissed_at?`. The reminder is due when it is on, no successful export is newer than the interval, and it was not dismissed within the last interval. Dismissal is for the household (not per browser), so it works across devices. Not exported. |
-| FR-1 | Tile **Data and backups** in a new **Data** group after Money out, emerald icon, subtitle from the last successful export ("Last export 3 days ago" / "No export yet"). |
+| FR-1 | Tile **Data and backups** in a new **Data** group after Money out, green (savings) icon, subtitle from the last successful export ("Last export 3 days ago" / "No export yet"). |
 
 ### Import
 1. Decrypt and validate the file (format, password, `migration` known, every table of that
@@ -83,7 +83,6 @@ All keys are Guids generated by the application, so no sequences need resetting.
   - `POST /api/data/import` (file, password, confirmation) → summary of what was imported.
   - `POST /api/data/safety-copy/restore` `{ confirmation }`.
   - `PUT /api/data/reminder` `{ enabled, intervalDays }`; `POST /api/data/reminder/dismiss`.
-  - `GET /api/dashboard` gets `exportReminder` (`null` or the date of the last export).
   - `HealthResponse` gets `dataImportedAt`. OpenAPI document and generated client regenerated.
 - Front-end changes (pages, components):
   - Settings: the Data group and tile; the Data and backups section (`pages/settings/data/`) with
@@ -93,9 +92,10 @@ All keys are Guids generated by the application, so no sequences need resetting.
     response as a blob with the file name from `Content-Disposition`.
   - Import dialog: file and password → check → side-by-side summaries and the word `REPLACE` →
     import → confirmation; all cached queries invalidated afterwards.
-  - Dashboard: a dismissible reminder card linking to the section.
-  - `useHealth`: invalidate all queries when `dataImportedAt` changes; the menu's system status
-    shows "Import running" while the gate is closed.
+  - Dashboard: a dismissible reminder card linking to the section, shown when `GET /api/data`
+    says the reminder is due (the Dashboard response stays as it is).
+  - `useReloadAfterImport` in the app layout: invalidate all queries when `dataImportedAt` in the
+    health response changes.
 - Database migrations: `AddDataTransfer` (the three tables and the default settings row).
 
 ## Steps
@@ -110,8 +110,8 @@ All keys are Guids generated by the application, so no sequences need resetting.
    endpoint (FR-2, FR-9).
 5. **Import:** validation, safety copy, migration-based import in a temporary schema, sensitive
    columns re-encrypted, import gate, `dataImportedAt`, history rows, endpoints (FR-4 to FR-8).
-6. **Settings and reminder:** reminder setting, dismissal, `exportReminder` on the Dashboard
-   (FR-10, FR-11).
+6. **Settings and reminder:** reminder setting, dismissal, `isDue` in the overview for the
+   Dashboard (FR-10, FR-11).
 7. **OpenAPI and client:** regenerate the document and the TypeScript client.
 8. **Front-end:** Settings tile and section, export and import dialogs, history, reminder setting,
    Dashboard reminder, refresh after an import (FR-1 to FR-11, NFR-6).
@@ -125,9 +125,11 @@ All keys are Guids generated by the application, so no sequences need resetting.
     a file without the header refused; password shorter than 6 characters refused.
   - Reminder: due, not due, turned off, dismissed and coming back after the interval.
 - API / integration tests (PostgreSQL, as the existing tests):
-  - Round trip (NFR-3, NFR-4): fill every exported table with made-up data, export, import into an
-    empty database **with other encryption and hash keys**, and compare every table row by row
-    (card numbers and IBANs compared decrypted) and the Dashboard and month totals to the cent.
+  - Round trip (NFR-3, NFR-4): made-up cards (with numbers and IBANs), participants and payers,
+    export, empty the data, import, and compare every household table row by row (card numbers and
+    IBANs compared decrypted). The EF Core model caches one cipher per process, so the test checks
+    that the numbers are encrypted again and hashed again on import instead of using a second set
+    of keys in the same process.
   - Older file (FR-6): a file made at an earlier migration (built in the test by migrating a
     database only that far) imports and comes out at the current migration; a file with an unknown
     migration is refused.

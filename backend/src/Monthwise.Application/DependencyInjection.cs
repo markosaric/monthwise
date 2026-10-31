@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Monthwise.Application.CardPurchases;
 using Monthwise.Application.Cards;
 using Monthwise.Application.CashFlow;
+using Monthwise.Application.DataTransfer;
 using Monthwise.Application.Expenses;
 using Monthwise.Application.Loans;
 using Monthwise.Application.SharedCosts;
@@ -98,6 +99,13 @@ public static class DependencyInjection
         services.AddScoped<ParticipantHandler>();
         services.AddScoped<ContributionHandler>();
         services.AddScoped<GetSharedCostsHandler>();
+
+        services.AddSingleton<ImportGate>();
+        services.AddScoped<DataOverviewHandler>();
+        services.AddScoped<DataHistoryHandler>();
+        services.AddScoped<ExportDataHandler>();
+        services.AddScoped<ImportDataHandler>();
+        services.AddScoped<BackupReminderHandler>();
         return services;
     }
 }

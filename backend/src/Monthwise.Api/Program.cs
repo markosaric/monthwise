@@ -24,6 +24,7 @@ builder.Services.ConfigureHttpJsonOptions(options =>
 });
 builder.Services.AddOpenApi();
 builder.Services.AddProxyHosting(builder.Configuration);
+builder.Services.AddDataPolicies();
 
 // Authentication (ASP.NET Core Identity, cookie) is added in its own feature plan.
 
@@ -40,6 +41,7 @@ app.UseProxyHosting();
 app.UseExceptionHandler();
 app.UseStatusCodePages();
 app.UseMigrationGate();
+app.UseImportGate();
 app.UseFrontend();
 
 if (app.Environment.IsDevelopment())
@@ -79,6 +81,7 @@ api.MapCardPurchaseEndpoints();
 api.MapExpenseEndpoints();
 api.MapSharedCostEndpoints();
 api.MapDashboardEndpoints();
+api.MapDataEndpoints();
 
 await app.RunAsync();
 return 0;

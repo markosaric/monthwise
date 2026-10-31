@@ -21,3 +21,6 @@ data/private/
 # OS / editors
 .DS_Store
 .idea/
+
+# Monthwise export files hold personal financial data
+*.monthwise

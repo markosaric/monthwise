@@ -1,5 +1,6 @@
 import {
   CreditCard,
+  DatabaseBackup,
   Landmark,
   Repeat,
   ShoppingBag,
@@ -11,10 +12,13 @@ import { Link } from 'react-router'
 import { useInputCategories, usePayers } from '@/api/cashFlow'
 import { useHealth } from '@/api/health'
 import { useCards } from '@/api/cards'
+import { useDataOverview } from '@/api/dataTransfer'
 import { useExpenseCategories, useRecurringBills } from '@/api/expenses'
 import { useLoanCategories } from '@/api/loans'
 import { cardTexts } from '@/components/cards/texts'
 import { cashFlowTexts } from '@/components/cashflow/texts'
+import { daysAgo } from '@/components/dataTransfer/format'
+import { dataTexts } from '@/components/dataTransfer/texts'
 import { meaningColors, sectionColors } from '@/components/design/colors'
 import { IconTile } from '@/components/design/IconTile'
 import { expenseTexts } from '@/components/expenses/texts'
@@ -35,8 +39,9 @@ function counted(count: number | undefined, one: string, many: string): string |
 }
 
 /**
- * Settings as tiles grouped into Accounts, Money in and Money out, each with a coloured icon and a
- * count of what it holds (design refresh FR-20).
+ * Settings as tiles grouped into Accounts, Money in, Money out and Data, each with a coloured icon
+ * and a count of what it holds (design refresh FR-20); the Data tile shows the age of the last
+ * export instead (backup and restore FR-1).
  */
 export function SettingsPage() {
   const { data: cards } = useCards('Default')
@@ -46,6 +51,8 @@ export function SettingsPage() {
   const { data: loanCategories } = useLoanCategories()
   const { data: recurringBills } = useRecurringBills()
   const { data: health } = useHealth()
+  const { data: dataOverview } = useDataOverview()
+  const lastExport = dataOverview?.lastExport
 
   const groups: { title: string; tiles: Tile[] }[] = [
     {
@@ -112,6 +119,23 @@ export function SettingsPage() {
             'active bill',
             'active bills',
           ),
+        },
+      ],
+    },
+    {
+      title: dataTexts.group,
+      tiles: [
+        {
+          to: '/settings/data',
+          icon: DatabaseBackup,
+          color: sectionColors.savings,
+          title: dataTexts.section,
+          description: dataTexts.description,
+          count:
+            dataOverview &&
+            (lastExport
+              ? `${dataTexts.lastExport} ${daysAgo(lastExport.occurredAt)}`
+              : dataTexts.noExport),
         },
       ],
     },
