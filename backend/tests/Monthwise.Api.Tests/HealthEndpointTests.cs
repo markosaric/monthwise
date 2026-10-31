@@ -4,6 +4,7 @@ using System.Text.Json;
 
 namespace Monthwise.Api.Tests;
 
+[Collection(SharedDatabase.Name)]
 public class HealthEndpointTests
 {
     private const string UnreachableDatabase =

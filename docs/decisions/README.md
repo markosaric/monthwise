@@ -11,3 +11,4 @@ when a decision changes, add a new record that supersedes the old one instead of
 | [0004](0004-same-origin-dev-proxy.md) | Same origin in development via the Vite proxy | Accepted |
 | [0005](0005-encrypted-sensitive-data.md) | Card numbers and IBANs encrypted in the application | Accepted |
 | [0006](0006-single-release-api-serves-frontend.md) | One release in which the API serves the front-end | Accepted |
+| [0007](0007-data-export-and-import.md) | Data export and import through the migrations | Accepted |

@@ -2,6 +2,7 @@ import { PanelLeftClose, PanelLeftOpen } from 'lucide-react'
 import { Tooltip } from 'radix-ui'
 import type { ReactElement } from 'react'
 import { NavLink, Outlet } from 'react-router'
+import { useReloadAfterImport } from '@/api/dataTransfer'
 import { tint } from '@/components/design/colors'
 import { Toaster } from '@/components/ui/sonner'
 import { cn } from '@/lib/utils'
@@ -15,6 +16,7 @@ import { SystemStatusAlert } from './SystemStatusAlert'
  */
 export function AppLayout() {
   const [collapsed, toggle] = useMenuCollapsed()
+  useReloadAfterImport()
 
   return (
     <Tooltip.Provider delayDuration={300}>

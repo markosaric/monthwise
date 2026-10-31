@@ -27,6 +27,17 @@ internal static class ResultHttpExtensions
         return validation is not null ? validation : problem!;
     }
 
+    public static Results<FileContentHttpResult, ValidationProblem, ProblemHttpResult> ToFile<T>(
+        this Result<T> result, Func<T, FileContentHttpResult> file)
+    {
+        if (result.IsSuccess)
+        {
+            return file(result.Value);
+        }
+        var (validation, problem) = ToProblem(result);
+        return validation is not null ? validation : problem!;
+    }
+
     public static Results<NoContent, ValidationProblem, ProblemHttpResult> ToNoContent(this Result result)
     {
         if (result.IsSuccess)

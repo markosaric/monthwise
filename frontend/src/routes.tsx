@@ -23,6 +23,7 @@ import { SharedCostsPage } from '@/pages/sharedCosts/SharedCostsPage'
 import { CardDetailsPage } from '@/pages/settings/CardDetailsPage'
 import { CardEditPage, CardNewPage } from '@/pages/settings/CardFormPages'
 import { CardsSettingsPage } from '@/pages/settings/CardsSettingsPage'
+import { DataSettingsPage } from '@/pages/settings/DataSettingsPage'
 import { CashFlowPage } from '@/pages/cashflow/CashFlowPage'
 import { MonthlyReportPage } from '@/pages/cashflow/MonthlyReportPage'
 import {
@@ -85,6 +86,7 @@ export const routes: RouteObject[] = [
       { path: 'settings/input-categories', element: <InputCategoriesSettingsPage /> },
       { path: 'settings/loan-categories', element: <LoanCategoriesSettingsPage /> },
       { path: 'settings/expense-categories', element: <ExpenseCategoriesSettingsPage /> },
+      { path: 'settings/data', element: <DataSettingsPage /> },
       {
         path: 'settings/purchase-categories',
         element: <Navigate to="/settings/expense-categories" replace />,

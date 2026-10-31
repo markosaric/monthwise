@@ -867,6 +867,125 @@ namespace Monthwise.Infrastructure.Persistence.Migrations
                     b.ToTable("skipped_occurrence", (string)null);
                 });
 
+            modelBuilder.Entity("Monthwise.Domain.DataTransfer.BackupReminder", b =>
+                {
+                    b.Property<int>("Id")
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset?>("DismissedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("reminder_dismissed_at");
+
+                    b.Property<bool>("Enabled")
+                        .HasColumnType("boolean")
+                        .HasColumnName("reminder_enabled");
+
+                    b.Property<int>("IntervalDays")
+                        .HasColumnType("integer")
+                        .HasColumnName("reminder_interval_days");
+
+                    b.HasKey("Id")
+                        .HasName("pk_data_backup_settings");
+
+                    b.ToTable("data_backup_settings", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_data_backup_settings_single_row", "id = 1");
+                        });
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            Enabled = true,
+                            IntervalDays = 30
+                        });
+                });
+
+            modelBuilder.Entity("Monthwise.Domain.DataTransfer.DataTransferRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset?>("FileCreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("file_created_at");
+
+                    b.Property<string>("FileName")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("file_name");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("kind");
+
+                    b.Property<string>("Message")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("message");
+
+                    b.Property<DateTimeOffset>("OccurredAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("occurred_at");
+
+                    b.Property<string>("Release")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("release");
+
+                    b.Property<bool>("Succeeded")
+                        .HasColumnType("boolean")
+                        .HasColumnName("succeeded");
+
+                    b.Property<string>("UserName")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("user_name");
+
+                    b.HasKey("Id")
+                        .HasName("pk_data_transfer_log");
+
+                    b.HasIndex("OccurredAt")
+                        .HasDatabaseName("ix_data_transfer_log_occurred_at");
+
+                    b.ToTable("data_transfer_log", (string)null);
+                });
+
+            modelBuilder.Entity("Monthwise.Domain.DataTransfer.SafetyCopy", b =>
+                {
+                    b.Property<int>("Id")
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("content");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Release")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("release");
+
+                    b.HasKey("Id")
+                        .HasName("pk_data_safety_copy");
+
+                    b.ToTable("data_safety_copy", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_data_safety_copy_single_row", "id = 1");
+                        });
+                });
+
             modelBuilder.Entity("Monthwise.Domain.Expenses.Bill", b =>
                 {
                     b.Property<Guid>("Id")

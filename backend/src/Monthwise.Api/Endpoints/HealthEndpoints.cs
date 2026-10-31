@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Monthwise.Api.Hosting;
+using Monthwise.Application.DataTransfer;
 using Monthwise.Infrastructure;
 using Monthwise.Infrastructure.Persistence;
 
@@ -22,6 +23,7 @@ internal static class HealthEndpoints
     private static async Task<Microsoft.AspNetCore.Http.HttpResults.JsonHttpResult<HealthResponse>> GetHealthAsync(
         HealthCheckService healthChecks,
         DatabaseMigrationState migrationState,
+        ImportGate importGate,
         CancellationToken cancellationToken)
     {
         var report = await healthChecks.CheckHealthAsync(cancellationToken);
@@ -37,7 +39,7 @@ internal static class HealthEndpoints
         };
         var status = migrations == MigrationStatusValue.Failed ? HealthStatusValue.Unhealthy : ToStatus(report.Status);
 
-        var response = new HealthResponse(status, database, migrations, AppVersion.Current);
+        var response = new HealthResponse(status, database, migrations, AppVersion.Current, importGate.LastImportedAt);
         var statusCode = status == HealthStatusValue.Unhealthy
             ? StatusCodes.Status503ServiceUnavailable
             : StatusCodes.Status200OK;
@@ -53,12 +55,16 @@ internal static class HealthEndpoints
     };
 }
 
-/// <summary>Only states and the version: the health address is reachable without login and shows no household data.</summary>
+/// <summary>
+/// Only states, the version and when data was last imported (so open screens reload): the health
+/// address is reachable without login and shows no household data.
+/// </summary>
 internal sealed record HealthResponse(
     HealthStatusValue Status,
     HealthStatusValue Database,
     MigrationStatusValue Migrations,
-    string Version);
+    string Version,
+    DateTimeOffset? DataImportedAt);
 
 [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter<HealthStatusValue>))]
 internal enum HealthStatusValue

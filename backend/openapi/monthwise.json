@@ -6878,6 +6878,359 @@
           }
         }
       }
+    },
+    "/api/data": {
+      "get": {
+        "tags": [
+          "Data and backups"
+        ],
+        "summary": "The last export and import, the safety copy, the export reminder and whether this user may export and import.",
+        "operationId": "GetDataOverview",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DataOverviewResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/data/history": {
+      "get": {
+        "tags": [
+          "Data and backups"
+        ],
+        "summary": "Every export, import and safety copy, newest first, 50 per page.",
+        "operationId": "GetDataHistory",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DataHistoryResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/data/export": {
+      "post": {
+        "tags": [
+          "Data and backups"
+        ],
+        "summary": "Exports all household data to a file protected with the given password (at least 6 characters).",
+        "operationId": "ExportData",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExportRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "byte"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/data/import/check": {
+      "post": {
+        "tags": [
+          "Data and backups"
+        ],
+        "summary": "Reads an export file and shows what it holds next to what Monthwise holds now. Changes nothing.",
+        "operationId": "CheckImport",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "allOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "file": {
+                        "$ref": "#/components/schemas/IFormFile"
+                      }
+                    }
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "password": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportCheckResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/data/import": {
+      "post": {
+        "tags": [
+          "Data and backups"
+        ],
+        "summary": "Replaces all household data with the data of an export file. Needs the confirmation word REPLACE; makes a safety copy first.",
+        "operationId": "ImportData",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "allOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "file": {
+                        "$ref": "#/components/schemas/IFormFile"
+                      }
+                    }
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "password": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "confirmation": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/data/safety-copy/restore": {
+      "post": {
+        "tags": [
+          "Data and backups"
+        ],
+        "summary": "Brings back the data as it was before the newest import. Needs the confirmation word REPLACE.",
+        "operationId": "RestoreSafetyCopy",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SafetyCopyRestoreRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/data/reminder": {
+      "put": {
+        "tags": [
+          "Data and backups"
+        ],
+        "summary": "Turns the export reminder on or off and sets its interval (7, 14, 30, 60 or 90 days).",
+        "operationId": "UpdateBackupReminder",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BackupReminderRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackupReminderResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/data/reminder/dismiss": {
+      "post": {
+        "tags": [
+          "Data and backups"
+        ],
+        "summary": "Hides the export reminder on the Dashboard for one interval.",
+        "operationId": "DismissBackupReminder",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackupReminderResponse"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -6939,6 +7292,50 @@
           "added": {
             "type": "integer",
             "format": "int32"
+          }
+        }
+      },
+      "BackupReminderRequest": {
+        "required": [
+          "enabled",
+          "intervalDays"
+        ],
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "intervalDays": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "BackupReminderResponse": {
+        "required": [
+          "enabled",
+          "intervalDays",
+          "intervalChoices",
+          "isDue"
+        ],
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "intervalDays": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "intervalChoices": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          "isDue": {
+            "type": "boolean"
           }
         }
       },
@@ -8631,6 +9028,183 @@
           }
         }
       },
+      "DataHistoryResponse": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "totalCount"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DataTransferResponse"
+            }
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalCount": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "DataOverviewResponse": {
+        "required": [
+          "lastExport",
+          "lastImport",
+          "safetyCopyCreatedAt",
+          "reminder",
+          "canManage"
+        ],
+        "type": "object",
+        "properties": {
+          "lastExport": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/DataTransferResponse"
+              }
+            ]
+          },
+          "lastImport": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/DataTransferResponse"
+              }
+            ]
+          },
+          "safetyCopyCreatedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "reminder": {
+            "$ref": "#/components/schemas/BackupReminderResponse"
+          },
+          "canManage": {
+            "type": "boolean"
+          }
+        }
+      },
+      "DataSummaryResponse": {
+        "required": [
+          "cards",
+          "loans",
+          "inputs",
+          "cardPurchases",
+          "bills",
+          "expenses"
+        ],
+        "type": "object",
+        "properties": {
+          "cards": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "loans": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "inputs": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "cardPurchases": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "bills": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "expenses": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "DataTransferKind": {
+        "enum": [
+          "Export",
+          "Import",
+          "SafetyCopy",
+          "SafetyCopyRestore"
+        ]
+      },
+      "DataTransferResponse": {
+        "required": [
+          "id",
+          "occurredAt",
+          "kind",
+          "userName",
+          "succeeded",
+          "fileName",
+          "release",
+          "fileCreatedAt",
+          "message"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "occurredAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/DataTransferKind"
+          },
+          "userName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "succeeded": {
+            "type": "boolean"
+          },
+          "fileName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "release": {
+            "type": "string"
+          },
+          "fileCreatedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "message": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
       "ExpenseCategoryResponse": {
         "required": [
           "id",
@@ -8791,12 +9365,27 @@
           }
         }
       },
+      "ExportRequest": {
+        "required": [
+          "password"
+        ],
+        "type": "object",
+        "properties": {
+          "password": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
       "HealthResponse": {
         "required": [
           "status",
           "database",
           "migrations",
-          "version"
+          "version",
+          "dataImportedAt"
         ],
         "type": "object",
         "properties": {
@@ -8811,6 +9400,13 @@
           },
           "version": {
             "type": "string"
+          },
+          "dataImportedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
           }
         }
       },
@@ -8863,6 +9459,50 @@
                 "type": "string"
               }
             }
+          }
+        }
+      },
+      "IFormFile": {
+        "type": "string",
+        "format": "binary"
+      },
+      "ImportCheckResponse": {
+        "required": [
+          "fileCreatedAt",
+          "fileRelease",
+          "file",
+          "current"
+        ],
+        "type": "object",
+        "properties": {
+          "fileCreatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "fileRelease": {
+            "type": "string"
+          },
+          "file": {
+            "$ref": "#/components/schemas/DataSummaryResponse"
+          },
+          "current": {
+            "$ref": "#/components/schemas/DataSummaryResponse"
+          }
+        }
+      },
+      "ImportResponse": {
+        "required": [
+          "fileCreatedAt",
+          "summary"
+        ],
+        "type": "object",
+        "properties": {
+          "fileCreatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "summary": {
+            "$ref": "#/components/schemas/DataSummaryResponse"
           }
         }
       },
@@ -10874,6 +11514,20 @@
           }
         }
       },
+      "SafetyCopyRestoreRequest": {
+        "required": [
+          "confirmation"
+        ],
+        "type": "object",
+        "properties": {
+          "confirmation": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
       "SensitiveNumberKind": {
         "enum": [
           "CardNumber",
@@ -11027,6 +11681,9 @@
     },
     {
       "name": "Expenses"
+    },
+    {
+      "name": "Data and backups"
     }
   ]
 }
