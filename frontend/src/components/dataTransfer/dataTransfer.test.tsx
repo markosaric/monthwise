@@ -105,7 +105,8 @@ describe('Data and backups', () => {
 
   it('checks the file, compares it with the current data and imports only after typing REPLACE', async () => {
     const user = userEvent.setup()
-    const imported: FormData[] = []
+    // The raw multipart body: request.formData() cannot parse a jsdom File on Node 24 (CI).
+    const imported: string[] = []
     stubData(anOverview(), {
       'POST /api/data/import/check': () =>
         json({
@@ -115,7 +116,7 @@ describe('Data and backups', () => {
           current: { ...summary, cards: 4 },
         }),
       'POST /api/data/import': async (request) => {
-        imported.push(await request.formData())
+        imported.push(await request.text())
         return json({ fileCreatedAt: '2026-10-12T08:15:00Z', summary })
       },
     })
@@ -138,8 +139,10 @@ describe('Data and backups', () => {
     await user.type(screen.getByLabelText(t.import.typeWord(t.confirmationWord)), 'REPLACE')
     await user.click(replace)
     await waitFor(() => expect(imported).toHaveLength(1))
-    expect(imported[0]!.get('confirmation')).toBe('REPLACE')
-    expect(imported[0]!.get('password')).toBe('secret1')
+    expect(imported[0]).toMatch(/name="confirmation"\r\n\r\nREPLACE\r\n/)
+    expect(imported[0]).toMatch(/name="password"\r\n\r\nsecret1\r\n/)
+    // Under jsdom the file part is an unnamed blob (empty on Node 24); a browser sends the file.
+    expect(imported[0]).toMatch(/name="file"; filename="/)
   })
 
   it('changes the reminder setting', async () => {
