@@ -151,7 +151,7 @@ describe('Card form', () => {
     await waitFor(() => expect(screen.getByRole('option', { name: 'Visa' })).toBeInTheDocument())
     await userEvent.selectOptions(screen.getByLabelText(cardTexts.fields.issuer), visaIssuer.id)
     await userEvent.selectOptions(screen.getByLabelText(cardTexts.fields.bank), zaba.id)
-    await userEvent.type(screen.getByLabelText(cardTexts.fields.validThrough), '2029-12')
+    await userEvent.type(screen.getByLabelText(cardTexts.fields.validThrough), '1229')
     await userEvent.selectOptions(screen.getByLabelText(cardTexts.fields.type), 'Debit')
     await userEvent.click(screen.getByLabelText(cardTexts.fields.allowsInstallments))
     await userEvent.type(screen.getByLabelText(billing.statementDay), '5')
@@ -235,13 +235,64 @@ describe('Card form', () => {
     await userEvent.selectOptions(screen.getByLabelText(cardTexts.fields.issuer), visaIssuer.id)
     await userEvent.selectOptions(screen.getByLabelText(cardTexts.fields.bank), zaba.id)
     await userEvent.type(screen.getByLabelText(cardTexts.fields.cardNumber), '4111 1111 1111 1111')
-    await userEvent.type(screen.getByLabelText(cardTexts.fields.validFrom), '2025-01')
-    await userEvent.type(screen.getByLabelText(cardTexts.fields.validThrough), '2029-12')
+    await userEvent.type(screen.getByLabelText(cardTexts.fields.validFrom), '0125')
+    await userEvent.type(screen.getByLabelText(cardTexts.fields.validThrough), '1229')
     await userEvent.type(screen.getByLabelText(billing.statementDay), '5')
     await userEvent.type(screen.getByLabelText(billing.paymentDay), '20')
     await userEvent.click(screen.getByRole('button', { name: cardTexts.addCard }))
 
     expect(await screen.findByText('Another card already has this name.')).toBeInTheDocument()
+  })
+
+  it('formats valid through as MM/YY while typing', async () => {
+    stubApi(lists)
+    renderRoute('/settings/cards/new')
+
+    const validThrough = await screen.findByLabelText(cardTexts.fields.validThrough)
+    expect(validThrough).toHaveAttribute('placeholder', 'MM/YY')
+    expect(validThrough).toHaveAttribute('inputmode', 'numeric')
+
+    await userEvent.type(validThrough, '0228')
+    expect(validThrough).toHaveValue('02/28')
+
+    await userEvent.clear(validThrough)
+    await userEvent.type(validThrough, '02/28')
+    expect(validThrough).toHaveValue('02/28')
+  })
+
+  it.each(['1328', '022'])('rejects valid through "%s" before sending', async (typed) => {
+    const fetchMock = stubApi(lists)
+    renderRoute('/settings/cards/new')
+
+    await userEvent.type(await screen.findByLabelText(cardTexts.fields.validThrough), typed)
+    await userEvent.click(screen.getByRole('button', { name: cardTexts.addCard }))
+
+    expect(await screen.findByText(cardTexts.errors.monthRequired)).toBeInTheDocument()
+    expect(fetchMock.mock.calls.some(([request]) => (request as Request).method === 'POST')).toBe(
+      false,
+    )
+  })
+
+  it('asks for valid through not before valid from', async () => {
+    stubApi(lists)
+    renderRoute('/settings/cards/new')
+
+    await userEvent.type(await screen.findByLabelText(cardTexts.fields.validFrom), '0328')
+    await userEvent.type(screen.getByLabelText(cardTexts.fields.validThrough), '0228')
+    await userEvent.click(screen.getByRole('button', { name: cardTexts.addCard }))
+
+    expect(await screen.findByText(cardTexts.errors.validityOrder)).toBeInTheDocument()
+  })
+
+  it('shows the stored validity as MM/YY when editing', async () => {
+    stubApi({
+      ...lists,
+      'GET /api/cards/card-1': () => json(aCard({ validFrom: '2025-01', validThrough: '2028-02' })),
+    })
+    renderRoute('/settings/cards/card-1/edit')
+
+    expect(await screen.findByLabelText(cardTexts.fields.validFrom)).toHaveValue('01/25')
+    expect(screen.getByLabelText(cardTexts.fields.validThrough)).toHaveValue('02/28')
   })
 
   it('adds a new bank from the form', async () => {

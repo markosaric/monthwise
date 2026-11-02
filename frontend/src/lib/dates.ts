@@ -60,3 +60,25 @@ export function formatDayShort(isoDate: string): string {
 }
 
 export { APP_LOCALE }
+
+/**
+ * Formats what was typed or pasted into a card month field as "MM/YY": keeps up to 4 digits and
+ * inserts the slash once a third digit is there ("0228" → "02/28", "022" → "02/2", "02" → "02").
+ */
+export function formatCardMonthInput(text: string): string {
+  const digits = text.replace(/\D/g, '').slice(0, 4)
+  return digits.length > 2 ? `${digits.slice(0, 2)}/${digits.slice(2)}` : digits
+}
+
+const cardMonth = /^(0[1-9]|1[0-2])\/(\d{2})$/
+
+/** "02/28" → "2028-02", or null when the text is not a valid "MM/YY". */
+export function cardMonthToYearMonth(text: string): string | null {
+  const match = cardMonth.exec(text)
+  return match ? `20${match[2]}-${match[1]}` : null
+}
+
+/** "2028-02" → "02/28". */
+export function yearMonthToCardMonth(yearMonth: string): string {
+  return `${yearMonth.slice(5, 7)}/${yearMonth.slice(2, 4)}`
+}

@@ -48,7 +48,7 @@ export const cardTexts = {
     bankRequired: 'Choose a bank.',
     cardNumberInvalid: 'Card number is not valid.',
     ibanInvalid: 'IBAN is not valid.',
-    monthRequired: 'Enter the month and year as printed on the card.',
+    monthRequired: 'Enter the month and year as on the card, e.g. 02/28.',
     validityOrder: 'Valid through must be the same as or later than valid from.',
     debtLimitInvalid: 'Enter an amount in euros, e.g. 1.500,00.',
   },

@@ -4,6 +4,7 @@ import { useCard, useCreateCard, useUpdateCard, type Card } from '@/api/cards'
 import { CardForm } from '@/components/cards/CardForm'
 import { emptyCardFormValues, type CardFormValues } from '@/components/cards/cardFormModel'
 import { cardTexts } from '@/components/cards/texts'
+import { yearMonthToCardMonth } from '@/lib/dates'
 import { centsToEuroInput } from '@/lib/money'
 import { PageHeader } from '@/pages/PageHeader'
 
@@ -87,8 +88,8 @@ export function CardEditPage() {
       <CardForm
         defaultValues={emptyCardFormValues({
           ...detailsOf(card),
-          validFrom: card.validFrom ?? '',
-          validThrough: card.validThrough,
+          validFrom: card.validFrom ? yearMonthToCardMonth(card.validFrom) : '',
+          validThrough: yearMonthToCardMonth(card.validThrough),
           cardNumberMode: card.cardNumberMasked ? 'keep' : 'enter',
           ibanMode: card.ibanMasked ? 'keep' : 'enter',
         })}

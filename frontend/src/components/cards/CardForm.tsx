@@ -18,6 +18,7 @@ import {
   type CardFormValues,
   type NumberMode,
 } from './cardFormModel'
+import { CardMonthInput } from './CardMonthInput'
 import { ListSelectWithAdd } from './ListSelectWithAdd'
 import { cardTexts } from './texts'
 
@@ -165,19 +166,37 @@ export function CardForm({
           hint={t.hints.validFrom}
           error={errors.validFrom?.message}
         >
-          <Input
-            id="validFrom"
-            type="month"
-            aria-invalid={!!errors.validFrom}
-            {...register('validFrom')}
+          <Controller
+            control={control}
+            name="validFrom"
+            render={({ field }) => (
+              <CardMonthInput
+                id="validFrom"
+                aria-invalid={!!errors.validFrom}
+                name={field.name}
+                ref={field.ref}
+                value={field.value}
+                onChange={field.onChange}
+                onBlur={field.onBlur}
+              />
+            )}
           />
         </Field>
         <Field id="validThrough" label={t.fields.validThrough} error={errors.validThrough?.message}>
-          <Input
-            id="validThrough"
-            type="month"
-            aria-invalid={!!errors.validThrough}
-            {...register('validThrough')}
+          <Controller
+            control={control}
+            name="validThrough"
+            render={({ field }) => (
+              <CardMonthInput
+                id="validThrough"
+                aria-invalid={!!errors.validThrough}
+                name={field.name}
+                ref={field.ref}
+                value={field.value}
+                onChange={field.onChange}
+                onBlur={field.onBlur}
+              />
+            )}
           />
         </Field>
       </div>

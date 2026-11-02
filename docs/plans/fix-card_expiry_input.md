@@ -1,7 +1,7 @@
 # Plan: Card validity entered as MM/YY
 
 - **Branch:** `claude/project-thread-qlqnr4`
-- **Status:** In progress
+- **Status:** Done
 - **Date:** 2026-11-02
 - **Requirements:** [credit-card-settings.md, Appendix 4](../feature-requirements/credit-card-settings.md#appendix-4-valid-from-and-valid-through-entered-as-mmyy)
 
