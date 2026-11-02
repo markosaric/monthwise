@@ -286,3 +286,38 @@ at the top of the **Cards** screen (see [design-refresh.md](design-refresh.md) F
   opening a card's details are unchanged.
 - FR-11: Blocked, Expired and Expiring soon are highlighted on the Cards screen and in Settings.
 - The empty state action **Set up cards** still opens the Cards and accounts section in Settings.
+
+## Appendix 4: Valid from and Valid through entered as MM/YY
+
+- **Date:** 2026-11-02
+- **Branch:** `claude/project-thread-qlqnr4`
+- **Changes:** A6, A7, FR-2 and FR-4 (add and edit), acceptance criterion 3
+
+*Valid from* and *Valid through* are entered the way they are printed on a physical card: two
+digits for the month, a slash and two digits for the year, **`MM/YY`** (e.g. `02/28`).
+
+- Both fields work the same way in every supported browser (including Safari on macOS and iOS);
+  they never show up as an empty box without a hint of what to type.
+- Each field shows the placeholder `MM/YY`. On phones and tablets it opens a numeric keyboard.
+- The user only types digits: the slash is added automatically after the month. Typing the
+  slash, or pasting `02/28` or `0228`, gives the same result.
+- A two-digit year means the year in the 2000s: `02/28` is February 2028.
+- The month must be `01` to `12`. Anything that is not a complete, valid `MM/YY` blocks saving
+  with the message *Enter the month and year as on the card, e.g. 02/28.*
+- *Valid from* stays optional and *Valid through* stays required. The rule that *Valid through*
+  is the same as or later than *Valid from* is unchanged.
+- When an existing card is edited, both fields show its stored dates as `MM/YY`.
+- What is stored and how the dates are shown elsewhere (list, details, statuses) is unchanged;
+  this appendix changes only how the dates are entered.
+
+**Acceptance criteria**
+
+1. In Safari, Chrome and Firefox, the Add card form shows both fields with the `MM/YY`
+   placeholder, and typing `0228` in *Valid through* shows `02/28` and saves the card as valid
+   through February 2028.
+2. `13/28`, `2/28`, `02/2` and letters are rejected with the message above.
+3. Editing a card valid from January 2025 through February 2028 shows `01/25` and `02/28`.
+
+**Why:** the fields used the browser's built-in month picker, which Safari does not support. In
+production (Safari) both fields were plain empty text boxes with no hint of the expected format,
+so a card could not be added reliably. `MM/YY` is also how the dates are printed on the card.

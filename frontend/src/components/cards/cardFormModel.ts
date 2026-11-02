@@ -6,6 +6,7 @@ import {
   normalizeCardNumber,
   normalizeIban,
 } from '@/lib/cardNumbers'
+import { cardMonthToYearMonth } from '@/lib/dates'
 import { parseEuroInput } from '@/lib/money'
 import { cardPurchaseTexts } from '@/components/cardPurchases/texts'
 import { cardTexts } from './texts'
@@ -16,7 +17,10 @@ const billing = cardPurchaseTexts.billing
 /** keep: leave the stored number as is (edit only); remove: delete it (edit only); enter: type a number. */
 export type NumberMode = 'keep' | 'remove' | 'enter'
 
-const yearMonth = /^\d{4}-(0[1-9]|1[0-2])$/
+/** "MM/YY" as printed on the card (Appendix 4). */
+const cardMonth = z.string().refine((text) => cardMonthToYearMonth(text) !== null, {
+  message: t.errors.monthRequired,
+})
 
 export const cardFormSchema = z
   .object({
@@ -27,8 +31,8 @@ export const cardFormSchema = z
     cardNumber: z.string(),
     ibanMode: z.enum(['keep', 'remove', 'enter']),
     iban: z.string(),
-    validFrom: z.union([z.literal(''), z.string().regex(yearMonth, t.errors.monthRequired)]),
-    validThrough: z.string().regex(yearMonth, t.errors.monthRequired),
+    validFrom: z.union([z.literal(''), cardMonth]),
+    validThrough: cardMonth,
     type: z.enum(cardTypes as [CardType, ...CardType[]]),
     isPrimary: z.boolean(),
     allowsInstallments: z.boolean(),
@@ -50,11 +54,9 @@ export const cardFormSchema = z
     if (values.ibanMode === 'enter' && values.iban.trim() !== '' && !isValidIban(values.iban)) {
       ctx.addIssue({ code: 'custom', path: ['iban'], message: t.errors.ibanInvalid })
     }
-    if (
-      yearMonth.test(values.validFrom) &&
-      yearMonth.test(values.validThrough) &&
-      values.validThrough < values.validFrom
-    ) {
+    const validFrom = cardMonthToYearMonth(values.validFrom)
+    const validThrough = cardMonthToYearMonth(values.validThrough)
+    if (validFrom !== null && validThrough !== null && validThrough < validFrom) {
       ctx.addIssue({ code: 'custom', path: ['validThrough'], message: t.errors.validityOrder })
     }
     if (values.debtLimit.trim() !== '' && parseEuroInput(values.debtLimit) === null) {
@@ -158,8 +160,8 @@ export function toCardRequest(values: CardFormValues, editing: boolean): CardReq
       editing,
     ),
     iban: numberForRequest(values.ibanMode, values.iban, normalizeIban, editing),
-    validFrom: values.validFrom === '' ? null : values.validFrom,
-    validThrough: values.validThrough,
+    validFrom: cardMonthToYearMonth(values.validFrom),
+    validThrough: cardMonthToYearMonth(values.validThrough) ?? '',
     type: values.type,
     isPrimary: values.type === 'Debit' && values.isPrimary,
     allowsInstallments: values.type === 'Debit' && values.allowsInstallments,
