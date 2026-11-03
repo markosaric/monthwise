@@ -159,6 +159,46 @@
         }
       }
     },
+    "/api/overall-balance": {
+      "get": {
+        "tags": [
+          "Balances"
+        ],
+        "summary": "Balance of all primary accounts at the end of a month (yyyy-MM, default this month) once everything is received and paid.",
+        "operationId": "GetOverallBalance",
+        "parameters": [
+          {
+            "name": "month",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OverallBalanceResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/loan-payments": {
       "get": {
         "tags": [
@@ -11979,6 +12019,43 @@
         "properties": {
           "name": {
             "type": "string"
+          }
+        }
+      },
+      "OverallBalanceResponse": {
+        "required": [
+          "month",
+          "isExpected",
+          "balanceCents",
+          "primaryAccountCount",
+          "outputsWithoutAccountCount",
+          "missingStartingBalance"
+        ],
+        "type": "object",
+        "properties": {
+          "month": {
+            "type": "string"
+          },
+          "isExpected": {
+            "type": "boolean"
+          },
+          "balanceCents": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int64"
+          },
+          "primaryAccountCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "outputsWithoutAccountCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "missingStartingBalance": {
+            "type": "boolean"
           }
         }
       },

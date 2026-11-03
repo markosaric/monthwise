@@ -7,6 +7,7 @@ import { useMonthLoanPayments } from '@/api/loans'
 import { useMonthRevolving } from '@/api/revolving'
 import { CardPaymentsSection } from '@/components/cardPurchases/CardPaymentsSection'
 import { IncomeSection } from '@/components/cashflow/IncomeSection'
+import { OverallBalanceCard } from '@/components/dashboard/OverallBalanceCard'
 import { meaningColors, sectionColors } from '@/components/design/colors'
 import { MonthHeader } from '@/components/design/MonthHeader'
 import { ProgressBar } from '@/components/design/ProgressBar'
@@ -63,7 +64,7 @@ function MonthSummary({ month }: { month: string }) {
 
   return (
     <>
-      <StatGrid label="Key figures">
+      <StatGrid label="Key figures" five>
         <StatCard
           icon={ArrowDownLeft}
           color={meaningColors.moneyIn}
@@ -93,6 +94,7 @@ function MonthSummary({ month }: { month: string }) {
           value={formatCents(outputs.expectedCents)}
           problem={overdue > 0}
         />
+        <OverallBalanceCard month={month} />
       </StatGrid>
       <Card>
         <CardContent className="grid items-center gap-6 md:grid-cols-[1fr_auto]">

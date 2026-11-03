@@ -54,6 +54,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/overall-balance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Balance of all primary accounts at the end of a month (yyyy-MM, default this month) once everything is received and paid. */
+        get: operations["GetOverallBalance"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/loan-payments": {
         parameters: {
             query?: never;
@@ -2847,6 +2864,17 @@ export interface components {
         NameRequest: {
             name: string;
         };
+        OverallBalanceResponse: {
+            month: string;
+            isExpected: boolean;
+            /** Format: int64 */
+            balanceCents: null | number;
+            /** Format: int32 */
+            primaryAccountCount: number;
+            /** Format: int32 */
+            outputsWithoutAccountCount: number;
+            missingStartingBalance: boolean;
+        };
         PaidFromResponse: {
             /** Format: uuid */
             id: string;
@@ -3313,6 +3341,37 @@ export interface operations {
                 };
                 content: {
                     "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetOverallBalance: {
+        parameters: {
+            query?: {
+                month?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OverallBalanceResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
                 };
             };
         };

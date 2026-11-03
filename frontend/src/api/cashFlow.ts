@@ -20,6 +20,7 @@ export type AccountBalanceDetails = Schemas['AccountBalanceDetailsResponse']
 export type ChartGranularity = NonNullable<Schemas['ChartGranularity']>
 export type CashFlowChart = Schemas['CashFlowChartResponse']
 export type MonthlyReport = Schemas['MonthlyReportResponse']
+export type OverallBalance = Schemas['OverallBalanceResponse']
 
 export const frequencies: RecurrenceFrequency[] = ['Weekly', 'Monthly', 'Quarterly', 'Yearly']
 
@@ -341,5 +342,18 @@ export function useMonthlyReport(month: string) {
     queryKey: [...cashFlowQueryKey, 'report', month],
     queryFn: async () =>
       unwrap(await api.GET('/api/cash-flow/report', { params: { query: { month } } })),
+  })
+}
+
+/**
+ * The overall balance of the primary accounts at the end of a month (overall balance tile FR-2 to FR-5).
+ * It lives under the cards key, so every change that refreshes account balances refreshes it too (FR-7).
+ */
+export function useOverallBalance(month: string) {
+  return useQuery({
+    queryKey: [...cardsQueryKey, 'overall-balance', month],
+    queryFn: async () =>
+      unwrap(await api.GET('/api/overall-balance', { params: { query: { month } } })),
+    placeholderData: keepPreviousData,
   })
 }

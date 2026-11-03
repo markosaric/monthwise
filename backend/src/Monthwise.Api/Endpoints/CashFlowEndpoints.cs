@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Http.HttpResults;
 using Monthwise.Application.CashFlow;
+using Monthwise.Application.Common;
 using Monthwise.Domain.Common;
 
 namespace Monthwise.Api.Endpoints;
@@ -171,6 +172,18 @@ internal static class CashFlowEndpoints
             .WithName("CreateBalanceEntry")
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict);
+
+        routes.MapGet("/overall-balance", async Task<Results<Ok<OverallBalanceResponse>, ValidationProblem>> (
+                string? month, OverallBalanceQuery query, TimeProvider timeProvider, CancellationToken ct) =>
+                month is null
+                    ? TypedResults.Ok(await query.ForMonthAsync(YearMonth.FromDate(timeProvider.Today()), ct))
+                    : YearMonth.TryParse(month, out var parsed)
+                        ? TypedResults.Ok(await query.ForMonthAsync(parsed, ct))
+                        : InvalidMonth())
+            .WithTags("Balances")
+            .WithName("GetOverallBalance")
+            .WithSummary(
+                "Balance of all primary accounts at the end of a month (yyyy-MM, default this month) once everything is received and paid.");
 
         var entries = routes.MapGroup("/balance-entries").WithTags("Balances");
 

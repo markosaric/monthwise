@@ -20,6 +20,125 @@ function stubDashboard(dashboard = aDashboard(), extra: ApiHandlers = {}) {
 
 const keyFigures = () => screen.getByRole('region', { name: t.keyFigures })
 
+const overall = (extra: Record<string, unknown> = {}) => ({
+  month: '2026-10',
+  isExpected: true,
+  balanceCents: 125050,
+  primaryAccountCount: 1,
+  outputsWithoutAccountCount: 0,
+  missingStartingBalance: false,
+  ...extra,
+})
+
+const emptyReport = {
+  month: '2026-11',
+  totals: { expectedCents: 0, receivedCents: 0, totalCents: 0 },
+  byCategory: [],
+  byAccount: [],
+  byPayer: [],
+  balanceEntries: [],
+  previousMonthTotalCents: 0,
+  differenceCents: 0,
+  outputs: {
+    totals: { expectedCents: 0, paidCents: 0, totalCents: 0 },
+    byCategory: [],
+    byAccount: [],
+    byLoan: [],
+    byCard: [],
+  },
+  monthResultCents: 0,
+  previousMonthOutputsCents: 0,
+  previousMonthResultCents: 0,
+}
+
+describe('Overall balance key figure', () => {
+  it('is the last of five key figures on the Dashboard, without account name, and opens Cards', async () => {
+    const fetchMock = stubDashboard(aDashboard(), {
+      'GET /api/overall-balance': () => json(overall()),
+    })
+    renderRoute('/')
+
+    const tile = await within(await screen.findByRole('region', { name: t.keyFigures })).findByRole(
+      'link',
+      { name: /Overall balance/ },
+    )
+    await within(tile).findByText('1.250,50 €')
+    expect(tile).toHaveTextContent(/Overall balance$/)
+    expect(tile).toHaveAttribute('href', '/cards')
+    const links = within(keyFigures()).getAllByRole('link')
+    expect(links).toHaveLength(5)
+    expect(links[4]).toBe(tile)
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        url: expect.stringContaining('/api/overall-balance?month=2026-10'),
+      }),
+    )
+  })
+
+  it('shows a negative balance in red', async () => {
+    stubDashboard(aDashboard(), {
+      'GET /api/overall-balance': () => json(overall({ balanceCents: -4000 })),
+    })
+    renderRoute('/')
+
+    const value = await screen.findByText('-40,00 €')
+    expect(value).toHaveClass('text-problem')
+  })
+
+  it('asks to mark a primary account when there is none', async () => {
+    stubDashboard(aDashboard(), {
+      'GET /api/overall-balance': () =>
+        json(overall({ balanceCents: null, primaryAccountCount: 0 })),
+    })
+    renderRoute('/')
+
+    const tile = await screen.findByRole('link', { name: /Mark a primary account/ })
+    expect(tile).toHaveTextContent('–')
+    expect(tile).toHaveAttribute('href', '/cards')
+  })
+
+  it('counts several primary accounts, outputs without account and a missing starting balance', async () => {
+    stubDashboard(aDashboard(), {
+      'GET /api/overall-balance': () =>
+        json(
+          overall({
+            primaryAccountCount: 2,
+            outputsWithoutAccountCount: 3,
+            missingStartingBalance: true,
+          }),
+        ),
+    })
+    renderRoute('/')
+
+    const tile = await screen.findByRole('link', { name: /Overall balance/ })
+    await within(tile).findByText('1.250,50 €')
+    expect(tile).toHaveTextContent(
+      'Overall balance · 2 primary accounts · 3 outputs without account · starting balance missing',
+    )
+  })
+
+  it('is the last key figure on the Month screen, for the month shown', async () => {
+    stubApi({
+      ...healthy,
+      'GET /api/cash-flow/report': () => json(emptyReport),
+      'GET /api/overall-balance': (request) =>
+        json(
+          overall({
+            month: new URL(request.url).searchParams.get('month'),
+            isExpected: false,
+            balanceCents: 98000,
+          }),
+        ),
+    })
+    renderRoute('/month/2026-09')
+
+    const figures = await screen.findByRole('region', { name: 'Key figures' })
+    const tile = await within(figures).findByRole('link', { name: /Overall balance/ })
+    await within(tile).findByText('980,00 €')
+    expect(tile).toHaveTextContent(/Overall balance$/)
+  })
+})
+
 describe('Dashboard', () => {
   it('shows the four key figures of the month with the change against last month', async () => {
     stubDashboard()
