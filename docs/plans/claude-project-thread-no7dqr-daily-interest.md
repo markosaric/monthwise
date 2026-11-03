@@ -81,3 +81,9 @@ follows the debt of every day, as the bank charges it, for past and estimated bi
 
 ## Open questions
 - None.
+
+## Changes during implementation
+- The same-day unit test uses made-up amounts (1.500,00 € starting debt, 400,00 € payment, giving
+  1.100,00 €) instead of the figures from the user's bank, so no real financial data is committed.
+- The API tests run with 0 % interest, so the mid-month payment case is covered by the domain tests
+  only; the API test checks the same-day starting debt and payment.

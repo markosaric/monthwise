@@ -160,6 +160,17 @@ public sealed class RevolvingEndpointTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task An_extra_payment_on_the_date_of_the_starting_debt_lowers_it()
+    {
+        await SendAsync(HttpMethod.Post, $"/api/revolving-cards/{_revolving}/extra-payments",
+            new { accountId = _account, date = Iso(DebtStart), amountCents = 30_000, description = (string?)null });
+
+        Assert.Equal(70_000,
+            (await GetAsync($"/api/revolving-cards/{_revolving}/debt?date={Iso(DebtStart)}")).GetProperty("debtCents").GetInt64());
+        Assert.Equal(70_000, await DebtAsync());
+    }
+
+    [Fact]
     public async Task A_correction_sets_the_debt_and_the_overview_adds_up_the_cards()
     {
         var correction = await SendAsync(HttpMethod.Post, $"/api/revolving-cards/{_revolving}/debt-entries",

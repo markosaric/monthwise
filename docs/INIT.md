@@ -152,8 +152,9 @@ Key rules:
 - A card payment is the sum of the installments and purchases paid in full in the card's billing period (from the day
   after the previous statement date up to and including the statement date), minus credits from reversed installments
   that were already charged.
-- A revolving card's debt = the latest starting debt or correction + charges + monthly interest
-  (debt × yearly rate / 12 on the bill day) − bill and extra payments after it. Each bill asks for
+- A revolving card's debt = the latest starting debt (at the start of its day) or correction (at the end of its day)
+  + charges + interest − bill and extra payments after it. Interest is daily: the debt at the end of each day since
+  the previous bill day × yearly rate / 365, summed and added on the bill day. Each bill asks for
   max(debt × minimum %, minimum amount), never more than the debt.
 - Available (calculated) = carryover + Σ income − Σ expenses; actual = entered account balance.
 - Closing a month carries the actual balance over as the next month's `opening_carryover`.
