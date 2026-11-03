@@ -5,7 +5,7 @@
 - **Date:** 2026-11-03
 
 > This document describes **what** the feature must do, not **how** it is built.
-> The implementation plan (`docs/plans/claude-project-thread-no7dqr.md`) is written after these
+> The implementation plan (`docs/plans/feat-revolving_credit_card.md`) is written after these
 > requirements are approved.
 
 ## 1. Goal

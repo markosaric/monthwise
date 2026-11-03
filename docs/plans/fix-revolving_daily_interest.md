@@ -1,7 +1,7 @@
 # Plan: Revolving card daily interest and starting debt order
 
 - **Branch:** `claude/project-thread-no7dqr` (restarted from `main` after #15; this plan has its own
-  file name because the branch's first plan, [claude-project-thread-no7dqr.md](claude-project-thread-no7dqr.md),
+  file name because the branch's first plan, [feat-revolving_credit_card.md](feat-revolving_credit_card.md),
   is the merged feature's plan)
 - **Status:** Draft
 - **Date:** 2026-11-03
