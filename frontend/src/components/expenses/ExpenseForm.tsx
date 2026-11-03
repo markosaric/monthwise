@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input'
 import { expenseFormSchema, toExpenseRequest, type ExpenseFormValues } from './expenseFormModel'
 import { applyApiErrors } from './formErrors'
 import { CategorySelect, Field } from './formParts'
-import { isCreditCard } from './paidFrom'
+import { isCreditCard, isRevolvingCard } from './paidFrom'
 import { PaidFromSelect } from './PaidFromSelect'
 import { expenseTexts } from './texts'
 
@@ -51,6 +51,7 @@ export function ExpenseForm({
   })
   const paidFromId = useWatch({ control, name: 'paidFromId' })
   const withCard = cards.some((c) => c.id === paidFromId && isCreditCard(c))
+  const withRevolving = cards.some((c) => c.id === paidFromId && isRevolvingCard(c))
 
   async function submit(values: ExpenseFormValues) {
     setFormError(null)
@@ -95,7 +96,15 @@ export function ExpenseForm({
       <Field
         id="paidFromId"
         label={cashWithdrawal ? t.fields.account : t.fields.paidFrom}
-        hint={cashWithdrawal ? t.hints.cashAccount : withCard ? t.hints.creditCard : undefined}
+        hint={
+          cashWithdrawal
+            ? t.hints.cashAccount
+            : withRevolving
+              ? t.hints.revolvingCard
+              : withCard
+                ? t.hints.creditCard
+                : undefined
+        }
         error={errors.paidFromId?.message}
       >
         <Controller

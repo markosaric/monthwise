@@ -7,6 +7,7 @@ export const dashboardTexts = {
     addExpense: 'Add expense',
     cashWithdrawal: 'Cash withdrawal',
     addPurchase: 'Add purchase',
+    payRevolving: 'Pay revolving card',
   },
   keyFigures: 'Key figures',
   inputs: 'Inputs',

@@ -16,6 +16,7 @@ public sealed class Card
     public const int ExpiringSoonMonths = 2;
 
     private readonly List<CardBillingTerms> _billingTerms = [];
+    private readonly List<RevolvingTerms> _revolvingTerms = [];
 
     private Card()
     {
@@ -45,12 +46,24 @@ public sealed class Card
         _ => false,
     };
 
+    /// <summary>A revolving credit card (revolving FR-1): it has a debt and monthly bills, not card payments.</summary>
+    public bool IsRevolving => Type == CardType.Revolving;
+
+    /// <summary>
+    /// An account money is paid from or received on: a Debit or Prepaid card. Credit, Charge and
+    /// Revolving cards are never offered as accounts (revolving FR-1).
+    /// </summary>
+    public bool IsAccount => Type is CardType.Debit or CardType.Prepaid;
+
     /// <summary>Last four digits of the card number, kept unencrypted for masked display.</summary>
     public string? CardNumberLast4 { get; private set; }
     public string? IbanCountry { get; private set; }
     public string? IbanLast4 { get; private set; }
 
-    /// <summary>The primary account card payments are paid from (installments FR-1, B3).</summary>
+    /// <summary>
+    /// The primary account card payments are paid from (installments FR-1, B3), or the account the
+    /// monthly bills of a revolving card are paid from (revolving R6).
+    /// </summary>
     public Guid? PayingAccountId { get; private set; }
 
     /// <summary>Whether the bank charges card payments directly from the paying account (B4).</summary>
@@ -70,6 +83,32 @@ public sealed class Card
 
     /// <summary>A card that allows installments but has no billing details yet.</summary>
     public bool NeedsBillingDetails => AllowsInstallments && !HasBillingDetails;
+
+    /// <summary>Every version of the revolving terms, oldest first (revolving FR-2).</summary>
+    public IReadOnlyList<RevolvingTerms> RevolvingTermVersions => _revolvingTerms.OrderBy(t => t.FromMonth).ToList();
+
+    /// <summary>The bill and due dates of every month of a revolving card; null for other cards.</summary>
+    public RevolvingCalendar? RevolvingDates() =>
+        IsRevolving && _revolvingTerms.Count > 0 && PayingAccountId is not null ? new RevolvingCalendar(_revolvingTerms) : null;
+
+    /// <summary>The revolving terms the user edits: the ones that apply to <paramref name="month"/>.</summary>
+    public RevolvingDetails? RevolvingFor(YearMonth month)
+    {
+        if (RevolvingDates() is not { } calendar)
+        {
+            return null;
+        }
+        var terms = calendar.TermsFor(month);
+        return new RevolvingDetails(
+            terms.MinPaymentBasisPoints,
+            terms.MinPaymentAmount,
+            terms.InterestBasisPoints,
+            terms.MinPaymentInterestBasisPoints,
+            terms.BillDay,
+            terms.DueDay,
+            PayingAccountId!.Value,
+            PaysFromAccountDirectly);
+    }
 
     public DateOnly? BlockedOn { get; private set; }
     public string? BlockReason { get; private set; }
@@ -124,6 +163,7 @@ public sealed class Card
         };
         card.Apply(details, cardNumber, iban, now);
         card.ApplyBilling(details, nextMonth: CardBillingTerms.Beginning, now);
+        card.ApplyRevolving(details, nextMonth: CardBillingTerms.Beginning, now);
         return Result.Success(card);
     }
 
@@ -153,6 +193,7 @@ public sealed class Card
         SensitiveData.Change(cardNumber, iban);
         Apply(details, cardNumber, iban, now);
         ApplyBilling(details, YearMonth.FromDate(today).Next(), now);
+        ApplyRevolving(details, YearMonth.FromDate(today).Next(), now);
         return Result.Success();
     }
 
@@ -246,12 +287,19 @@ public sealed class Card
         return Result.Success();
     }
 
-    /// <summary>Archives the card instead of deleting it. Final: an archived card cannot be restored.</summary>
-    public Result Archive(DateOnly today, DateTimeOffset now)
+    /// <summary>
+    /// Archives the card instead of deleting it. Final: an archived card cannot be restored. A revolving
+    /// card cannot be archived while <paramref name="debt"/> is more than zero (revolving FR-9).
+    /// </summary>
+    public Result Archive(DateOnly today, DateTimeOffset now, Money? debt = null)
     {
         if (ArchivedOn is not null)
         {
             return Result.Failure(CardErrors.AlreadyArchived);
+        }
+        if (IsRevolving && debt is { IsPositive: true })
+        {
+            return Result.Failure(CardErrors.ArchiveWithDebt);
         }
 
         ArchivedOn = today;
@@ -345,6 +393,14 @@ public sealed class Card
         {
             ValidateBilling(details.Billing, errors);
         }
+        if (details.Type == CardType.Revolving)
+        {
+            if (details.DebtLimit is null)
+            {
+                errors.Add(CardErrors.DebtLimitRequired);
+            }
+            Monthwise.Domain.Cards.RevolvingTerms.Validate(details.Revolving, errors);
+        }
         return errors;
     }
 
@@ -400,9 +456,12 @@ public sealed class Card
         if (!AllowsInstallmentsFor(details) || details.Billing is not { } billing)
         {
             _billingTerms.Clear();
-            PayingAccountId = null;
-            PaysFromAccountDirectly = false;
             MaxInstallments = null;
+            if (details.Type != CardType.Revolving)
+            {
+                PayingAccountId = null;
+                PaysFromAccountDirectly = false;
+            }
             return;
         }
 
@@ -436,6 +495,48 @@ public sealed class Card
         _billingTerms.Add(CardBillingTerms.Create(Id, nextMonth, billing.StatementDay, billing.PaymentDay, now));
     }
 
+    /// <summary>
+    /// Sets the revolving terms and paying account, or clears the terms when the card is not revolving.
+    /// Changed terms apply from <paramref name="nextMonth"/>: later versions are replaced and earlier
+    /// months keep theirs (revolving FR-2).
+    /// </summary>
+    private void ApplyRevolving(CardDetails details, YearMonth nextMonth, DateTimeOffset now)
+    {
+        if (details.Type != CardType.Revolving || details.Revolving is not { } revolving)
+        {
+            _revolvingTerms.Clear();
+            return;
+        }
+
+        PayingAccountId = revolving.PayingAccountId;
+        PaysFromAccountDirectly = revolving.PaysFromAccountDirectly;
+        if (_revolvingTerms.Count == 0)
+        {
+            _revolvingTerms.Add(Monthwise.Domain.Cards.RevolvingTerms.Create(Id, CardBillingTerms.Beginning, revolving, now));
+            return;
+        }
+
+        var current = new RevolvingCalendar(_revolvingTerms).TermsFor(nextMonth);
+        if (current.HasValues(revolving))
+        {
+            return;
+        }
+        _revolvingTerms.RemoveAll(t => t.FromMonth > nextMonth);
+        var fromNextMonth = _revolvingTerms.Find(t => t.FromMonth == nextMonth);
+        if (fromNextMonth is not null)
+        {
+            fromNextMonth.Change(revolving);
+            // Back to the terms the month before had: that version alone is enough.
+            var before = _revolvingTerms.Where(t => t.FromMonth < nextMonth).OrderBy(t => t.FromMonth).LastOrDefault();
+            if (before is not null && before.HasValues(revolving))
+            {
+                _revolvingTerms.Remove(fromNextMonth);
+            }
+            return;
+        }
+        _revolvingTerms.Add(Monthwise.Domain.Cards.RevolvingTerms.Create(Id, nextMonth, revolving, now));
+    }
+
     private void Apply(CardDetails details, CardNumber? cardNumber, Iban? iban, DateTimeOffset now)
     {
         Name = details.Name.Trim();
@@ -458,6 +559,11 @@ public sealed class Card
         if (replacement.Id == Id)
         {
             return Result.Failure(CardErrors.ReplacementIsSameCard);
+        }
+        // The debt of a revolving card moves to its replacement (revolving FR-9).
+        if (IsRevolving && !replacement.IsRevolving)
+        {
+            return Result.Failure(CardErrors.ReplacementNotRevolving);
         }
         // A replacement may still be "not yet valid" (a new card that starts next month).
         if (replacement.StatusOn(today) is CardStatus.Archived or CardStatus.Blocked or CardStatus.Expired)

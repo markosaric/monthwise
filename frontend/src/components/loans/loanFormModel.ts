@@ -107,9 +107,14 @@ export function standingOrderAccounts(cards: Card[]): Card[] {
   return cards.filter((c) => c.isPrimary && ['Active', 'ExpiringSoon'].includes(c.status))
 }
 
-/** Accounts a payment can be paid from: not blocked, expired or archived (FR-5). */
+/**
+ * Accounts a payment can be paid from: not blocked, expired or archived (FR-5), and never a revolving
+ * card, which is not an account (revolving FR-1).
+ */
 export function payingAccounts(cards: Card[]): Card[] {
-  return cards.filter((c) => !['Blocked', 'Expired', 'Archived'].includes(c.status))
+  return cards.filter(
+    (c) => c.type !== 'Revolving' && !['Blocked', 'Expired', 'Archived'].includes(c.status),
+  )
 }
 
 /** The account to prefill: only when exactly one account can be chosen (FR-3, FR-5). */

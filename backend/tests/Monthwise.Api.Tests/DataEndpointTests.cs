@@ -22,7 +22,11 @@ public sealed class DataEndpointTests : IAsyncLifetime
     private const string Visa = "4111111111111111";
     private const string CroatianIban = "HR1210010051863000160";
     private const string Password = "secret1";
-    private const string PreviousMigration = "20261010054541_AddSharedCosts";
+    private const string PreviousMigration = "20261031063743_AddDataTransfer";
+
+    /// <summary>The household tables added after <see cref="PreviousMigration"/>, which a file of that release does not have.</summary>
+    private static readonly string[] TablesAfterPreviousMigration =
+        ["revolving_bill", "revolving_debt_entry", "revolving_extra_payment", "revolving_terms"];
     private static readonly Guid VisaIssuer = new("0199b0c0-0000-7000-8000-000000000001");
     private static readonly Guid ZaBa = new("0199b0c0-0000-7000-8000-000000000101");
 
@@ -259,6 +263,13 @@ public sealed class DataEndpointTests : IAsyncLifetime
     private byte[] WithMigration(byte[] file, string migration)
     {
         var data = Codec.Read(file, Password).Value;
+        if (migration == PreviousMigration)
+        {
+            foreach (var table in TablesAfterPreviousMigration)
+            {
+                data.Tables.Remove(table);
+            }
+        }
         return Codec.Write(data with { Migration = migration, Release = "9.9.9" }, Password);
     }
 

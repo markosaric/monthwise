@@ -6,13 +6,16 @@ import {
   normalizeCardNumber,
   normalizeIban,
 } from '@/lib/cardNumbers'
-import { cardMonthToYearMonth } from '@/lib/dates'
+import { cardMonthToYearMonth, todayIso } from '@/lib/dates'
 import { parseEuroInput } from '@/lib/money'
+import { parsePercentInput } from '@/lib/percent'
 import { cardPurchaseTexts } from '@/components/cardPurchases/texts'
+import { revolvingTexts } from '@/components/revolving/texts'
 import { cardTexts } from './texts'
 
 const t = cardTexts
 const billing = cardPurchaseTexts.billing
+const revolving = revolvingTexts.form
 
 /** keep: leave the stored number as is (edit only); remove: delete it (edit only); enter: type a number. */
 export type NumberMode = 'keep' | 'remove' | 'enter'
@@ -42,6 +45,14 @@ export const cardFormSchema = z
     payingAccountId: z.string(),
     paysFromAccountDirectly: z.boolean(),
     maxInstallments: z.enum(['12', '24', '36']),
+    minPaymentPercent: z.string(),
+    minPaymentAmount: z.string(),
+    interestPercent: z.string(),
+    minPaymentInterestPercent: z.string(),
+    billDay: z.string(),
+    dueDay: z.string(),
+    startingDebt: z.string(),
+    startingDebtDate: z.string(),
   })
   .superRefine((values, ctx) => {
     if (
@@ -61,6 +72,9 @@ export const cardFormSchema = z
     }
     if (values.debtLimit.trim() !== '' && parseEuroInput(values.debtLimit) === null) {
       ctx.addIssue({ code: 'custom', path: ['debtLimit'], message: t.errors.debtLimitInvalid })
+    }
+    if (values.type === 'Revolving') {
+      checkRevolving(values, ctx)
     }
     if (allowsInstallments(values.type, values.allowsInstallments)) {
       const statement = dayOf(values.statementDay, 1, 30)
@@ -94,6 +108,53 @@ export const cardFormSchema = z
       }
     }
   })
+
+/** The revolving terms (revolving FR-2): required percentages, amounts, days and the paying account. */
+type RevolvingField =
+  | 'debtLimit'
+  | 'minPaymentPercent'
+  | 'minPaymentAmount'
+  | 'interestPercent'
+  | 'minPaymentInterestPercent'
+  | 'billDay'
+  | 'dueDay'
+  | 'payingAccountId'
+  | 'startingDebt'
+  | 'startingDebtDate'
+
+function checkRevolving(values: Record<RevolvingField, string>, ctx: z.RefinementCtx) {
+  const issue = (path: RevolvingField, message: string) =>
+    ctx.addIssue({ code: 'custom', path: [path], message })
+  if (values.debtLimit.trim() === '') issue('debtLimit', revolving.errors.debtLimitRequired)
+  const minPayment = parsePercentInput(values.minPaymentPercent)
+  if (minPayment === null || minPayment === 0 || minPayment > 10_000) {
+    issue('minPaymentPercent', revolving.errors.minPaymentPercentInvalid)
+  }
+  if (parseEuroInput(values.minPaymentAmount) === null) {
+    issue('minPaymentAmount', revolving.errors.minPaymentAmountInvalid)
+  }
+  if (parsePercentInput(values.interestPercent) === null) {
+    issue('interestPercent', revolving.errors.percentInvalid)
+  }
+  if (values.minPaymentInterestPercent.trim() !== '') {
+    const interestPart = parsePercentInput(values.minPaymentInterestPercent)
+    if (interestPart === null) {
+      issue('minPaymentInterestPercent', revolving.errors.percentInvalid)
+    } else if (minPayment !== null && interestPart > minPayment) {
+      issue('minPaymentInterestPercent', revolving.errors.minPaymentInterestTooHigh)
+    }
+  }
+  if (dayOf(values.billDay, 1, 31) === null) issue('billDay', revolving.errors.dayInvalid)
+  if (dayOf(values.dueDay, 1, 31) === null) issue('dueDay', revolving.errors.dayInvalid)
+  if (values.payingAccountId === '')
+    issue('payingAccountId', revolving.errors.payingAccountRequired)
+  if (values.startingDebt.trim() !== '') {
+    if (parseEuroInput(values.startingDebt) === null) {
+      issue('startingDebt', revolving.errors.amountInvalid)
+    }
+    if (values.startingDebtDate === '') issue('startingDebtDate', revolving.errors.dateRequired)
+  }
+}
 
 /** Credit and Charge cards always allow installments, Prepaid never, Debit by the check box (A11). */
 export function allowsInstallments(type: CardType, debitAllows: boolean): boolean {
@@ -130,6 +191,14 @@ export function emptyCardFormValues(prefill: Partial<CardFormValues> = {}): Card
     payingAccountId: '',
     paysFromAccountDirectly: false,
     maxInstallments: '36',
+    minPaymentPercent: '',
+    minPaymentAmount: '',
+    interestPercent: '',
+    minPaymentInterestPercent: '',
+    billDay: '',
+    dueDay: '',
+    startingDebt: '',
+    startingDebtDate: todayIso(),
     ...prefill,
   }
 }
@@ -149,6 +218,8 @@ function numberForRequest(
 
 export function toCardRequest(values: CardFormValues, editing: boolean): CardRequest {
   const withBilling = allowsInstallments(values.type, values.allowsInstallments)
+  const isRevolving = values.type === 'Revolving'
+  const startingDebt = isRevolving && !editing ? parseEuroInput(values.startingDebt) : null
   return {
     name: values.name.trim(),
     issuerId: values.issuerId,
@@ -168,8 +239,23 @@ export function toCardRequest(values: CardFormValues, editing: boolean): CardReq
     debtLimitCents: values.debtLimit.trim() === '' ? null : parseEuroInput(values.debtLimit),
     statementDay: withBilling ? Number(values.statementDay) : null,
     paymentDay: withBilling ? Number(values.paymentDay) : null,
-    payingAccountId: withBilling ? values.payingAccountId : null,
-    paysFromAccountDirectly: withBilling && values.paysFromAccountDirectly,
+    payingAccountId: withBilling || isRevolving ? values.payingAccountId : null,
+    paysFromAccountDirectly: (withBilling || isRevolving) && values.paysFromAccountDirectly,
     maxInstallments: withBilling ? Number(values.maxInstallments) : null,
+    ...(isRevolving
+      ? {
+          minPaymentBasisPoints: parsePercentInput(values.minPaymentPercent),
+          minPaymentAmountCents: parseEuroInput(values.minPaymentAmount),
+          interestBasisPoints: parsePercentInput(values.interestPercent),
+          minPaymentInterestBasisPoints:
+            values.minPaymentInterestPercent.trim() === ''
+              ? null
+              : parsePercentInput(values.minPaymentInterestPercent),
+          billDay: Number(values.billDay),
+          dueDay: Number(values.dueDay),
+          startingDebtCents: startingDebt,
+          startingDebtDate: startingDebt === null ? null : values.startingDebtDate,
+        }
+      : {}),
   }
 }

@@ -14,7 +14,7 @@ export type DashboardCards = Schemas['DashboardCardsResponse']
 export type SensitiveNumberKind = Schemas['SensitiveNumberKind']
 export type ListKind = 'issuers' | 'banks'
 
-export const cardTypes: CardType[] = ['Debit', 'Charge', 'Credit', 'Prepaid']
+export const cardTypes: CardType[] = ['Debit', 'Charge', 'Credit', 'Prepaid', 'Revolving']
 
 /** All card queries share this prefix, so one invalidation refreshes Settings and the Dashboard. */
 export const cardsQueryKey = ['cards'] as const
@@ -84,7 +84,7 @@ export function useUpdateCard(id: string) {
 }
 
 export type CardAction =
-  | { action: 'block'; reason: string | null }
+  | { action: 'block'; reason: string | null; replacementCardId?: string | null }
   | { action: 'unblock' }
   | { action: 'expire'; reason: string | null; replacementCardId: string | null }
   | { action: 'archive' }
@@ -97,7 +97,10 @@ export function useCardAction(id: string) {
       switch (change.action) {
         case 'block':
           return unwrap(
-            await api.POST('/api/cards/{id}/block', { params, body: { reason: change.reason } }),
+            await api.POST('/api/cards/{id}/block', {
+              params,
+              body: { reason: change.reason, replacementCardId: change.replacementCardId ?? null },
+            }),
           )
         case 'unblock':
           return unwrap(await api.POST('/api/cards/{id}/unblock', { params }))

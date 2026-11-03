@@ -26,6 +26,7 @@ export function CardActionDialog({
   withReason = false,
   removesPrimary = false,
   destructive = false,
+  canConfirm = true,
   children,
   onConfirm,
 }: {
@@ -37,6 +38,8 @@ export function CardActionDialog({
   withReason?: boolean
   removesPrimary?: boolean
   destructive?: boolean
+  /** False hides the confirm button, e.g. when the action is not possible yet. */
+  canConfirm?: boolean
   children?: ReactNode
   onConfirm: (reason: string | null) => Promise<void>
 }) {
@@ -87,13 +90,15 @@ export function CardActionDialog({
         )}
         <AlertDialogFooter>
           <AlertDialogCancel disabled={busy}>{cardTexts.actions.cancel}</AlertDialogCancel>
-          <Button
-            variant={destructive ? 'destructive' : 'default'}
-            onClick={confirm}
-            disabled={busy}
-          >
-            {confirmLabel}
-          </Button>
+          {canConfirm && (
+            <Button
+              variant={destructive ? 'destructive' : 'default'}
+              onClick={confirm}
+              disabled={busy}
+            >
+              {confirmLabel}
+            </Button>
+          )}
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

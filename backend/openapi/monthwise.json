@@ -265,6 +265,181 @@
         }
       }
     },
+    "/api/revolving-bills": {
+      "get": {
+        "tags": [
+          "Revolving cards"
+        ],
+        "summary": "Monthly bills and extra payments of revolving cards in a month (yyyy-MM), with totals.",
+        "operationId": "GetMonthRevolvingBills",
+        "parameters": [
+          {
+            "name": "month",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MonthRevolvingResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/revolving-cards/{id}/extra-payments": {
+      "post": {
+        "tags": [
+          "Revolving cards"
+        ],
+        "summary": "Records an extra payment from an account, paid on its date, of at most the debt on that date.",
+        "operationId": "CreateExtraPayment",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExtraPaymentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExtraPaymentResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/revolving-cards/{id}/debt-entries": {
+      "post": {
+        "tags": [
+          "Revolving cards"
+        ],
+        "summary": "Records a starting debt or a correction: the debt at the end of a date.",
+        "operationId": "CreateDebtEntry",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DebtEntryRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DebtEntryResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/shared-costs": {
       "get": {
         "tags": [
@@ -4432,6 +4607,672 @@
         }
       }
     },
+    "/api/revolving-cards": {
+      "get": {
+        "tags": [
+          "Revolving cards"
+        ],
+        "summary": "Revolving cards with their debt, remaining limit and next monthly bill, and the debt of all of them.",
+        "operationId": "GetRevolvingCards",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RevolvingCardsResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/revolving-cards/{id}": {
+      "get": {
+        "tags": [
+          "Revolving cards"
+        ],
+        "summary": "A revolving card with its terms, monthly bills (estimated up to `to`, yyyy-MM), extra payments, charges, debt entries and debt history.",
+        "operationId": "GetRevolvingCard",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RevolvingCardDetailsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/revolving-cards/{id}/debt": {
+      "get": {
+        "tags": [
+          "Revolving cards"
+        ],
+        "summary": "The debt of a revolving card at the end of a date (today by default).",
+        "operationId": "GetRevolvingDebt",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "date",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RevolvingDebtResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/revolving-cards/{id}/bills/{month}/paid": {
+      "post": {
+        "tags": [
+          "Revolving cards"
+        ],
+        "summary": "Pays a monthly bill. Defaults: today, the card's paying account and the minimum payment.",
+        "operationId": "MarkRevolvingBillPaid",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "month",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RevolvingBillPaidRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RevolvingBillResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Revolving cards"
+        ],
+        "summary": "Unticks Paid, also for a bill paid automatically.",
+        "operationId": "MarkRevolvingBillUnpaid",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "month",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RevolvingBillResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/revolving-cards/{id}/bills/{month}/correction": {
+      "put": {
+        "tags": [
+          "Revolving cards"
+        ],
+        "summary": "Sets the minimum payment and interest of the bank's bill; null keeps the calculated value.",
+        "operationId": "CorrectRevolvingBill",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "month",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RevolvingBillCorrectionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RevolvingBillResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Revolving cards"
+        ],
+        "summary": "Goes back to the calculated minimum payment and interest.",
+        "operationId": "ClearRevolvingBillCorrection",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "month",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RevolvingBillResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/extra-payments/{id}": {
+      "put": {
+        "tags": [
+          "Revolving cards"
+        ],
+        "summary": "Edits an extra payment.",
+        "operationId": "UpdateExtraPayment",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExtraPaymentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExtraPaymentResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Revolving cards"
+        ],
+        "summary": "Deletes an extra payment.",
+        "operationId": "DeleteExtraPayment",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/debt-entries/{id}": {
+      "put": {
+        "tags": [
+          "Revolving cards"
+        ],
+        "summary": "Edits a starting debt or a correction; transfers cannot be changed.",
+        "operationId": "UpdateDebtEntry",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DebtEntryRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DebtEntryResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Revolving cards"
+        ],
+        "summary": "Deletes a starting debt or a correction; transfers cannot be deleted.",
+        "operationId": "DeleteDebtEntry",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/expense-categories": {
       "get": {
         "tags": [
@@ -8217,6 +9058,62 @@
               "integer"
             ],
             "format": "int32"
+          },
+          "minPaymentBasisPoints": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "minPaymentAmountCents": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int64"
+          },
+          "interestBasisPoints": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "minPaymentInterestBasisPoints": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "billDay": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "dueDay": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "startingDebtCents": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int64"
+          },
+          "startingDebtDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
           }
         }
       },
@@ -8369,6 +9266,78 @@
           },
           "needsBillingDetails": {
             "type": "boolean"
+          },
+          "revolving": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/CardRevolvingResponse"
+              }
+            ]
+          },
+          "revolvingDebtCents": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int64"
+          }
+        }
+      },
+      "CardRevolvingResponse": {
+        "required": [
+          "minPaymentBasisPoints",
+          "minPaymentAmountCents",
+          "interestBasisPoints",
+          "minPaymentInterestBasisPoints",
+          "billDay",
+          "dueDay",
+          "payingAccount",
+          "paysFromAccountDirectly",
+          "terms"
+        ],
+        "type": "object",
+        "properties": {
+          "minPaymentBasisPoints": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "minPaymentAmountCents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "interestBasisPoints": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "minPaymentInterestBasisPoints": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "billDay": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "dueDay": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "payingAccount": {
+            "$ref": "#/components/schemas/NamedReference"
+          },
+          "paysFromAccountDirectly": {
+            "type": "boolean"
+          },
+          "terms": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RevolvingTermsResponse"
+            }
           }
         }
       },
@@ -8383,6 +9352,13 @@
               "null",
               "string"
             ]
+          },
+          "replacementCardId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
           }
         }
       },
@@ -8401,7 +9377,8 @@
           "Debit",
           "Charge",
           "Credit",
-          "Prepaid"
+          "Prepaid",
+          "Revolving"
         ]
       },
       "CashFlowChartResponse": {
@@ -9205,6 +10182,96 @@
           }
         }
       },
+      "DebtEntryKind": {
+        "enum": [
+          "Starting",
+          "Correction",
+          "TransferIn",
+          "TransferOut"
+        ]
+      },
+      "DebtEntryRequest": {
+        "required": [
+          "kind",
+          "date",
+          "debtCents",
+          "note"
+        ],
+        "type": "object",
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/DebtEntryKind"
+          },
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "debtCents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "note": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "DebtEntryResponse": {
+        "required": [
+          "id",
+          "cardId",
+          "kind",
+          "date",
+          "amountCents",
+          "differenceCents",
+          "note",
+          "linkedCard"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "cardId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/DebtEntryKind"
+          },
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "amountCents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "differenceCents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "note": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "linkedCard": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NamedReference"
+              }
+            ]
+          }
+        }
+      },
       "ExpenseCategoryResponse": {
         "required": [
           "id",
@@ -9372,6 +10439,77 @@
         "type": "object",
         "properties": {
           "password": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "ExtraPaymentRequest": {
+        "required": [
+          "accountId",
+          "date",
+          "amountCents",
+          "description"
+        ],
+        "type": "object",
+        "properties": {
+          "accountId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "amountCents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "description": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "ExtraPaymentResponse": {
+        "required": [
+          "id",
+          "cardId",
+          "cardName",
+          "account",
+          "date",
+          "amountCents",
+          "description"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "cardId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "cardName": {
+            "type": "string"
+          },
+          "account": {
+            "$ref": "#/components/schemas/NamedReference"
+          },
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "amountCents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "description": {
             "type": [
               "null",
               "string"
@@ -10788,6 +11926,35 @@
           }
         }
       },
+      "MonthRevolvingResponse": {
+        "required": [
+          "month",
+          "bills",
+          "extraPayments",
+          "totals"
+        ],
+        "type": "object",
+        "properties": {
+          "month": {
+            "type": "string"
+          },
+          "bills": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RevolvingBillResponse"
+            }
+          },
+          "extraPayments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ExtraPaymentResponse"
+            }
+          },
+          "totals": {
+            "$ref": "#/components/schemas/LoanPaymentTotalsResponse"
+          }
+        }
+      },
       "NamedReference": {
         "required": [
           "id",
@@ -11514,6 +12681,473 @@
           }
         }
       },
+      "RevolvingBillCorrectionRequest": {
+        "required": [
+          "minimumCents",
+          "interestCents"
+        ],
+        "type": "object",
+        "properties": {
+          "minimumCents": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int64"
+          },
+          "interestCents": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int64"
+          }
+        }
+      },
+      "RevolvingBillPaidRequest": {
+        "required": [
+          "paidDate",
+          "accountId",
+          "amountCents"
+        ],
+        "type": "object",
+        "properties": {
+          "paidDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "accountId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "amountCents": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int64"
+          }
+        }
+      },
+      "RevolvingBillResponse": {
+        "required": [
+          "cardId",
+          "cardName",
+          "month",
+          "billDate",
+          "dueDate",
+          "debtCents",
+          "interestCents",
+          "minimumCents",
+          "isCorrected",
+          "isEstimated",
+          "isPaid",
+          "paidDate",
+          "paidAmountCents",
+          "account",
+          "paysFromAccountDirectly",
+          "paidAutomatically",
+          "isOverdue",
+          "needsAccount"
+        ],
+        "type": "object",
+        "properties": {
+          "cardId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "cardName": {
+            "type": "string"
+          },
+          "month": {
+            "type": "string"
+          },
+          "billDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "dueDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "debtCents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "interestCents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "minimumCents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "isCorrected": {
+            "type": "boolean"
+          },
+          "isEstimated": {
+            "type": "boolean"
+          },
+          "isPaid": {
+            "type": "boolean"
+          },
+          "paidDate": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date"
+          },
+          "paidAmountCents": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int64"
+          },
+          "account": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NamedReference"
+              }
+            ]
+          },
+          "paysFromAccountDirectly": {
+            "type": "boolean"
+          },
+          "paidAutomatically": {
+            "type": "boolean"
+          },
+          "isOverdue": {
+            "type": "boolean"
+          },
+          "needsAccount": {
+            "type": "boolean"
+          }
+        }
+      },
+      "RevolvingCardDetailsResponse": {
+        "required": [
+          "card",
+          "bills",
+          "extraPayments",
+          "debtEntries",
+          "charges",
+          "movements"
+        ],
+        "type": "object",
+        "properties": {
+          "card": {
+            "$ref": "#/components/schemas/RevolvingCardResponse"
+          },
+          "bills": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RevolvingBillResponse"
+            }
+          },
+          "extraPayments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ExtraPaymentResponse"
+            }
+          },
+          "debtEntries": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DebtEntryResponse"
+            }
+          },
+          "charges": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RevolvingChargeResponse"
+            }
+          },
+          "movements": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RevolvingMovementResponse"
+            }
+          }
+        }
+      },
+      "RevolvingCardResponse": {
+        "required": [
+          "id",
+          "name",
+          "cardNumberMasked",
+          "status",
+          "canBeUsed",
+          "debtCents",
+          "debtLimitCents",
+          "remainingLimitCents",
+          "isOverLimit",
+          "nextBill",
+          "terms",
+          "needsAccount"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "cardNumberMasked": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/CardStatus"
+          },
+          "canBeUsed": {
+            "type": "boolean"
+          },
+          "debtCents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "debtLimitCents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "remainingLimitCents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "isOverLimit": {
+            "type": "boolean"
+          },
+          "nextBill": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/RevolvingBillResponse"
+              }
+            ]
+          },
+          "terms": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/CardRevolvingResponse"
+              }
+            ]
+          },
+          "needsAccount": {
+            "type": "boolean"
+          }
+        }
+      },
+      "RevolvingCardsResponse": {
+        "required": [
+          "cards",
+          "totalDebtCents"
+        ],
+        "type": "object",
+        "properties": {
+          "cards": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RevolvingCardResponse"
+            }
+          },
+          "totalDebtCents": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "RevolvingChargeKind": {
+        "enum": [
+          "Bill",
+          "Expense",
+          "Purchase",
+          "PurchaseCredit"
+        ]
+      },
+      "RevolvingChargeResponse": {
+        "required": [
+          "sourceId",
+          "kind",
+          "date",
+          "description",
+          "category",
+          "amountCents"
+        ],
+        "type": "object",
+        "properties": {
+          "sourceId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/RevolvingChargeKind"
+          },
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "description": {
+            "type": "string"
+          },
+          "category": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/NamedReference"
+              }
+            ]
+          },
+          "amountCents": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "RevolvingDebtResponse": {
+        "required": [
+          "cardId",
+          "date",
+          "debtCents"
+        ],
+        "type": "object",
+        "properties": {
+          "cardId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "debtCents": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "RevolvingMovementKind": {
+        "enum": [
+          "Starting",
+          "Correction",
+          "TransferIn",
+          "TransferOut",
+          "Charge",
+          "Credit",
+          "Interest",
+          "BillPayment",
+          "ExtraPayment"
+        ]
+      },
+      "RevolvingMovementResponse": {
+        "required": [
+          "date",
+          "kind",
+          "changeCents",
+          "debtAfterCents",
+          "sourceId",
+          "billMonth"
+        ],
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/RevolvingMovementKind"
+          },
+          "changeCents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "debtAfterCents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "sourceId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "billMonth": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "RevolvingTermsResponse": {
+        "required": [
+          "fromMonth",
+          "minPaymentBasisPoints",
+          "minPaymentAmountCents",
+          "interestBasisPoints",
+          "minPaymentInterestBasisPoints",
+          "billDay",
+          "dueDay"
+        ],
+        "type": "object",
+        "properties": {
+          "fromMonth": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "minPaymentBasisPoints": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "minPaymentAmountCents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "interestBasisPoints": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "minPaymentInterestBasisPoints": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "billDay": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "dueDay": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
       "SafetyCopyRestoreRequest": {
         "required": [
           "confirmation"
@@ -11657,6 +13291,9 @@
     },
     {
       "name": "Card purchases"
+    },
+    {
+      "name": "Revolving cards"
     },
     {
       "name": "Shared costs"

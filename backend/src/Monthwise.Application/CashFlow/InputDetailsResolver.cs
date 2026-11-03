@@ -100,11 +100,14 @@ public sealed class InputDetailsResolver(
         return Result.Success(details with { PayerId = payer.Id });
     }
 
-    /// <summary>Any account that is not blocked, expired or archived can receive money (FR-4).</summary>
+    /// <summary>
+    /// Any account that is not blocked, expired or archived can receive money (FR-4). A revolving card is
+    /// never an account: money paid to it is an extra payment (revolving FR-8).
+    /// </summary>
     public static bool CanReceive(Card account, DateOnly today)
     {
         ArgumentNullException.ThrowIfNull(account);
-        return account.StatusOn(today) is not (CardStatus.Blocked or CardStatus.Expired or CardStatus.Archived);
+        return !account.IsRevolving && account.StatusOn(today) is not (CardStatus.Blocked or CardStatus.Expired or CardStatus.Archived);
     }
 
     private async Task<Payer> FindOrCreatePayerAsync(string name, CancellationToken cancellationToken)

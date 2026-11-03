@@ -29,6 +29,9 @@ internal sealed class CardMapping(
 
     public IReadOnlyList<Card> AllCards => _cards.Values.ToList();
 
+    /// <summary>Today's debt of each revolving card (revolving FR-5), shown in the list and on the details.</summary>
+    public IReadOnlyDictionary<Guid, Money> Debts { get; set; } = new Dictionary<Guid, Money>();
+
     public CardResponse ToResponse(Card card)
     {
         var replaces = _cards.Values.FirstOrDefault(c => c.ReplacedByCardId == card.Id);
@@ -55,8 +58,13 @@ internal sealed class CardMapping(
             card.ReplacedByCardId is { } id && _cards.TryGetValue(id, out var replacement) ? new CardReference(id, replacement.Name) : null,
             replaces is null ? null : new CardReference(replaces.Id, replaces.Name),
             Billing(card),
-            card.NeedsBillingDetails);
+            card.NeedsBillingDetails,
+            Revolving.RevolvingBook.TermsOf(card, today, Reference),
+            card.IsRevolving ? Debts.GetValueOrDefault(card.Id).Cents : null);
     }
+
+    private CashFlow.NamedReference Reference(Guid id) =>
+        new(id, _cards.TryGetValue(id, out var card) ? card.Name : "Unknown");
 
     private CardBillingResponse? Billing(Card card)
     {
@@ -95,7 +103,26 @@ internal sealed class CardMapping(
         request.IsPrimary,
         request.DebtLimitCents is { } cents ? Money.FromCents(cents) : null,
         request.AllowsInstallments,
-        ToBilling(request));
+        ToBilling(request),
+        request.Type == CardType.Revolving ? ToRevolving(request) : null);
+
+    /// <summary>
+    /// The revolving terms, or null when none were entered. Missing values become invalid ones, so the
+    /// card rules report each missing field.
+    /// </summary>
+    private static RevolvingDetails? ToRevolving(CardRequest request) =>
+        request.MinPaymentBasisPoints is null && request.MinPaymentAmountCents is null && request.InterestBasisPoints is null
+            && request.BillDay is null && request.DueDay is null
+            ? null
+            : new RevolvingDetails(
+                request.MinPaymentBasisPoints ?? 0,
+                Money.FromCents(request.MinPaymentAmountCents ?? -1),
+                request.InterestBasisPoints ?? -1,
+                request.MinPaymentInterestBasisPoints,
+                request.BillDay ?? 0,
+                request.DueDay ?? 0,
+                request.PayingAccountId ?? Guid.Empty,
+                request.PaysFromAccountDirectly);
 
     /// <summary>
     /// The billing details, or null when none were entered. Missing values become invalid ones, so the

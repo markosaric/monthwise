@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router'
 import { toast } from 'sonner'
+import { warnIfOverLimit } from '@/components/revolving/overLimit'
 import { useCards } from '@/api/cards'
 import { useChangeExpense, useExpense, useLastExpensePaidFrom } from '@/api/expenses'
 import { CardActionDialog } from '@/components/cards/CardActionDialog'
@@ -71,6 +72,7 @@ export function ExpenseNewPage() {
               : { action: 'create', request },
           )
           toast.success(t.saved)
+          if (!cash) await warnIfOverLimit(request.paidFromId)
           navigate(returnTo ?? `/month/${monthOf(request.date)}`, { replace: true })
         }}
       />
@@ -124,6 +126,7 @@ export function ExpenseEditPage() {
                 : { action: 'update', id: expense.id, request },
             )
             toast.success(t.saved)
+            if (!cash) await warnIfOverLimit(request.paidFromId)
             navigate(`/month/${monthOf(request.date)}`, { replace: true })
           }}
         />

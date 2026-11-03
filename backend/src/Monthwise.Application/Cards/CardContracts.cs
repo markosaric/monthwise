@@ -6,7 +6,10 @@ namespace Monthwise.Application.Cards;
 /// Add or edit a card. Months use the ISO form <c>yyyy-MM</c>. On edit, a <c>null</c>
 /// <see cref="CardNumber"/> or <see cref="Iban"/> keeps the stored value and an empty string removes it.
 /// The billing details (<see cref="StatementDay"/> to <see cref="MaxInstallments"/>) are required for
-/// a card that allows monthly installments and ignored for other cards (installments FR-1).
+/// a card that allows monthly installments and ignored for other cards (installments FR-1). A
+/// revolving card needs its terms (<see cref="MinPaymentBasisPoints"/> to <see cref="DueDay"/>, revolving
+/// FR-2), its paying account and connection; percentages are basis points (8.33 % is 833). A starting
+/// debt (<see cref="StartingDebtCents"/> on <see cref="StartingDebtDate"/>) is only read when adding.
 /// </summary>
 public sealed record CardRequest(
     string Name,
@@ -24,9 +27,18 @@ public sealed record CardRequest(
     int? PaymentDay = null,
     Guid? PayingAccountId = null,
     bool PaysFromAccountDirectly = false,
-    int? MaxInstallments = null);
+    int? MaxInstallments = null,
+    int? MinPaymentBasisPoints = null,
+    long? MinPaymentAmountCents = null,
+    int? InterestBasisPoints = null,
+    int? MinPaymentInterestBasisPoints = null,
+    int? BillDay = null,
+    int? DueDay = null,
+    long? StartingDebtCents = null,
+    DateOnly? StartingDebtDate = null);
 
-public sealed record CardStateRequest(string? Reason);
+/// <summary>Block a card (FR-7). A revolving card can name its replacement, which takes over its debt (revolving FR-9).</summary>
+public sealed record CardStateRequest(string? Reason, Guid? ReplacementCardId = null);
 
 public sealed record ExpireCardRequest(string? Reason, Guid? ReplacementCardId);
 
@@ -78,7 +90,9 @@ public sealed record CardResponse(
     CardReference? ReplacedBy,
     CardReference? Replaces,
     CardBillingResponse? Billing,
-    bool NeedsBillingDetails);
+    bool NeedsBillingDetails,
+    Revolving.CardRevolvingResponse? Revolving = null,
+    long? RevolvingDebtCents = null);
 
 /// <summary>
 /// The Dashboard widget: the cards shown, whether any card exists, and the balance of each shown

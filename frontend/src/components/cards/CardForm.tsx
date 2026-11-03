@@ -4,6 +4,8 @@ import { Controller, useForm, useWatch } from 'react-hook-form'
 import { maxInstallmentsChoices } from '@/api/cardPurchases'
 import { ApiError, cardTypes, useCards, type CardRequest } from '@/api/cards'
 import { cardPurchaseTexts } from '@/components/cardPurchases/texts'
+import { payableAccounts } from '@/components/expenses/paidFrom'
+import { revolvingTexts } from '@/components/revolving/texts'
 import { onlyPrimaryAccountId, payingAccounts } from '@/components/loans/loanFormModel'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -24,9 +26,17 @@ import { cardTexts } from './texts'
 
 const t = cardTexts
 const b = cardPurchaseTexts.billing
+const r = revolvingTexts.form
 
 /** API field names that differ from form field names. */
-const apiFieldToFormField: Record<string, keyof CardFormValues> = { debtLimitCents: 'debtLimit' }
+const apiFieldToFormField: Record<string, keyof CardFormValues> = {
+  debtLimitCents: 'debtLimit',
+  minPaymentBasisPoints: 'minPaymentPercent',
+  minPaymentAmountCents: 'minPaymentAmount',
+  interestBasisPoints: 'interestPercent',
+  minPaymentInterestBasisPoints: 'minPaymentInterestPercent',
+  startingDebtCents: 'startingDebt',
+}
 const formFields = new Set(Object.keys(emptyCardFormValues()))
 
 /** Add/edit form (FR-2, FR-4). On edit, `masked` holds the stored numbers to keep, replace or remove. */
@@ -59,16 +69,19 @@ export function CardForm({
     name: ['type', 'cardNumberMode', 'ibanMode', 'allowsInstallments', 'payingAccountId'],
   })
   const withBilling = allowsInstallments(type, debitAllowsInstallments)
+  const isRevolving = type === 'Revolving'
   const { data: cards = [], isPending: cardsPending } = useCards('Default')
   const accountOptions = payingAccounts(cards).filter((c) => c.isPrimary)
+  // A revolving card is paid from any usable account (revolving R6).
+  const revolvingAccountOptions = payableAccounts(cards)
   const onlyPrimary = onlyPrimaryAccountId(cards)
 
   // The paying account is prefilled only when exactly one account is primary (installments B3).
   useEffect(() => {
-    if (withBilling && payingAccountId === '' && onlyPrimary !== '') {
+    if ((withBilling || isRevolving) && payingAccountId === '' && onlyPrimary !== '') {
       setValue('payingAccountId', onlyPrimary)
     }
-  }, [withBilling, payingAccountId, onlyPrimary, setValue])
+  }, [withBilling, isRevolving, payingAccountId, onlyPrimary, setValue])
 
   async function submit(values: CardFormValues) {
     setFormError(null)
@@ -214,7 +227,7 @@ export function CardForm({
         <Field
           id="debtLimit"
           label={t.fields.debtLimit}
-          hint={t.hints.debtLimit}
+          hint={isRevolving ? r.debtLimitHint : t.hints.debtLimit}
           error={errors.debtLimit?.message}
         >
           <Input
@@ -352,6 +365,162 @@ export function CardForm({
             </div>
             <p className="text-xs text-muted-foreground">{b.directHint}</p>
           </div>
+        </fieldset>
+      )}
+
+      {isRevolving && (
+        <fieldset className="flex flex-col gap-4 rounded-lg border p-3">
+          <legend className="px-1 text-sm font-medium">{r.title}</legend>
+          {editing && <p className="text-xs text-muted-foreground">{r.changeHint}</p>}
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field
+              id="minPaymentPercent"
+              label={r.minPaymentPercent}
+              error={errors.minPaymentPercent?.message}
+            >
+              <Input
+                id="minPaymentPercent"
+                inputMode="decimal"
+                placeholder="8,33"
+                aria-invalid={!!errors.minPaymentPercent}
+                {...register('minPaymentPercent')}
+              />
+            </Field>
+            <Field
+              id="minPaymentAmount"
+              label={r.minPaymentAmount}
+              error={errors.minPaymentAmount?.message}
+            >
+              <Input
+                id="minPaymentAmount"
+                inputMode="decimal"
+                placeholder="13,27"
+                aria-invalid={!!errors.minPaymentAmount}
+                {...register('minPaymentAmount')}
+              />
+            </Field>
+          </div>
+          <p className="-mt-2 text-xs text-muted-foreground">{r.minPaymentHint}</p>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field
+              id="interestPercent"
+              label={r.interestPercent}
+              error={errors.interestPercent?.message}
+            >
+              <Input
+                id="interestPercent"
+                inputMode="decimal"
+                placeholder="12,75"
+                aria-invalid={!!errors.interestPercent}
+                {...register('interestPercent')}
+              />
+            </Field>
+            <Field
+              id="minPaymentInterestPercent"
+              label={r.minPaymentInterestPercent}
+              hint={r.minPaymentInterestHint}
+              error={errors.minPaymentInterestPercent?.message}
+            >
+              <Input
+                id="minPaymentInterestPercent"
+                inputMode="decimal"
+                aria-invalid={!!errors.minPaymentInterestPercent}
+                {...register('minPaymentInterestPercent')}
+              />
+            </Field>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field
+              id="billDay"
+              label={r.billDay}
+              hint={r.billDayHint}
+              error={errors.billDay?.message}
+            >
+              <Input
+                id="billDay"
+                inputMode="numeric"
+                maxLength={2}
+                aria-invalid={!!errors.billDay}
+                {...register('billDay')}
+              />
+            </Field>
+            <Field id="dueDay" label={r.dueDay} hint={r.dueDayHint} error={errors.dueDay?.message}>
+              <Input
+                id="dueDay"
+                inputMode="numeric"
+                maxLength={2}
+                aria-invalid={!!errors.dueDay}
+                {...register('dueDay')}
+              />
+            </Field>
+          </div>
+          <Field
+            id="payingAccountId"
+            label={r.payingAccount}
+            error={errors.payingAccountId?.message}
+          >
+            <NativeSelect
+              id="payingAccountId"
+              aria-invalid={!!errors.payingAccountId}
+              {...register('payingAccountId')}
+            >
+              <option value="">Choose…</option>
+              {revolvingAccountOptions.map((account) => (
+                <option key={account.id} value={account.id}>
+                  {account.name}
+                </option>
+              ))}
+            </NativeSelect>
+            {!cardsPending && revolvingAccountOptions.length === 0 && (
+              <p className="text-xs text-muted-foreground">{r.noAccount}</p>
+            )}
+          </Field>
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center gap-3">
+              <Controller
+                control={control}
+                name="paysFromAccountDirectly"
+                render={({ field }) => (
+                  <Switch
+                    id="paysFromAccountDirectly"
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                  />
+                )}
+              />
+              <Label htmlFor="paysFromAccountDirectly">{r.paysFromAccountDirectly}</Label>
+            </div>
+            <p className="text-xs text-muted-foreground">{r.directHint}</p>
+          </div>
+          {!editing && (
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field
+                id="startingDebt"
+                label={r.startingDebt}
+                hint={r.startingDebtHint}
+                error={errors.startingDebt?.message}
+              >
+                <Input
+                  id="startingDebt"
+                  inputMode="decimal"
+                  aria-invalid={!!errors.startingDebt}
+                  {...register('startingDebt')}
+                />
+              </Field>
+              <Field
+                id="startingDebtDate"
+                label={r.startingDebtDate}
+                error={errors.startingDebtDate?.message}
+              >
+                <Input
+                  id="startingDebtDate"
+                  type="date"
+                  aria-invalid={!!errors.startingDebtDate}
+                  {...register('startingDebtDate')}
+                />
+              </Field>
+            </div>
+          )}
         </fieldset>
       )}
 

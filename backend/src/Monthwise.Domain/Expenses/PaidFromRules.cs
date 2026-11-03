@@ -19,6 +19,16 @@ public static class PaidFromRules
     }
 
     /// <summary>
+    /// Whether what is paid with <paramref name="card"/> is a charge on the card, not an output of an
+    /// account: a credit card (into its card payment) or a revolving card (into its debt, revolving FR-6).
+    /// </summary>
+    public static bool IsCardCharge(Card card)
+    {
+        ArgumentNullException.ThrowIfNull(card);
+        return IsCreditCard(card) || card.IsRevolving;
+    }
+
+    /// <summary>
     /// Checks <paramref name="card"/> as what a bill or expense dated <paramref name="date"/> is paid
     /// with. <paramref name="primaryOnly"/> allows only primary accounts (cash withdrawals, FR-8).
     /// <paramref name="unchanged"/> keeps a choice that was valid when saved, so an entry can still be
@@ -39,6 +49,18 @@ public static class PaidFromRules
             if (!card.HasBillingDetails)
             {
                 return ExpenseErrors.PaidFromNeedsBillingDetails;
+            }
+            if (card.ValidFrom is { } validFrom && date < validFrom.FirstDay)
+            {
+                return ExpenseErrors.PaidFromNotValidYet;
+            }
+        }
+        else if (card.IsRevolving)
+        {
+            // Raises the revolving debt (revolving FR-6); never for a cash withdrawal.
+            if (primaryOnly)
+            {
+                return ExpenseErrors.CashWithdrawalNotPrimary;
             }
             if (card.ValidFrom is { } validFrom && date < validFrom.FirstDay)
             {

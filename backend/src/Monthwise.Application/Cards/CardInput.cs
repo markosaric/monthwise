@@ -52,6 +52,21 @@ public sealed class CardInputChecker(
         {
             errors.Add(CardErrors.IbanInUse);
         }
+        // A revolving card's paying account is any usable account (revolving R6); one the card already has stays allowed.
+        if (details.Revolving is { } revolving
+            && revolving.PayingAccountId != Guid.Empty
+            && revolving.PayingAccountId != existing?.PayingAccountId)
+        {
+            var account = await cards.GetAsync(revolving.PayingAccountId, includeSensitiveData: false, cancellationToken);
+            if (account is null || !account.IsAccount)
+            {
+                errors.Add(CardErrors.PayingAccountUnknown);
+            }
+            else if (!account.CanBeUsedOn(timeProvider.Today()))
+            {
+                errors.Add(CardErrors.RevolvingPayingAccountUnusable);
+            }
+        }
         // The paying account must be a usable primary account; one the card already has stays allowed.
         if (Card.AllowsInstallmentsFor(details)
             && details.Billing?.PayingAccountId is { } payingAccountId

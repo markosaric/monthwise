@@ -105,6 +105,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/revolving-bills": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Monthly bills and extra payments of revolving cards in a month (yyyy-MM), with totals. */
+        get: operations["GetMonthRevolvingBills"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/revolving-cards/{id}/extra-payments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Records an extra payment from an account, paid on its date, of at most the debt on that date. */
+        post: operations["CreateExtraPayment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/revolving-cards/{id}/debt-entries": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Records a starting debt or a correction: the debt at the end of a date. */
+        post: operations["CreateDebtEntry"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/shared-costs": {
         parameters: {
             query?: never;
@@ -1006,6 +1057,129 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/revolving-cards": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Revolving cards with their debt, remaining limit and next monthly bill, and the debt of all of them. */
+        get: operations["GetRevolvingCards"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/revolving-cards/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A revolving card with its terms, monthly bills (estimated up to `to`, yyyy-MM), extra payments, charges, debt entries and debt history. */
+        get: operations["GetRevolvingCard"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/revolving-cards/{id}/debt": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The debt of a revolving card at the end of a date (today by default). */
+        get: operations["GetRevolvingDebt"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/revolving-cards/{id}/bills/{month}/paid": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Pays a monthly bill. Defaults: today, the card's paying account and the minimum payment. */
+        post: operations["MarkRevolvingBillPaid"];
+        /** Unticks Paid, also for a bill paid automatically. */
+        delete: operations["MarkRevolvingBillUnpaid"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/revolving-cards/{id}/bills/{month}/correction": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Sets the minimum payment and interest of the bank's bill; null keeps the calculated value. */
+        put: operations["CorrectRevolvingBill"];
+        post?: never;
+        /** Goes back to the calculated minimum payment and interest. */
+        delete: operations["ClearRevolvingBillCorrection"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/extra-payments/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Edits an extra payment. */
+        put: operations["UpdateExtraPayment"];
+        post?: never;
+        /** Deletes an extra payment. */
+        delete: operations["DeleteExtraPayment"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/debt-entries/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Edits a starting debt or a correction; transfers cannot be changed. */
+        put: operations["UpdateDebtEntry"];
+        post?: never;
+        /** Deletes a starting debt or a correction; transfers cannot be deleted. */
+        delete: operations["DeleteDebtEntry"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/expense-categories": {
         parameters: {
             query?: never;
@@ -1892,6 +2066,22 @@ export interface components {
             paysFromAccountDirectly: boolean;
             /** Format: int32 */
             maxInstallments?: null | number;
+            /** Format: int32 */
+            minPaymentBasisPoints?: null | number;
+            /** Format: int64 */
+            minPaymentAmountCents?: null | number;
+            /** Format: int32 */
+            interestBasisPoints?: null | number;
+            /** Format: int32 */
+            minPaymentInterestBasisPoints?: null | number;
+            /** Format: int32 */
+            billDay?: null | number;
+            /** Format: int32 */
+            dueDay?: null | number;
+            /** Format: int64 */
+            startingDebtCents?: null | number;
+            /** Format: date */
+            startingDebtDate?: null | string;
         };
         CardResponse: {
             /** Format: uuid */
@@ -1922,14 +2112,36 @@ export interface components {
             replaces: null | components["schemas"]["CardReference"];
             billing: null | components["schemas"]["CardBillingResponse"];
             needsBillingDetails: boolean;
+            revolving?: null | components["schemas"]["CardRevolvingResponse"];
+            /** Format: int64 */
+            revolvingDebtCents?: null | number;
+        };
+        CardRevolvingResponse: {
+            /** Format: int32 */
+            minPaymentBasisPoints: number;
+            /** Format: int64 */
+            minPaymentAmountCents: number;
+            /** Format: int32 */
+            interestBasisPoints: number;
+            /** Format: int32 */
+            minPaymentInterestBasisPoints: null | number;
+            /** Format: int32 */
+            billDay: number;
+            /** Format: int32 */
+            dueDay: number;
+            payingAccount: components["schemas"]["NamedReference"];
+            paysFromAccountDirectly: boolean;
+            terms: components["schemas"]["RevolvingTermsResponse"][];
         };
         CardStateRequest: {
             reason: null | string;
+            /** Format: uuid */
+            replacementCardId?: null | string;
         };
         /** @enum {unknown} */
         CardStatus: "Archived" | "Blocked" | "Expired" | "NotYetValid" | "ExpiringSoon" | "Active";
         /** @enum {unknown} */
-        CardType: "Debit" | "Charge" | "Credit" | "Prepaid";
+        CardType: "Debit" | "Charge" | "Credit" | "Prepaid" | "Revolving";
         CashFlowChartResponse: {
             /** Format: date */
             from: string;
@@ -2153,6 +2365,31 @@ export interface components {
             fileCreatedAt: null | string;
             message: null | string;
         };
+        /** @enum {unknown} */
+        DebtEntryKind: "Starting" | "Correction" | "TransferIn" | "TransferOut";
+        DebtEntryRequest: {
+            kind: components["schemas"]["DebtEntryKind"];
+            /** Format: date */
+            date: string;
+            /** Format: int64 */
+            debtCents: number;
+            note: null | string;
+        };
+        DebtEntryResponse: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            cardId: string;
+            kind: components["schemas"]["DebtEntryKind"];
+            /** Format: date */
+            date: string;
+            /** Format: int64 */
+            amountCents: number;
+            /** Format: int64 */
+            differenceCents: number;
+            note: null | string;
+            linkedCard: null | components["schemas"]["NamedReference"];
+        };
         ExpenseCategoryResponse: {
             /** Format: uuid */
             id: string;
@@ -2203,6 +2440,28 @@ export interface components {
         };
         ExportRequest: {
             password: null | string;
+        };
+        ExtraPaymentRequest: {
+            /** Format: uuid */
+            accountId: string;
+            /** Format: date */
+            date: string;
+            /** Format: int64 */
+            amountCents: number;
+            description: null | string;
+        };
+        ExtraPaymentResponse: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            cardId: string;
+            cardName: string;
+            account: components["schemas"]["NamedReference"];
+            /** Format: date */
+            date: string;
+            /** Format: int64 */
+            amountCents: number;
+            description: null | string;
         };
         HealthResponse: {
             status: components["schemas"]["HealthStatusValue"];
@@ -2574,6 +2833,12 @@ export interface components {
             previousMonthResultCents: number;
             sharedCosts?: null | components["schemas"]["ReportSharedCostsResponse"];
         };
+        MonthRevolvingResponse: {
+            month: string;
+            bills: components["schemas"]["RevolvingBillResponse"][];
+            extraPayments: components["schemas"]["ExtraPaymentResponse"][];
+            totals: components["schemas"]["LoanPaymentTotalsResponse"];
+        };
         NamedReference: {
             /** Format: uuid */
             id: string;
@@ -2761,6 +3026,129 @@ export interface components {
         };
         ReversalRequest: {
             reason: null | string;
+        };
+        RevolvingBillCorrectionRequest: {
+            /** Format: int64 */
+            minimumCents: null | number;
+            /** Format: int64 */
+            interestCents: null | number;
+        };
+        RevolvingBillPaidRequest: {
+            /** Format: date */
+            paidDate: null | string;
+            /** Format: uuid */
+            accountId: null | string;
+            /** Format: int64 */
+            amountCents: null | number;
+        };
+        RevolvingBillResponse: {
+            /** Format: uuid */
+            cardId: string;
+            cardName: string;
+            month: string;
+            /** Format: date */
+            billDate: string;
+            /** Format: date */
+            dueDate: string;
+            /** Format: int64 */
+            debtCents: number;
+            /** Format: int64 */
+            interestCents: number;
+            /** Format: int64 */
+            minimumCents: number;
+            isCorrected: boolean;
+            isEstimated: boolean;
+            isPaid: boolean;
+            /** Format: date */
+            paidDate: null | string;
+            /** Format: int64 */
+            paidAmountCents: null | number;
+            account: null | components["schemas"]["NamedReference"];
+            paysFromAccountDirectly: boolean;
+            paidAutomatically: boolean;
+            isOverdue: boolean;
+            needsAccount: boolean;
+        };
+        RevolvingCardDetailsResponse: {
+            card: components["schemas"]["RevolvingCardResponse"];
+            bills: components["schemas"]["RevolvingBillResponse"][];
+            extraPayments: components["schemas"]["ExtraPaymentResponse"][];
+            debtEntries: components["schemas"]["DebtEntryResponse"][];
+            charges: components["schemas"]["RevolvingChargeResponse"][];
+            movements: components["schemas"]["RevolvingMovementResponse"][];
+        };
+        RevolvingCardResponse: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            cardNumberMasked: null | string;
+            status: components["schemas"]["CardStatus"];
+            canBeUsed: boolean;
+            /** Format: int64 */
+            debtCents: number;
+            /** Format: int64 */
+            debtLimitCents: number;
+            /** Format: int64 */
+            remainingLimitCents: number;
+            isOverLimit: boolean;
+            nextBill: null | components["schemas"]["RevolvingBillResponse"];
+            terms: null | components["schemas"]["CardRevolvingResponse"];
+            needsAccount: boolean;
+        };
+        RevolvingCardsResponse: {
+            cards: components["schemas"]["RevolvingCardResponse"][];
+            /** Format: int64 */
+            totalDebtCents: number;
+        };
+        /** @enum {unknown} */
+        RevolvingChargeKind: "Bill" | "Expense" | "Purchase" | "PurchaseCredit";
+        RevolvingChargeResponse: {
+            /** Format: uuid */
+            sourceId: string;
+            kind: components["schemas"]["RevolvingChargeKind"];
+            /** Format: date */
+            date: string;
+            description: string;
+            category: null | components["schemas"]["NamedReference"];
+            /** Format: int64 */
+            amountCents: number;
+        };
+        RevolvingDebtResponse: {
+            /** Format: uuid */
+            cardId: string;
+            /** Format: date */
+            date: string;
+            /** Format: int64 */
+            debtCents: number;
+        };
+        /** @enum {unknown} */
+        RevolvingMovementKind: "Starting" | "Correction" | "TransferIn" | "TransferOut" | "Charge" | "Credit" | "Interest" | "BillPayment" | "ExtraPayment";
+        RevolvingMovementResponse: {
+            /** Format: date */
+            date: string;
+            kind: components["schemas"]["RevolvingMovementKind"];
+            /** Format: int64 */
+            changeCents: number;
+            /** Format: int64 */
+            debtAfterCents: number;
+            /** Format: uuid */
+            sourceId: null | string;
+            billMonth: null | string;
+        };
+        RevolvingTermsResponse: {
+            fromMonth: null | string;
+            /** Format: int32 */
+            minPaymentBasisPoints: number;
+            /** Format: int64 */
+            minPaymentAmountCents: number;
+            /** Format: int32 */
+            interestBasisPoints: number;
+            /** Format: int32 */
+            minPaymentInterestBasisPoints: null | number;
+            /** Format: int32 */
+            billDay: number;
+            /** Format: int32 */
+            dueDay: number;
         };
         SafetyCopyRestoreRequest: {
             confirmation: null | string;
@@ -3007,6 +3395,134 @@ export interface operations {
                 };
                 content: {
                     "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+        };
+    };
+    GetMonthRevolvingBills: {
+        parameters: {
+            query: {
+                month: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MonthRevolvingResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+        };
+    };
+    CreateExtraPayment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExtraPaymentRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExtraPaymentResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    CreateDebtEntry: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DebtEntryRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DebtEntryResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
             };
         };
@@ -6091,6 +6607,500 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["CardPurchaseDetailsResponse"];
                 };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetRevolvingCards: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RevolvingCardsResponse"];
+                };
+            };
+        };
+    };
+    GetRevolvingCard: {
+        parameters: {
+            query?: {
+                to?: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RevolvingCardDetailsResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetRevolvingDebt: {
+        parameters: {
+            query?: {
+                date?: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RevolvingDebtResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    MarkRevolvingBillPaid: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                month: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RevolvingBillPaidRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RevolvingBillResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    MarkRevolvingBillUnpaid: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                month: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RevolvingBillResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    CorrectRevolvingBill: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                month: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RevolvingBillCorrectionRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RevolvingBillResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ClearRevolvingBillCorrection: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                month: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RevolvingBillResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    UpdateExtraPayment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExtraPaymentRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExtraPaymentResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    DeleteExtraPayment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    UpdateDebtEntry: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DebtEntryRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DebtEntryResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    DeleteDebtEntry: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Bad Request */
             400: {

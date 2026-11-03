@@ -18,6 +18,7 @@ internal sealed class CardConfiguration : IEntityTypeConfiguration<Card>
             table.HasCheckConstraint("ck_card_primary_is_debit", "NOT is_primary OR type = 'Debit'");
             table.HasCheckConstraint("ck_card_number_last4", "card_number_last4 ~ '^[0-9]{4}$'");
             table.HasCheckConstraint("ck_card_max_installments", "max_installments IS NULL OR max_installments IN (12, 24, 36)");
+            table.HasCheckConstraint("ck_card_revolving_debt_limit", "type <> 'Revolving' OR debt_limit_cents IS NOT NULL");
         });
 
         builder.HasKey(c => c.Id);
@@ -46,6 +47,8 @@ internal sealed class CardConfiguration : IEntityTypeConfiguration<Card>
         builder.Ignore(c => c.IsReadOnly);
         builder.Ignore(c => c.HasBillingDetails);
         builder.Ignore(c => c.NeedsBillingDetails);
+        builder.Ignore(c => c.IsRevolving);
+        builder.Ignore(c => c.IsAccount);
 
         builder.HasOne<Card>().WithMany().HasForeignKey(c => c.PayingAccountId)
             .OnDelete(DeleteBehavior.Restrict).HasConstraintName("fk_card_card_paying_account_id");
@@ -53,6 +56,9 @@ internal sealed class CardConfiguration : IEntityTypeConfiguration<Card>
         builder.HasMany(c => c.BillingTerms).WithOne().HasForeignKey(t => t.CardId)
             .OnDelete(DeleteBehavior.Cascade).HasConstraintName("fk_card_billing_terms_card_card_id");
         builder.Navigation(c => c.BillingTerms).HasField("_billingTerms").UsePropertyAccessMode(PropertyAccessMode.Field).AutoInclude();
+        builder.HasMany(c => c.RevolvingTermVersions).WithOne().HasForeignKey(t => t.CardId)
+            .OnDelete(DeleteBehavior.Cascade).HasConstraintName("fk_revolving_terms_card_card_id");
+        builder.Navigation(c => c.RevolvingTermVersions).HasField("_revolvingTerms").UsePropertyAccessMode(PropertyAccessMode.Field).AutoInclude();
         // Name uniqueness ignoring case is a unique index on lower(name), created in the migration.
     }
 }

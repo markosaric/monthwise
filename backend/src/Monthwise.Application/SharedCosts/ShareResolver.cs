@@ -37,7 +37,7 @@ public sealed class ShareResolver(IParticipantRepository participants, ICardRepo
         if (request.ContributionAccountId is { } accountId && accountId != Guid.Empty && accountId != existing?.ContributionAccountId)
         {
             var account = await cards.GetAsync(accountId, includeSensitiveData: false, cancellationToken);
-            if (account is null || PaidFromRules.IsCreditCard(account) || !InputDetailsResolver.CanReceive(account, timeProvider.Today()))
+            if (account is null || PaidFromRules.IsCardCharge(account) || !InputDetailsResolver.CanReceive(account, timeProvider.Today()))
             {
                 errors.Add(SharedCostErrors.ContributionAccountUnusable);
             }

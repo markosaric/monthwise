@@ -9,16 +9,19 @@ import { formatDate, formatMonth } from '@/components/cards/format'
 import { RevealableNumber } from '@/components/cards/RevealableNumber'
 import { cardPurchaseTexts } from '@/components/cardPurchases/texts'
 import { cardTexts } from '@/components/cards/texts'
+import { revolvingTexts } from '@/components/revolving/texts'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { NativeSelect } from '@/components/ui/native-select'
 import { formatCents } from '@/lib/money'
+import { formatBasisPoints } from '@/lib/percent'
 import { PageHeader } from '@/pages/PageHeader'
 
 type Dialog = 'block' | 'unblock' | 'expire' | 'archive' | null
 const t = cardTexts
 const b = cardPurchaseTexts.billing
+const r = revolvingTexts
 
 /**
  * Card details with reveal, status history and the block/unblock/expire/archive actions (FR-3, FR-5,
@@ -45,8 +48,37 @@ function CardDetails({ card }: { card: Card }) {
   const archived = card.status === 'Archived'
   const expiredByUser = card.expiredOn !== null
   const readOnly = blocked || archived || expiredByUser
+  const isRevolving = card.type === 'Revolving'
+  const debt = card.revolvingDebtCents ?? 0
+  // A revolving card is replaced only by a revolving card, which takes over its debt (revolving FR-9).
   const replacementOptions = candidates.filter(
-    (c) => c.id !== card.id && ['Active', 'ExpiringSoon', 'NotYetValid'].includes(c.status),
+    (c) =>
+      c.id !== card.id &&
+      (c.type === 'Revolving') === isRevolving &&
+      ['Active', 'ExpiringSoon', 'NotYetValid'].includes(c.status),
+  )
+  const replacementSelect = (
+    <div className="flex flex-col gap-1.5">
+      <Label htmlFor="replacement">
+        {isRevolving ? r.dialogs.replacement : t.dialogs.replacement}
+      </Label>
+      <NativeSelect
+        id="replacement"
+        value={replacementId}
+        disabled={addReplacement}
+        onChange={(e) => setReplacementId(e.target.value)}
+      >
+        <option value="">{t.dialogs.noReplacement}</option>
+        {replacementOptions.map((c) => (
+          <option key={c.id} value={c.id}>
+            {c.name}
+          </option>
+        ))}
+      </NativeSelect>
+      {isRevolving && debt > 0 && (
+        <p className="text-xs text-muted-foreground">{r.dialogs.replacementHint}</p>
+      )}
+    </div>
   )
 
   const close = (open: boolean) => !open && setDialog(null)
@@ -79,7 +111,9 @@ function CardDetails({ card }: { card: Card }) {
               ? `${formatMonth(card.validFrom)} – ${formatMonth(card.validThrough)}`
               : `until ${formatMonth(card.validThrough)}`}
           </Row>
-          <Row label={t.fields.allowsInstallments}>{card.allowsInstallments ? 'Yes' : 'No'}</Row>
+          {!isRevolving && (
+            <Row label={t.fields.allowsInstallments}>{card.allowsInstallments ? 'Yes' : 'No'}</Row>
+          )}
           {card.billing && (
             <>
               <Row label={b.terms}>
@@ -112,6 +146,47 @@ function CardDetails({ card }: { card: Card }) {
             <Row label={b.title}>
               <span className="text-destructive">{cardPurchaseTexts.needsBillingDetails}</span>
             </Row>
+          )}
+          {card.revolving && (
+            <>
+              <Row label={r.card.terms}>
+                <ul className="flex flex-col">
+                  {card.revolving.terms.map((terms) => (
+                    <li key={terms.fromMonth ?? 'start'}>
+                      {r.card.termsLine(
+                        formatBasisPoints(terms.minPaymentBasisPoints),
+                        formatCents(terms.minPaymentAmountCents),
+                      )}{' '}
+                      · {r.card.interest} {formatBasisPoints(terms.interestBasisPoints)}
+                      {terms.minPaymentInterestBasisPoints != null &&
+                        ` (${r.card.interestPart} ${formatBasisPoints(terms.minPaymentInterestBasisPoints)})`}{' '}
+                      · {r.card.billAndDue} {r.card.days(terms.billDay, terms.dueDay)}{' '}
+                      <span className="text-muted-foreground">
+                        (
+                        {terms.fromMonth
+                          ? `${b.from} ${formatMonth(terms.fromMonth)}`
+                          : b.fromStart}
+                        )
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </Row>
+              <Row label={r.card.payingAccount}>
+                <Link
+                  className="underline"
+                  to={`/settings/cards/${card.revolving.payingAccount.id}`}
+                >
+                  {card.revolving.payingAccount.name}
+                </Link>
+                {card.revolving.paysFromAccountDirectly && ` · ${r.form.paysFromAccountDirectly}`}
+              </Row>
+              <Row label={r.card.debt}>
+                <Link className="underline" to={`/cards/revolving/${card.id}`}>
+                  {formatCents(debt)}
+                </Link>
+              </Row>
+            </>
           )}
           <Row label="Max debt limit">
             {card.debtLimitCents === null ? '—' : formatCents(card.debtLimitCents)}
@@ -176,7 +251,7 @@ function CardDetails({ card }: { card: Card }) {
             </Button>
           </div>
         )}
-        <BalanceEntries accountId={card.id} canAdd={!archived} />
+        {!isRevolving && <BalanceEntries accountId={card.id} canAdd={!archived} />}
         <Link to="/settings/cards" className="text-sm text-muted-foreground underline">
           Back to {t.section.toLowerCase()}
         </Link>
@@ -191,10 +266,16 @@ function CardDetails({ card }: { card: Card }) {
         withReason
         removesPrimary={card.isPrimary}
         onConfirm={async (reason) => {
-          await action.mutateAsync({ action: 'block', reason })
+          await action.mutateAsync({
+            action: 'block',
+            reason,
+            replacementCardId: isRevolving && replacementId !== '' ? replacementId : null,
+          })
           toast.success(t.blocked)
         }}
-      />
+      >
+        {isRevolving && replacementSelect}
+      </CardActionDialog>
       <CardActionDialog
         open={dialog === 'unblock'}
         onOpenChange={close}
@@ -227,22 +308,7 @@ function CardDetails({ card }: { card: Card }) {
             navigate(`/settings/cards/new?replaces=${card.id}${card.isPrimary ? '&primary=1' : ''}`)
         }}
       >
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor="replacement">{t.dialogs.replacement}</Label>
-          <NativeSelect
-            id="replacement"
-            value={replacementId}
-            disabled={addReplacement}
-            onChange={(e) => setReplacementId(e.target.value)}
-          >
-            <option value="">{t.dialogs.noReplacement}</option>
-            {replacementOptions.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </NativeSelect>
-        </div>
+        {replacementSelect}
         <label className="flex items-center gap-2 text-sm">
           <input
             type="checkbox"
@@ -256,8 +322,13 @@ function CardDetails({ card }: { card: Card }) {
         open={dialog === 'archive'}
         onOpenChange={close}
         title={t.dialogs.archiveTitle(card.name)}
-        description={t.dialogs.archiveDescription}
+        description={
+          isRevolving && debt > 0
+            ? r.dialogs.archiveWithDebt(formatCents(debt))
+            : t.dialogs.archiveDescription
+        }
         confirmLabel={t.actions.archive}
+        canConfirm={!isRevolving || debt === 0}
         removesPrimary={card.isPrimary}
         destructive
         onConfirm={async () => {

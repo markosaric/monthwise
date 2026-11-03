@@ -11,12 +11,14 @@ public sealed class GetCardsHandler(
     ICardListRepository<CardIssuer> issuers,
     ICardListRepository<Bank> banks,
     ICardActivityQuery activity,
+    Revolving.RevolvingLedger revolvingLedger,
     TimeProvider timeProvider)
 {
     public async Task<IReadOnlyList<CardResponse>> HandleAsync(CardListFilter filter, CancellationToken cancellationToken)
     {
         var today = timeProvider.Today();
         var mapping = await CardMapping.LoadAsync(issuers, banks, cards, today, cancellationToken);
+        mapping.Debts = await DebtsAsync(revolvingLedger, cancellationToken);
         var ongoing = await activity.CardsWithOngoingTransactionsAsync(cancellationToken);
 
         var selected = mapping.AllCards.Where(card => filter switch
@@ -27,6 +29,14 @@ public sealed class GetCardsHandler(
         });
         return mapping.ToSortedResponses(selected);
     }
+
+    /// <summary>Today's debt of every revolving card (revolving FR-5).</summary>
+    internal static async Task<IReadOnlyDictionary<Guid, Money>> DebtsAsync(
+        Revolving.RevolvingLedger revolvingLedger, CancellationToken cancellationToken)
+    {
+        var book = await revolvingLedger.LoadAsync(cancellationToken);
+        return book.Calculators.ToDictionary(c => c.Card.Id, c => c.Debt);
+    }
 }
 
 /// <summary>Card details (FR-3), with masked numbers only.</summary>
@@ -34,11 +44,13 @@ public sealed class GetCardHandler(
     ICardRepository cards,
     ICardListRepository<CardIssuer> issuers,
     ICardListRepository<Bank> banks,
+    Revolving.RevolvingLedger revolvingLedger,
     TimeProvider timeProvider)
 {
     public async Task<Result<CardResponse>> HandleAsync(Guid id, CancellationToken cancellationToken)
     {
         var mapping = await CardMapping.LoadAsync(issuers, banks, cards, timeProvider.Today(), cancellationToken);
+        mapping.Debts = await GetCardsHandler.DebtsAsync(revolvingLedger, cancellationToken);
         var card = mapping.AllCards.FirstOrDefault(c => c.Id == id);
         return card is null
             ? Result.Failure<CardResponse>(CardErrors.NotFound)
@@ -61,8 +73,9 @@ public sealed class GetDashboardCardsHandler(
         var mapping = await CardMapping.LoadAsync(issuers, banks, cards, today, cancellationToken);
         var ongoing = await activity.CardsWithOngoingTransactionsAsync(cancellationToken);
 
+        // Revolving cards have their own part on the Cards screen (revolving FR-10), not an account balance.
         var shown = mapping.ToSortedResponses(
-            mapping.AllCards.Where(card => card.IsShownOnDashboard(today, ongoing.Contains(card.Id))));
+            mapping.AllCards.Where(card => !card.IsRevolving && card.IsShownOnDashboard(today, ongoing.Contains(card.Id))));
         var shownBalances = await balances.ForAccountsAsync(shown.Select(c => c.Id).ToList(), cancellationToken);
         return new DashboardCardsResponse(mapping.AllCards.Count > 0, shown, shown.Select(c => shownBalances[c.Id]).ToList());
     }

@@ -383,6 +383,8 @@ namespace Monthwise.Infrastructure.Persistence.Migrations
 
                             t.HasCheckConstraint("ck_card_primary_is_debit", "NOT is_primary OR type = 'Debit'");
 
+                            t.HasCheckConstraint("ck_card_revolving_debt_limit", "type <> 'Revolving' OR debt_limit_cents IS NOT NULL");
+
                             t.HasCheckConstraint("ck_card_validity_order", "valid_from IS NULL OR valid_through >= valid_from");
                         });
                 });
@@ -522,6 +524,71 @@ namespace Monthwise.Infrastructure.Persistence.Migrations
                         .HasFilter("iban_hash IS NOT NULL AND archived_on IS NULL");
 
                     b.ToTable("card", (string)null);
+                });
+
+            modelBuilder.Entity("Monthwise.Domain.Cards.RevolvingTerms", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<int>("BillDay")
+                        .HasColumnType("integer")
+                        .HasColumnName("bill_day");
+
+                    b.Property<Guid>("CardId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("card_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<int>("DueDay")
+                        .HasColumnType("integer")
+                        .HasColumnName("due_day");
+
+                    b.Property<DateOnly>("FromMonth")
+                        .HasColumnType("date")
+                        .HasColumnName("from_month");
+
+                    b.Property<int>("InterestBasisPoints")
+                        .HasColumnType("integer")
+                        .HasColumnName("interest_bp");
+
+                    b.Property<long>("MinPaymentAmount")
+                        .HasColumnType("bigint")
+                        .HasColumnName("min_payment_cents");
+
+                    b.Property<int>("MinPaymentBasisPoints")
+                        .HasColumnType("integer")
+                        .HasColumnName("min_payment_bp");
+
+                    b.Property<int?>("MinPaymentInterestBasisPoints")
+                        .HasColumnType("integer")
+                        .HasColumnName("min_payment_interest_bp");
+
+                    b.HasKey("Id")
+                        .HasName("pk_revolving_terms");
+
+                    b.HasIndex("CardId", "FromMonth")
+                        .IsUnique()
+                        .HasDatabaseName("ux_revolving_terms_card_id_from_month");
+
+                    b.ToTable("revolving_terms", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_revolving_terms_bill_day", "bill_day BETWEEN 1 AND 31");
+
+                            t.HasCheckConstraint("ck_revolving_terms_due_day", "due_day BETWEEN 1 AND 31");
+
+                            t.HasCheckConstraint("ck_revolving_terms_interest_bp", "interest_bp >= 0");
+
+                            t.HasCheckConstraint("ck_revolving_terms_min_payment_bp", "min_payment_bp BETWEEN 1 AND 10000");
+
+                            t.HasCheckConstraint("ck_revolving_terms_min_payment_cents", "min_payment_cents >= 0");
+
+                            t.HasCheckConstraint("ck_revolving_terms_min_payment_interest_bp", "min_payment_interest_bp IS NULL OR min_payment_interest_bp BETWEEN 0 AND min_payment_bp");
+                        });
                 });
 
             modelBuilder.Entity("Monthwise.Domain.CashFlow.BalanceEntry", b =>
@@ -1697,6 +1764,184 @@ namespace Monthwise.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Monthwise.Domain.Revolving.DebtEntry", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<long>("Amount")
+                        .HasColumnType("bigint")
+                        .HasColumnName("amount_cents");
+
+                    b.Property<Guid>("CardId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("card_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateOnly>("Date")
+                        .HasColumnType("date")
+                        .HasColumnName("date");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("kind");
+
+                    b.Property<Guid?>("LinkedCardId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("linked_card_id");
+
+                    b.Property<string>("Note")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("note");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id")
+                        .HasName("pk_revolving_debt_entry");
+
+                    b.HasIndex("LinkedCardId")
+                        .HasDatabaseName("ix_revolving_debt_entry_linked_card_id");
+
+                    b.HasIndex("CardId", "Date")
+                        .HasDatabaseName("ix_revolving_debt_entry_card_id_date");
+
+                    b.ToTable("revolving_debt_entry", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_revolving_debt_entry_amount", "amount_cents >= 0");
+
+                            t.HasCheckConstraint("ck_revolving_debt_entry_transfer_linked", "(kind IN ('TransferIn', 'TransferOut')) = (linked_card_id IS NOT NULL)");
+                        });
+                });
+
+            modelBuilder.Entity("Monthwise.Domain.Revolving.ExtraPayment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("AccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("account_id");
+
+                    b.Property<long>("Amount")
+                        .HasColumnType("bigint")
+                        .HasColumnName("amount_cents");
+
+                    b.Property<Guid>("CardId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("card_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateOnly>("Date")
+                        .HasColumnType("date")
+                        .HasColumnName("date");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("description");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id")
+                        .HasName("pk_revolving_extra_payment");
+
+                    b.HasIndex("AccountId")
+                        .HasDatabaseName("ix_revolving_extra_payment_account_id");
+
+                    b.HasIndex("CardId", "Date")
+                        .HasDatabaseName("ix_revolving_extra_payment_card_id_date");
+
+                    b.ToTable("revolving_extra_payment", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_revolving_extra_payment_amount_positive", "amount_cents > 0");
+                        });
+                });
+
+            modelBuilder.Entity("Monthwise.Domain.Revolving.RevolvingBill", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("CardId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("card_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<long?>("Interest")
+                        .HasColumnType("bigint")
+                        .HasColumnName("interest_cents");
+
+                    b.Property<bool?>("IsPaid")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_paid");
+
+                    b.Property<long?>("Minimum")
+                        .HasColumnType("bigint")
+                        .HasColumnName("minimum_cents");
+
+                    b.Property<DateOnly>("Month")
+                        .HasColumnType("date")
+                        .HasColumnName("month");
+
+                    b.Property<Guid?>("PaidAccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("paid_account_id");
+
+                    b.Property<long?>("PaidAmount")
+                        .HasColumnType("bigint")
+                        .HasColumnName("paid_amount_cents");
+
+                    b.Property<DateOnly?>("PaidDate")
+                        .HasColumnType("date")
+                        .HasColumnName("paid_date");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id")
+                        .HasName("pk_revolving_bill");
+
+                    b.HasIndex("PaidAccountId")
+                        .HasDatabaseName("ix_revolving_bill_paid_account_id");
+
+                    b.HasIndex("CardId", "Month")
+                        .IsUnique()
+                        .HasDatabaseName("ux_revolving_bill_card_id_month");
+
+                    b.ToTable("revolving_bill", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_revolving_bill_corrections", "minimum_cents >= 0 AND interest_cents >= 0");
+
+                            t.HasCheckConstraint("ck_revolving_bill_paid", "(is_paid IS TRUE) = (paid_date IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_revolving_bill_paid_account", "(is_paid IS TRUE) = (paid_account_id IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_revolving_bill_paid_amount", "(is_paid IS TRUE) = (paid_amount_cents IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_revolving_bill_paid_amount_positive", "paid_amount_cents > 0");
+                        });
+                });
+
             modelBuilder.Entity("Monthwise.Domain.SharedCosts.Participant", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1829,6 +2074,16 @@ namespace Monthwise.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_card_card_card_id");
+                });
+
+            modelBuilder.Entity("Monthwise.Domain.Cards.RevolvingTerms", b =>
+                {
+                    b.HasOne("Monthwise.Domain.Cards.Card", null)
+                        .WithMany("RevolvingTermVersions")
+                        .HasForeignKey("CardId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_revolving_terms_card_card_id");
                 });
 
             modelBuilder.Entity("Monthwise.Domain.CashFlow.BalanceEntry", b =>
@@ -2086,6 +2341,55 @@ namespace Monthwise.Infrastructure.Persistence.Migrations
                         .HasConstraintName("fk_loan_payment_change_loan_loan_id");
                 });
 
+            modelBuilder.Entity("Monthwise.Domain.Revolving.DebtEntry", b =>
+                {
+                    b.HasOne("Monthwise.Domain.Cards.Card", null)
+                        .WithMany()
+                        .HasForeignKey("CardId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_revolving_debt_entry_card_card_id");
+
+                    b.HasOne("Monthwise.Domain.Cards.Card", null)
+                        .WithMany()
+                        .HasForeignKey("LinkedCardId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_revolving_debt_entry_card_linked_card_id");
+                });
+
+            modelBuilder.Entity("Monthwise.Domain.Revolving.ExtraPayment", b =>
+                {
+                    b.HasOne("Monthwise.Domain.Cards.Card", null)
+                        .WithMany()
+                        .HasForeignKey("AccountId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_revolving_extra_payment_card_account_id");
+
+                    b.HasOne("Monthwise.Domain.Cards.Card", null)
+                        .WithMany()
+                        .HasForeignKey("CardId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_revolving_extra_payment_card_card_id");
+                });
+
+            modelBuilder.Entity("Monthwise.Domain.Revolving.RevolvingBill", b =>
+                {
+                    b.HasOne("Monthwise.Domain.Cards.Card", null)
+                        .WithMany()
+                        .HasForeignKey("CardId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_revolving_bill_card_card_id");
+
+                    b.HasOne("Monthwise.Domain.Cards.Card", null)
+                        .WithMany()
+                        .HasForeignKey("PaidAccountId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_revolving_bill_card_paid_account_id");
+                });
+
             modelBuilder.Entity("Monthwise.Domain.SharedCosts.Participant", b =>
                 {
                     b.HasOne("Monthwise.Domain.CashFlow.Payer", null)
@@ -2104,6 +2408,8 @@ namespace Monthwise.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("Monthwise.Domain.Cards.Card", b =>
                 {
                     b.Navigation("BillingTerms");
+
+                    b.Navigation("RevolvingTermVersions");
 
                     b.Navigation("SensitiveData")
                         .IsRequired();

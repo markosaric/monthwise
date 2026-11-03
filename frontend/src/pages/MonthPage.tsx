@@ -4,6 +4,7 @@ import { useMonthCardPayments } from '@/api/cardPurchases'
 import { useMonthlyReport } from '@/api/cashFlow'
 import { useMonthBills, useMonthExpenses } from '@/api/expenses'
 import { useMonthLoanPayments } from '@/api/loans'
+import { useMonthRevolving } from '@/api/revolving'
 import { CardPaymentsSection } from '@/components/cardPurchases/CardPaymentsSection'
 import { IncomeSection } from '@/components/cashflow/IncomeSection'
 import { meaningColors, sectionColors } from '@/components/design/colors'
@@ -14,6 +15,7 @@ import { StatCard, StatGrid } from '@/components/design/StatCard'
 import { BillsSection } from '@/components/expenses/BillsSection'
 import { ExpensesSection } from '@/components/expenses/ExpensesSection'
 import { LoanPaymentsSection } from '@/components/loans/LoanPaymentsSection'
+import { RevolvingMonthSection } from '@/components/revolving/RevolvingMonthSection'
 import { Card, CardContent } from '@/components/ui/card'
 import { currentMonth, isYearMonth } from '@/lib/dates'
 import { formatCents } from '@/lib/money'
@@ -33,6 +35,7 @@ export function MonthPage() {
       <ExpensesSection month={month} />
       <LoanPaymentsSection month={month} />
       <CardPaymentsSection month={month} />
+      <RevolvingMonthSection month={month} />
     </div>
   )
 }
@@ -47,6 +50,7 @@ function MonthSummary({ month }: { month: string }) {
   const { data: expenses } = useMonthExpenses(month)
   const { data: loanPayments } = useMonthLoanPayments(month)
   const { data: cardPayments } = useMonthCardPayments(month)
+  const { data: revolving } = useMonthRevolving(month)
   if (!report) return null
 
   const inputs = report.totals
@@ -54,7 +58,8 @@ function MonthSummary({ month }: { month: string }) {
   const overdue =
     (bills?.bills.filter((b) => b.isOverdue).length ?? 0) +
     (loanPayments?.payments.filter((p) => p.isOverdue).length ?? 0) +
-    (cardPayments?.payments.filter((p) => p.isOverdue).length ?? 0)
+    (cardPayments?.payments.filter((p) => p.isOverdue).length ?? 0) +
+    (revolving?.bills.filter((b) => b.isOverdue).length ?? 0)
 
   return (
     <>
@@ -125,7 +130,7 @@ function MonthSummary({ month }: { month: string }) {
               },
               {
                 label: 'Card payments',
-                cents: cardPayments?.totals.totalCents ?? 0,
+                cents: (cardPayments?.totals.totalCents ?? 0) + (revolving?.totals.totalCents ?? 0),
                 color: sectionColors.cards,
               },
             ]}

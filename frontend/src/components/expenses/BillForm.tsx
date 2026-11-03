@@ -16,7 +16,7 @@ import { parseEuroInput } from '@/lib/money'
 import { billFormSchema, toBillRequest, type BillFormValues } from './billFormModel'
 import { applyApiErrors } from './formErrors'
 import { CategorySelect, Field } from './formParts'
-import { isCreditCard } from './paidFrom'
+import { isCreditCard, isRevolvingCard } from './paidFrom'
 import { PaidFromSelect } from './PaidFromSelect'
 import { expenseTexts } from './texts'
 
@@ -71,6 +71,7 @@ export function BillForm({
   })
   const amountCents = parseEuroInput(amount)
   const withCard = cards.some((c) => c.id === paidFromId && isCreditCard(c))
+  const withRevolving = cards.some((c) => c.id === paidFromId && isRevolvingCard(c))
 
   async function submit(values: BillFormValues) {
     setFormError(null)
@@ -140,7 +141,7 @@ export function BillForm({
       <Field
         id="paidFromId"
         label={paid ? t.fields.paidFrom : t.fields.usualPaidFrom}
-        hint={withCard ? t.hints.creditCard : undefined}
+        hint={withRevolving ? t.hints.revolvingCard : withCard ? t.hints.creditCard : undefined}
         error={errors.paidFromId?.message}
       >
         <Controller
