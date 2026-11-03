@@ -22,7 +22,11 @@ public sealed record ChartFilter(
 /// expenses), per day or month (FR-12, Appendix 1; installments FR-8; bills and expenses FR-10).
 /// </summary>
 public sealed class GetCashFlowChartHandler(
-    InputLedger ledger, LoanLedger loanLedger, CardPaymentLedger cardPaymentLedger, ExpenseLedger expenseLedger)
+    InputLedger ledger,
+    LoanLedger loanLedger,
+    CardPaymentLedger cardPaymentLedger,
+    ExpenseLedger expenseLedger,
+    Revolving.RevolvingLedger revolvingLedger)
 {
     /// <summary>Longest period the chart accepts.</summary>
     public const int MaxYears = 10;
@@ -58,13 +62,21 @@ public sealed class GetCashFlowChartHandler(
                 .Where(p => filter.AccountId is null || p.AccountId == filter.AccountId)
                 .Where(p => filter.CardId is null || p.CardId == filter.CardId)
                 .Select(p => new ChartOutput(p.MonthDate, p.IsPaid, p.Amount));
+        // Monthly bills and extra payments of revolving cards count like card payments (revolving FR-11).
+        IEnumerable<ChartOutput> revolving = filter.LoanCategoryId is not null || filter.ExpenseCategoryId is not null
+            ? []
+            : (await revolvingLedger.LoadAsync(cancellationToken, YearMonth.FromDate(to))).OutputsBetween(from, to)
+                .Where(o => filter.AccountId is null || o.AccountId == filter.AccountId)
+                .Where(o => filter.CardId is null || o.CardId == filter.CardId)
+                .Select(o => new ChartOutput(o.Date, o.IsPaid, o.Amount));
         IEnumerable<ChartOutput> billsAndExpenses = filter.LoanCategoryId is not null || filter.CardId is not null
             ? []
             : (await expenseLedger.LoadAsync(cancellationToken)).OutputsBetween(from, to)
                 .Where(o => filter.AccountId is null || o.AccountId == filter.AccountId)
                 .Where(o => filter.ExpenseCategoryId is null || o.CategoryId == filter.ExpenseCategoryId)
                 .Select(o => new ChartOutput(o.Date, o.IsPaid, o.Amount));
-        var payments = loanPayments.Concat(cardPayments).Concat(billsAndExpenses).ToLookup(p => BucketStart(p.Date, granularity));
+        var payments = loanPayments.Concat(cardPayments).Concat(revolving).Concat(billsAndExpenses)
+            .ToLookup(p => BucketStart(p.Date, granularity));
 
         var buckets = new List<ChartBucketResponse>();
         for (var start = BucketStart(from, granularity); start <= to; start = granularity == ChartGranularity.Day ? start.AddDays(1) : start.AddMonths(1))
@@ -96,6 +108,7 @@ public sealed class GetMonthlyReportHandler(
     LoanLedger loanLedger,
     CardPaymentLedger cardPaymentLedger,
     ExpenseLedger expenseLedger,
+    Revolving.RevolvingLedger revolvingLedger,
     IBalanceEntryRepository balanceEntries,
     AccountBalanceQuery balances,
     IPayerRepository payers,
@@ -125,9 +138,10 @@ public sealed class GetMonthlyReportHandler(
         var book = await loanLedger.LoadAsync(cancellationToken);
         var cardBook = await cardPaymentLedger.LoadAsync(cancellationToken);
         var expenseBook = await expenseLedger.LoadAsync(cancellationToken);
-        var outputs = Outputs(book, cardBook, expenseBook, month);
+        var revolvingBook = await revolvingLedger.LoadAsync(cancellationToken, month);
+        var outputs = Outputs(book, cardBook, expenseBook, revolvingBook, month);
         var outputTotals = outputs.Totals;
-        var previousOutputs = Outputs(book, cardBook, expenseBook, previous).Totals.TotalCents;
+        var previousOutputs = Outputs(book, cardBook, expenseBook, revolvingBook, previous).Totals.TotalCents;
 
         return new MonthlyReportResponse(
             month.ToString(),
@@ -170,16 +184,20 @@ public sealed class GetMonthlyReportHandler(
     public const string CardPayments = "Card payments";
 
     /// <summary>
-    /// The month's outputs: loan payments, card payments, bills and expenses, grouped by category (loan
-    /// category, one Card payments group, or expense category), account, loan and card.
+    /// The month's outputs: loan payments, card payments (monthly bills and extra payments of revolving
+    /// cards included, revolving FR-11), bills and expenses, grouped by category (loan category, one Card
+    /// payments group, or expense category), account, loan and card.
     /// </summary>
-    private static ReportOutputsResponse Outputs(LoanBook book, CardPaymentBook cardBook, ExpenseBook expenseBook, YearMonth month)
+    private static ReportOutputsResponse Outputs(
+        LoanBook book, CardPaymentBook cardBook, ExpenseBook expenseBook, Revolving.RevolvingBook revolvingBook, YearMonth month)
     {
         var loanPayments = book.PaymentsBetween(month.FirstDay, month.LastDay)
             .Select(p => new ReportOutput(p.IsPaid, p.Amount, p.AccountId, book.CategoryOf(p.LoanId), p.LoanId, null))
             .ToList();
         var cardPayments = cardBook.PaymentsBetween(month.FirstDay, month.LastDay)
             .Select(p => new ReportOutput(p.IsPaid, p.Amount, p.NeedsAccount ? null : p.AccountId, null, null, p.CardId))
+            .Concat(revolvingBook.OutputsBetween(month.FirstDay, month.LastDay)
+                .Select(o => new ReportOutput(o.IsPaid, o.Amount, o.AccountId, null, null, o.CardId)))
             .ToList();
         var billsAndExpenses = expenseBook.OutputsBetween(month.FirstDay, month.LastDay)
             .Select(o => new ReportOutput(o.IsPaid, o.Amount, o.AccountId, null, null, null, o.CategoryId))

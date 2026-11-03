@@ -22,6 +22,7 @@ public sealed class GetDashboardHandler(
     GetMonthBillsHandler bills,
     GetMonthLoanPaymentsHandler loanPayments,
     GetMonthCardPaymentsHandler cardPayments,
+    Revolving.GetMonthRevolvingHandler revolvingBills,
     GetMonthInputsHandler inputs,
     GetLoansDashboardHandler loans,
     GetInstallmentCardsHandler installmentCards,
@@ -29,7 +30,8 @@ public sealed class GetDashboardHandler(
     RecurringBillHandler recurringBills,
     LoanLedger loanLedger,
     CardPaymentLedger cardPaymentLedger,
-    ExpenseLedger expenseLedger)
+    ExpenseLedger expenseLedger,
+    Revolving.RevolvingLedger revolvingLedger)
 {
     /// <summary>How many days Coming up looks ahead, today included.</summary>
     public const int ComingUpDays = 7;
@@ -47,8 +49,9 @@ public sealed class GetDashboardHandler(
         var monthBills = await bills.HandleAsync(month, cancellationToken);
         var monthLoanPayments = await loanPayments.HandleAsync(month, cancellationToken);
         var monthCardPayments = await cardPayments.HandleAsync(month, cancellationToken);
+        var monthRevolving = await revolvingBills.HandleAsync(month, cancellationToken);
 
-        var unpaid = Unpaid(monthBills, monthLoanPayments, monthCardPayments).ToList();
+        var unpaid = Unpaid(monthBills, monthLoanPayments, monthCardPayments, monthRevolving).ToList();
         var stillToPay = new DashboardStillToPayResponse(
             unpaid.Sum(u => u.Item.AmountCents),
             unpaid.Count,
@@ -81,9 +84,15 @@ public sealed class GetDashboardHandler(
             await RecurringBillsAsync(monthBills, cancellationToken));
     }
 
-    /// <summary>Issued bills, loan payments and card payments of a month that are not paid yet.</summary>
+    /// <summary>
+    /// Issued bills, loan payments, card payments and monthly bills of revolving cards of a month that are
+    /// not paid yet.
+    /// </summary>
     private static IEnumerable<UnpaidItem> Unpaid(
-        MonthBillsResponse monthBills, MonthLoanPaymentsResponse monthLoanPayments, MonthCardPaymentsResponse monthCardPayments) =>
+        MonthBillsResponse monthBills,
+        MonthLoanPaymentsResponse monthLoanPayments,
+        MonthCardPaymentsResponse monthCardPayments,
+        Revolving.MonthRevolvingResponse monthRevolving) =>
         monthBills.Bills
             .Where(b => b.State == BillState.Expected && b.DueDate is not null)
             .Select(b => new UnpaidItem(new DashboardItemResponse(DashboardItemKind.Bill, b.Name, b.DueDate!.Value, b.AmountCents), b.IsOverdue))
@@ -92,7 +101,10 @@ public sealed class GetDashboardHandler(
                 .Select(p => new UnpaidItem(new DashboardItemResponse(DashboardItemKind.LoanPayment, p.LoanName, p.DueDate, p.AmountCents), p.IsOverdue)))
             .Concat(monthCardPayments.Payments
                 .Where(p => !p.IsPaid)
-                .Select(p => new UnpaidItem(new DashboardItemResponse(DashboardItemKind.CardPayment, p.CardName, p.PaymentDate, p.AmountCents), p.IsOverdue)));
+                .Select(p => new UnpaidItem(new DashboardItemResponse(DashboardItemKind.CardPayment, p.CardName, p.PaymentDate, p.AmountCents), p.IsOverdue)))
+            .Concat(monthRevolving.Bills
+                .Where(b => !b.IsPaid)
+                .Select(b => new UnpaidItem(new DashboardItemResponse(DashboardItemKind.CardPayment, b.CardName, b.DueDate, b.MinimumCents), b.IsOverdue)));
 
     /// <summary>
     /// Unpaid outputs and expected inputs due from today through the next six days, this month and
@@ -108,7 +120,8 @@ public sealed class GetDashboardHandler(
             items.AddRange(Unpaid(
                 await bills.HandleAsync(next, cancellationToken),
                 await loanPayments.HandleAsync(next, cancellationToken),
-                await cardPayments.HandleAsync(next, cancellationToken)).Select(u => u.Item));
+                await cardPayments.HandleAsync(next, cancellationToken),
+                await revolvingBills.HandleAsync(next, cancellationToken)).Select(u => u.Item));
         }
         foreach (var inputMonth in YearMonth.FromDate(last) == next ? new[] { month, next } : [month])
         {
@@ -135,12 +148,14 @@ public sealed class GetDashboardHandler(
         var expenseBook = await expenseLedger.LoadAsync(cancellationToken);
         var loanBook = await loanLedger.LoadAsync(cancellationToken);
         var cardBook = await cardPaymentLedger.LoadAsync(cancellationToken);
+        var revolvingBook = await revolvingLedger.LoadAsync(cancellationToken, month);
         bool InMonth(DateOnly date) => date >= month.FirstDay && date <= month.LastDay;
         return new DashboardOutputsByKindResponse(
             Money.Sum(expenseBook.BillOutputs().Where(o => InMonth(o.Date)).Select(o => o.Amount)).Cents,
             Money.Sum(expenseBook.ExpenseOutputs().Where(o => InMonth(o.Date)).Select(o => o.Amount)).Cents,
             Money.Sum(loanBook.PaymentsBetween(month.FirstDay, month.LastDay).Select(p => p.Amount)).Cents,
-            Money.Sum(cardBook.PaymentsBetween(month.FirstDay, month.LastDay).Select(p => p.Amount)).Cents);
+            (Money.Sum(cardBook.PaymentsBetween(month.FirstDay, month.LastDay).Select(p => p.Amount))
+                + Money.Sum(revolvingBook.OutputsBetween(month.FirstDay, month.LastDay).Select(o => o.Amount))).Cents);
     }
 
     /// <summary>Inputs and outputs (received or paid and expected) of this month and the five before it.</summary>

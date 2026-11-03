@@ -14,6 +14,7 @@ import {
 import type { ReactNode } from 'react'
 import { Link } from 'react-router'
 import { useInstallmentCards } from '@/api/cardPurchases'
+import { useRevolvingCards } from '@/api/revolving'
 import { useDashboard, type Dashboard, type DashboardItem } from '@/api/dashboard'
 import { formatDate } from '@/components/cards/format'
 import { ExportReminder } from '@/components/dataTransfer/ExportReminder'
@@ -61,7 +62,13 @@ export function DashboardPage() {
 /** Icon-only add buttons with a delayed label (FR-14). */
 function QuickActions({ month }: { month?: string }) {
   const { data: cards } = useInstallmentCards()
-  const canAddPurchase = cards?.some((c) => c.canBeUsed && !c.needsBillingDetails) ?? false
+  const { data: revolving } = useRevolvingCards()
+  const usableRevolving = revolving?.cards.filter((c) => c.canBeUsed) ?? []
+  const canAddPurchase =
+    (cards?.some((c) => c.canBeUsed && !c.needsBillingDetails) ?? false) ||
+    usableRevolving.length > 0
+  // Shown when a revolving card has debt to pay (revolving FR-8).
+  const canPayRevolving = revolving?.cards.some((c) => c.debtCents > 0) ?? false
   const m = month ?? ''
   const back = 'returnTo=/'
   const actions: { key: keyof typeof addActions; label: string; to: string }[] = [
@@ -79,6 +86,15 @@ function QuickActions({ month }: { month?: string }) {
             key: 'purchase' as const,
             label: t.quickActions.addPurchase,
             to: `/cards/purchases/new?${back}`,
+          },
+        ]
+      : []),
+    ...(canPayRevolving
+      ? [
+          {
+            key: 'revolving' as const,
+            label: t.quickActions.payRevolving,
+            to: `/pay-revolving?${back}`,
           },
         ]
       : []),

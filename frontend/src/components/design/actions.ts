@@ -1,4 +1,12 @@
-import { Banknote, ReceiptText, Repeat, ShoppingBag, ShoppingCart, Wallet } from 'lucide-react'
+import {
+  Banknote,
+  CreditCard,
+  ReceiptText,
+  Repeat,
+  ShoppingBag,
+  ShoppingCart,
+  Wallet,
+} from 'lucide-react'
 import { meaningColors, sectionColors } from './colors'
 
 /**
@@ -12,4 +20,5 @@ export const addActions = {
   cash: { icon: Banknote, color: sectionColors.cashflow },
   purchase: { icon: ShoppingBag, color: sectionColors.cards },
   recurring: { icon: Repeat, color: sectionColors.month },
+  revolving: { icon: CreditCard, color: sectionColors.cards },
 } as const

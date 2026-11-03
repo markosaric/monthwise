@@ -11,6 +11,10 @@ public static class CardPurchaseErrors
         "purchase.card.noInstallments", "This card does not allow monthly installments.", "cardId");
     public static readonly DomainError CardNeedsBillingDetails = new(
         "purchase.card.needsBillingDetails", "Set the card's statement date, payment date and paying account first.", "cardId");
+    public static readonly DomainError RevolvingNoInstallments = new(
+        "purchase.inInstallments.revolving",
+        "A revolving card does not allow installments: the purchase is paid in full and becomes debt on the card.",
+        "inInstallments");
     public static readonly DomainError CardUnusable = new(
         "purchase.card.unusable", "This card is blocked, expired, archived or not valid yet.", "cardId");
     public static readonly DomainError DescriptionRequired =

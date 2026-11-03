@@ -125,6 +125,23 @@ public sealed class CardPurchaseInputChecker(
             {
                 errors.Add(CardPurchaseErrors.CardUnknown);
             }
+            else if (card.IsRevolving)
+            {
+                // Paid in full, the purchase becomes debt on the card (revolving FR-6).
+                maxInstallments = 1;
+                if (request.InInstallments)
+                {
+                    errors.Add(CardPurchaseErrors.RevolvingNoInstallments);
+                }
+                if (!card.CanBeUsedOn(timeProvider.Today()) && existing?.CardId != card.Id)
+                {
+                    errors.Add(CardPurchaseErrors.CardUnusable);
+                }
+                if (card.ValidFrom is { } validFrom && request.PurchaseDate < validFrom.FirstDay)
+                {
+                    errors.Add(CardPurchaseErrors.PurchaseDateBeforeValidFrom);
+                }
+            }
             else if (!card.AllowsInstallments)
             {
                 errors.Add(CardPurchaseErrors.CardNoInstallments);

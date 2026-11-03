@@ -24,6 +24,7 @@ public sealed class CashFlowEndpointTests : IAsyncLifetime
         + "UPDATE loan_category SET hidden_on = NULL; UPDATE loan_subcategory SET hidden_on = NULL; "
         + "DELETE FROM skipped_occurrence; DELETE FROM cash_flow_input; DELETE FROM recurring_input; DELETE FROM balance_entry; "
         + "DELETE FROM participant; DELETE FROM payer; DELETE FROM input_category WHERE NOT is_predefined; UPDATE input_category SET hidden_on = NULL; "
+        + "DELETE FROM revolving_bill; DELETE FROM revolving_extra_payment; DELETE FROM revolving_debt_entry; DELETE FROM revolving_terms; "
         + "DELETE FROM card;";
 
     private static readonly Guid VisaIssuer = new("0199b0c0-0000-7000-8000-000000000001");

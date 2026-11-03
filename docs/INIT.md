@@ -57,14 +57,28 @@ household            id, name, currency
 account              id, household_id, name, type (current|fx|savings|loan), issuer
 card                 id, name, issuer_id, bank_id, card_number (encrypted)?, iban (encrypted)?,
                      card_number_last4, iban_country, iban_last4, valid_from?, valid_through,
-                     type (Debit|Charge|Credit|Prepaid), is_primary, allows_installments (Debit only),
-                     debt_limit_cents?,
+                     type (Debit|Charge|Credit|Prepaid|Revolving), is_primary, allows_installments (Debit only),
+                     debt_limit_cents? (required for Revolving),
                      blocked_on?, expired_on?, archived_on?, replaced_by_card_id?,
                      paying_account_id → card?, pays_from_account_directly, max_installments? (12|24|36)
                      (payment cards and current accounts; see docs/feature-requirements/credit-card-settings.md;
-                     billing details only for cards that allow installments)
+                     billing details only for cards that allow installments; a Revolving card uses
+                     paying_account_id and pays_from_account_directly for its monthly bills)
 card_billing_terms   id, card_id, from_month, statement_day (1–30), payment_day (2–31, > statement_day)
                      (every version of a card's billing days; a change applies from the next month)
+revolving_terms      id, card_id, from_month?, min_payment_bp, min_payment_cents, interest_bp,
+                     min_payment_interest_bp? (for information), bill_day (1–31), due_day (1–31)
+                     (every version of a revolving card's terms; percentages in basis points, 8.33 % = 833;
+                     a change applies from the next bill; see docs/feature-requirements/revolving-credit-card.md)
+revolving_debt_entry id, card_id, kind (Starting|Correction|TransferIn|TransferOut), date, amount_cents, note?,
+                     linked_card_id → card?   (the debt at the end of that date, or debt moved to a replacement)
+revolving_extra_payment id, card_id, account_id → card, date, amount_cents, description?
+                     (always paid on its date; lowers the debt and is an output of the account)
+revolving_bill       id, card_id, month, minimum_cents?, interest_cents? (corrections), is_paid? (null =
+                     automatic), paid_date?, paid_amount_cents?, paid_account_id → card?
+                     (monthly bills, interest and the debt are CALCULATED from the debt entries, the charges
+                     (bills, expenses and purchases paid with the card) and the payments; a bill is stored
+                     only when paid, unticked or corrected)
 card_issuer          id, name, is_predefined   (Visa, Mastercard, … extendable by the user)
 bank                 id, name, is_predefined   (ZaBa, PBZ, … extendable by the user)
 payer                id, name, removed_on?   (saved automatically when an input names it)
@@ -138,6 +152,9 @@ Key rules:
 - A card payment is the sum of the installments and purchases paid in full in the card's billing period (from the day
   after the previous statement date up to and including the statement date), minus credits from reversed installments
   that were already charged.
+- A revolving card's debt = the latest starting debt or correction + charges + monthly interest
+  (debt × yearly rate / 12 on the bill day) − bill and extra payments after it. Each bill asks for
+  max(debt × minimum %, minimum amount), never more than the debt.
 - Available (calculated) = carryover + Σ income − Σ expenses; actual = entered account balance.
 - Closing a month carries the actual balance over as the next month's `opening_carryover`.
 

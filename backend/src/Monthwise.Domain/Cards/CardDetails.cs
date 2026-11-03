@@ -13,4 +13,5 @@ public sealed record CardDetails(
     bool IsPrimary,
     Money? DebtLimit,
     bool AllowsInstallments = false,
-    CardBillingDetails? Billing = null);
+    CardBillingDetails? Billing = null,
+    RevolvingDetails? Revolving = null);

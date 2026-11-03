@@ -55,8 +55,11 @@ public sealed class ExpenseBook
 
     public NamedReference Category(Guid id) => new(id, _categories.TryGetValue(id, out var category) ? category.Name : "Unknown");
 
-    /// <summary>Whether what is paid with <paramref name="id"/> goes into a card payment.</summary>
-    public bool IsCreditCard(Guid? id) => id is { } cardId && _cards.TryGetValue(cardId, out var card) && PaidFromRules.IsCreditCard(card);
+    /// <summary>
+    /// Whether what is paid with <paramref name="id"/> is a charge on a card, not an output of an account:
+    /// it goes into a card payment, or into the debt of a revolving card (revolving FR-6).
+    /// </summary>
+    public bool IsCreditCard(Guid? id) => id is { } cardId && _cards.TryGetValue(cardId, out var card) && PaidFromRules.IsCardCharge(card);
 
     public PaidFromResponse? PaidFrom(Guid? id) =>
         id is { } cardId

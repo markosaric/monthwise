@@ -20,6 +20,11 @@ import { cardPurchaseTexts } from './texts'
 
 const t = cardPurchaseTexts
 
+/** A card a purchase can be recorded on. A revolving card has no installments (revolving FR-6). */
+export type PurchaseCardOption = Pick<InstallmentCard, 'id' | 'name' | 'maxInstallments'> & {
+  isRevolving?: boolean
+}
+
 /** API field names that differ from form field names. */
 const apiFieldToFormField: Record<string, keyof PurchaseFormValues> = { amountCents: 'amount' }
 
@@ -36,8 +41,8 @@ export function PurchaseForm({
   onSubmit,
   onCancel,
 }: {
-  /** Cards purchases can be recorded on: usable, with billing details. */
-  cards: InstallmentCard[]
+  /** Cards purchases can be recorded on: usable, with billing details, or revolving. */
+  cards: PurchaseCardOption[]
   defaultValues: PurchaseFormValues
   submitLabel: string
   /** Shown above the buttons, e.g. that charged card payments will change. */
@@ -46,7 +51,9 @@ export function PurchaseForm({
   onCancel: () => void
 }) {
   const [cardId, setCardId] = useState(defaultValues.cardId)
-  const maxInstallments = cards.find((c) => c.id === cardId)?.maxInstallments ?? 36
+  const chosen = cards.find((c) => c.id === cardId)
+  const maxInstallments = chosen?.maxInstallments ?? 36
+  const revolving = chosen?.isRevolving === true
   const schema = useMemo(() => purchaseFormSchema(maxInstallments), [maxInstallments])
   const { data: categories = [] } = useExpenseCategories(true)
   const [formError, setFormError] = useState<string | null>(null)
@@ -72,7 +79,8 @@ export function PurchaseForm({
   async function submit(values: PurchaseFormValues) {
     setFormError(null)
     try {
-      await onSubmit(toPurchaseRequest(values))
+      // A revolving card is charged in full (revolving FR-6).
+      await onSubmit(toPurchaseRequest(revolving ? { ...values, inInstallments: false } : values))
     } catch (error) {
       if (!(error instanceof ApiError)) {
         setFormError('Saving failed. Please try again.')
@@ -143,21 +151,28 @@ export function PurchaseForm({
         </Field>
       </div>
 
-      <div className="flex flex-col gap-1">
-        <div className="flex items-center gap-3">
-          <Controller
-            control={control}
-            name="inInstallments"
-            render={({ field }) => (
-              <Switch id="inInstallments" checked={field.value} onCheckedChange={field.onChange} />
-            )}
-          />
-          <Label htmlFor="inInstallments">{t.fields.inInstallments}</Label>
+      {revolving && <p className="text-xs text-muted-foreground">{t.hints.revolving}</p>}
+      {!revolving && (
+        <div className="flex flex-col gap-1">
+          <div className="flex items-center gap-3">
+            <Controller
+              control={control}
+              name="inInstallments"
+              render={({ field }) => (
+                <Switch
+                  id="inInstallments"
+                  checked={field.value}
+                  onCheckedChange={field.onChange}
+                />
+              )}
+            />
+            <Label htmlFor="inInstallments">{t.fields.inInstallments}</Label>
+          </div>
+          <p className="text-xs text-muted-foreground">{t.hints.inInstallments}</p>
         </div>
-        <p className="text-xs text-muted-foreground">{t.hints.inInstallments}</p>
-      </div>
+      )}
 
-      {inInstallments && (
+      {inInstallments && !revolving && (
         <>
           <Field
             id="installmentCount"

@@ -1,4 +1,4 @@
-import { CalendarClock, CreditCard, Hourglass, Wallet } from 'lucide-react'
+import { CalendarClock, CreditCard, Hourglass, Landmark, Wallet } from 'lucide-react'
 import { Link } from 'react-router'
 import {
   useInstallmentCards,
@@ -6,10 +6,13 @@ import {
   type InstallmentCard,
 } from '@/api/cardPurchases'
 import { useDashboardCards } from '@/api/cards'
+import { useRevolvingCards } from '@/api/revolving'
 import { AccountsSection } from '@/components/cards/AccountsSection'
 import { CardStatusBadge } from '@/components/cards/CardStatusBadge'
 import { formatDate } from '@/components/cards/format'
 import { cardPurchaseTexts } from '@/components/cardPurchases/texts'
+import { RevolvingCardsSection } from '@/components/revolving/RevolvingCardsSection'
+import { revolvingTexts } from '@/components/revolving/texts'
 import { meaningColors, sectionColors, tint } from '@/components/design/colors'
 import { PairedBarChart } from '@/components/design/PairedBarChart'
 import { StatCard, StatGrid } from '@/components/design/StatCard'
@@ -25,12 +28,15 @@ const t = cardPurchaseTexts
 /**
  * The Cards screen: the accounts with their current and expected end-of-month balances (moved here
  * from the Dashboard, design refresh FR-12), then the cards that allow installments with their next
- * card payment and what is left to charge (installments FR-7).
+ * card payment and what is left to charge (installments FR-7). Revolving cards come after the
+ * accounts with their debt, and their total debt is a key figure (revolving FR-10).
  */
 export function CardsPage() {
   const accounts = useDashboardCards()
   const { data: cards, isPending, isError } = useInstallmentCards()
   const { data: payments } = useMonthCardPayments(currentMonth())
+  const { data: revolving } = useRevolvingCards()
+  const hasRevolving = (revolving?.cards.length ?? 0) > 0
   const canAdd = cards?.some((c) => c.canBeUsed && !c.needsBillingDetails) ?? false
 
   const listed = accounts.data?.cards ?? []
@@ -44,7 +50,7 @@ export function CardsPage() {
   return (
     <div className="flex max-w-6xl flex-col gap-4">
       <PageHeader title={t.screen} flush />
-      <StatGrid label="Key figures">
+      <StatGrid label="Key figures" five={hasRevolving}>
         <StatCard
           icon={Wallet}
           color={sectionColors.cards}
@@ -71,6 +77,14 @@ export function CardsPage() {
           label="Installments left"
           value={formatCents(installmentsLeft)}
         />
+        {hasRevolving && (
+          <StatCard
+            icon={Landmark}
+            color={meaningColors.expense}
+            label={revolvingTexts.debtFigure}
+            value={formatCents(revolving?.totalDebtCents ?? 0)}
+          />
+        )}
       </StatGrid>
 
       <div className="grid gap-4 lg:grid-cols-2">
@@ -107,6 +121,8 @@ export function CardsPage() {
           </Card>
         )}
       </div>
+
+      <RevolvingCardsSection data={revolving} />
 
       <Card>
         <CardHeader>

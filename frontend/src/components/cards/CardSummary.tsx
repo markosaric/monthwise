@@ -4,7 +4,9 @@ import type { Card } from '@/api/cards'
 import { cardPurchaseTexts } from '@/components/cardPurchases/texts'
 import { Badge } from '@/components/ui/badge'
 import { cashFlowTexts } from '@/components/cashflow/texts'
+import { revolvingTexts } from '@/components/revolving/texts'
 import { formatCents } from '@/lib/money'
+import { formatBasisPoints } from '@/lib/percent'
 import { cn } from '@/lib/utils'
 import { CardStatusBadge } from './CardStatusBadge'
 import { formatMonth } from './format'
@@ -56,6 +58,17 @@ export function CardSummary({
               {cardPurchaseTexts.payment.statement} {card.billing.statementDay}. ·{' '}
               {cardPurchaseTexts.payment.due} {card.billing.paymentDay}. ·{' '}
               {card.billing.payingAccount.name}
+            </div>
+          )}
+          {card.revolving && (
+            <div className="text-sm text-muted-foreground">
+              {formatBasisPoints(card.revolving.minPaymentBasisPoints)} /{' '}
+              {formatCents(card.revolving.minPaymentAmountCents)} ·{' '}
+              {revolvingTexts.card.days(card.revolving.billDay, card.revolving.dueDay)} ·{' '}
+              {card.revolving.payingAccount.name} · {revolvingTexts.card.debt}{' '}
+              <span className="text-foreground tabular-nums">
+                {formatCents(card.revolvingDebtCents ?? 0)}
+              </span>
             </div>
           )}
           {card.needsBillingDetails && (

@@ -168,7 +168,7 @@ public sealed class SharedCostLedger(
         var accounts = await cards.ListAsync(cancellationToken);
         var byId = accounts.ToDictionary(c => c.Id);
         var primary = accounts
-            .Where(c => c.IsPrimary && !PaidFromRules.IsCreditCard(c) && InputDetailsResolver.CanReceive(c, today))
+            .Where(c => c.IsPrimary && !PaidFromRules.IsCardCharge(c) && InputDetailsResolver.CanReceive(c, today))
             .Select(c => c.Id)
             .ToList();
         Guid? onlyPrimary = primary.Count == 1 ? primary[0] : null;
@@ -180,7 +180,7 @@ public sealed class SharedCostLedger(
             {
                 continue;
             }
-            Guid? account = bill.PaidFromId is { } id && byId.TryGetValue(id, out var card) && !PaidFromRules.IsCreditCard(card) ? id : null;
+            Guid? account = bill.PaidFromId is { } id && byId.TryGetValue(id, out var card) && !PaidFromRules.IsCardCharge(card) ? id : null;
             costs.Add(new SharedCost(
                 ContributionSource.ForBill(bill.Id),
                 share,

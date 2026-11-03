@@ -1,14 +1,21 @@
 using Monthwise.Application.CardPurchases;
 using Monthwise.Application.Common;
+using Monthwise.Application.Revolving;
 using Monthwise.Domain.Cards;
 using Monthwise.Domain.Common;
+using Monthwise.Domain.Revolving;
 
 namespace Monthwise.Application.Cards;
 
-/// <summary>Adds a card (FR-2), optionally as the replacement of an expired card (FR-8).</summary>
+/// <summary>
+/// Adds a card (FR-2), optionally as the replacement of an expired card (FR-8). A revolving card can
+/// start with a debt (revolving R8); a revolving replacement takes over the old card's debt (FR-9).
+/// </summary>
 public sealed class CreateCardHandler(
     ICardRepository cards,
     CardInputChecker checker,
+    IDebtEntryRepository debtEntries,
+    RevolvingCardRules revolvingRules,
     IUnitOfWork unitOfWork,
     GetCardHandler getCard,
     TimeProvider timeProvider)
@@ -30,6 +37,18 @@ public sealed class CreateCardHandler(
             return Result.Failure<CardResponse>(created.Errors);
         }
 
+        if (created.Value.IsRevolving && request.StartingDebtCents is { } startingDebt)
+        {
+            var entry = DebtEntry.Create(
+                created.Value.Id, DebtEntryKind.Starting, request.StartingDebtDate ?? timeProvider.Today(),
+                Money.FromCents(startingDebt), null, now);
+            if (entry.IsFailure)
+            {
+                return Result.Failure<CardResponse>(entry.Errors.Select(e => e with { Field = "startingDebtCents" }));
+            }
+            debtEntries.Add(entry.Value);
+        }
+
         if (replacesCardId is { } oldId)
         {
             var old = await cards.GetAsync(oldId, includeSensitiveData: false, cancellationToken);
@@ -42,6 +61,7 @@ public sealed class CreateCardHandler(
             {
                 return Result.Failure<CardResponse>(linked.Errors);
             }
+            await revolvingRules.MoveDebtAsync(old, created.Value, timeProvider.Today(), now, cancellationToken);
         }
 
         cards.Add(created.Value);
@@ -61,6 +81,9 @@ public sealed class UpdateCardHandler(
     ICardPurchaseRepository purchases,
     ICardPaymentRepository cardPayments,
     CardPaymentLedger cardPaymentLedger,
+    RevolvingCardRules revolvingRules,
+    RevolvingLedger revolvingLedger,
+    IRevolvingBillRepository revolvingBills,
     IUnitOfWork unitOfWork,
     GetCardHandler getCard,
     TimeProvider timeProvider)
@@ -89,6 +112,11 @@ public sealed class UpdateCardHandler(
         {
             return Result.Failure<CardResponse>(CardErrors.InstallmentsInUse);
         }
+        // The type cannot change to or from Revolving once the card has revolving activity (revolving FR-1).
+        if ((card.IsRevolving != (details.Type == CardType.Revolving)) && await revolvingRules.HasActivityAsync(card.Id, cancellationToken))
+        {
+            return Result.Failure<CardResponse>(CardErrors.TypeLocked);
+        }
 
         var today = timeProvider.Today();
         var now = timeProvider.GetUtcNow();
@@ -103,6 +131,16 @@ public sealed class UpdateCardHandler(
             }
         }
 
+        if (card.IsRevolving && card.PaysFromAccountDirectly
+            && (details.Revolving?.PaysFromAccountDirectly != true || details.Revolving.PayingAccountId != card.PayingAccountId))
+        {
+            // Monthly bills paid automatically stay paid when the paying account or connection changes.
+            if ((await revolvingLedger.LoadAsync(cancellationToken)).Calculator(card.Id) is { } calculator)
+            {
+                await RevolvingLedger.KeepAutomaticPaymentsAsync(revolvingBills, calculator, now, cancellationToken);
+            }
+        }
+
         var updated = card.Update(details, input.Value.CardNumber, input.Value.Iban, today, now);
         if (updated.IsFailure)
         {
@@ -114,11 +152,43 @@ public sealed class UpdateCardHandler(
     }
 }
 
-/// <summary>Block (FR-7).</summary>
-public sealed class BlockCardHandler(CardStateChanger changer, TimeProvider timeProvider)
+/// <summary>Block (FR-7). A revolving card can name a revolving replacement that takes over its debt (revolving FR-9).</summary>
+public sealed class BlockCardHandler(
+    ICardRepository cards, CardStateChanger changer, RevolvingCardRules revolvingRules, TimeProvider timeProvider)
 {
-    public Task<Result<CardResponse>> HandleAsync(Guid id, CardStateRequest request, CancellationToken cancellationToken) =>
-        changer.ChangeAsync(id, card => card.Block(timeProvider.Today(), request?.Reason, timeProvider.GetUtcNow()), cancellationToken);
+    public async Task<Result<CardResponse>> HandleAsync(Guid id, CardStateRequest request, CancellationToken cancellationToken)
+    {
+        Card? replacement = null;
+        if (request?.ReplacementCardId is { } replacementId)
+        {
+            replacement = await cards.GetAsync(replacementId, includeSensitiveData: false, cancellationToken);
+            if (replacement is null)
+            {
+                return Result.Failure<CardResponse>(CardErrors.ReplacementUnknown);
+            }
+        }
+
+        return await changer.ChangeAsync(id, async card =>
+        {
+            var today = timeProvider.Today();
+            var now = timeProvider.GetUtcNow();
+            if (replacement is not null && !card.IsRevolving)
+            {
+                return Result.Failure(CardErrors.ReplacementNotRevolving with { Message = "Only a revolving card names its replacement when it is blocked." });
+            }
+            var blocked = card.Block(today, request?.Reason, now);
+            if (blocked.IsFailure || replacement is null)
+            {
+                return blocked;
+            }
+            var linked = card.LinkReplacement(replacement, today, now);
+            if (linked.IsSuccess)
+            {
+                await revolvingRules.MoveDebtAsync(card, replacement, today, now, cancellationToken);
+            }
+            return linked;
+        }, cancellationToken);
+    }
 }
 
 /// <summary>Unblock (FR-7).</summary>
@@ -128,15 +198,20 @@ public sealed class UnblockCardHandler(CardStateChanger changer, TimeProvider ti
         changer.ChangeAsync(id, card => card.Unblock(timeProvider.GetUtcNow()), cancellationToken);
 }
 
-/// <summary>Archive instead of delete (FR-5).</summary>
-public sealed class ArchiveCardHandler(CardStateChanger changer, TimeProvider timeProvider)
+/// <summary>Archive instead of delete (FR-5). A revolving card with debt cannot be archived (revolving FR-9).</summary>
+public sealed class ArchiveCardHandler(CardStateChanger changer, RevolvingCardRules revolvingRules, TimeProvider timeProvider)
 {
     public Task<Result<CardResponse>> HandleAsync(Guid id, CancellationToken cancellationToken) =>
-        changer.ChangeAsync(id, card => card.Archive(timeProvider.Today(), timeProvider.GetUtcNow()), cancellationToken);
+        changer.ChangeAsync(id, async card => card.Archive(
+            timeProvider.Today(), timeProvider.GetUtcNow(), await revolvingRules.DebtAsync(card.Id, cancellationToken)), cancellationToken);
 }
 
-/// <summary>Mark as expired, optionally naming an existing replacement card (FR-8).</summary>
-public sealed class ExpireCardHandler(ICardRepository cards, CardStateChanger changer, TimeProvider timeProvider)
+/// <summary>
+/// Mark as expired, optionally naming an existing replacement card (FR-8). A revolving replacement takes
+/// over the debt of a revolving card (revolving FR-9).
+/// </summary>
+public sealed class ExpireCardHandler(
+    ICardRepository cards, CardStateChanger changer, RevolvingCardRules revolvingRules, TimeProvider timeProvider)
 {
     public async Task<Result<CardResponse>> HandleAsync(Guid id, ExpireCardRequest request, CancellationToken cancellationToken)
     {
@@ -152,7 +227,17 @@ public sealed class ExpireCardHandler(ICardRepository cards, CardStateChanger ch
 
         return await changer.ChangeAsync(
             id,
-            card => card.MarkExpired(timeProvider.Today(), request?.Reason, replacement, timeProvider.GetUtcNow()),
+            async card =>
+            {
+                var today = timeProvider.Today();
+                var now = timeProvider.GetUtcNow();
+                var expired = card.MarkExpired(today, request?.Reason, replacement, now);
+                if (expired.IsSuccess && replacement is not null)
+                {
+                    await revolvingRules.MoveDebtAsync(card, replacement, today, now, cancellationToken);
+                }
+                return expired;
+            },
             cancellationToken);
     }
 }
@@ -160,7 +245,13 @@ public sealed class ExpireCardHandler(ICardRepository cards, CardStateChanger ch
 /// <summary>Loads a card, applies one state change, saves, and returns the updated card.</summary>
 public sealed class CardStateChanger(ICardRepository cards, IUnitOfWork unitOfWork, GetCardHandler getCard)
 {
-    public async Task<Result<CardResponse>> ChangeAsync(Guid id, Func<Card, Result> change, CancellationToken cancellationToken)
+    public Task<Result<CardResponse>> ChangeAsync(Guid id, Func<Card, Result> change, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(change);
+        return ChangeAsync(id, card => Task.FromResult(change(card)), cancellationToken);
+    }
+
+    public async Task<Result<CardResponse>> ChangeAsync(Guid id, Func<Card, Task<Result>> change, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(change);
         var card = await cards.GetAsync(id, includeSensitiveData: false, cancellationToken);
@@ -169,7 +260,7 @@ public sealed class CardStateChanger(ICardRepository cards, IUnitOfWork unitOfWo
             return Result.Failure<CardResponse>(CardErrors.NotFound);
         }
 
-        var result = change(card);
+        var result = await change(card);
         if (result.IsFailure)
         {
             return Result.Failure<CardResponse>(result.Errors);

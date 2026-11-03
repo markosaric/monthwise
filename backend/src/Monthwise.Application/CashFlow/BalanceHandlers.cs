@@ -20,6 +20,7 @@ public sealed class AccountBalanceQuery(
     LoanLedger loanLedger,
     CardPaymentLedger cardPaymentLedger,
     ExpenseLedger expenseLedger,
+    Revolving.RevolvingLedger revolvingLedger,
     TimeProvider timeProvider)
 {
     /// <summary>Balances of the given accounts: current (today) and expected at the end of this month.</summary>
@@ -41,6 +42,10 @@ public sealed class AccountBalanceQuery(
         expectedPayments.AddRange((await cardPaymentLedger.LoadAsync(cancellationToken)).Payments()
             .Where(p => !p.IsPaid && !p.NeedsAccount && p.AccountId is not null && p.PaymentDate <= monthEnd)
             .Select(p => (AccountId: p.AccountId!.Value, p.Amount)));
+        // Expected monthly bills of revolving cards due by the end of the month on their paying account (revolving FR-8).
+        expectedPayments.AddRange((await revolvingLedger.LoadAsync(cancellationToken)).Outputs()
+            .Where(o => !o.IsPaid && o.AccountId is not null && o.Date <= monthEnd)
+            .Select(o => (AccountId: o.AccountId!.Value, o.Amount)));
         // Expected bills due by the end of the month on the account they will be paid from (bills FR-10).
         expectedPayments.AddRange((await expenseLedger.LoadAsync(cancellationToken)).Outputs()
             .Where(o => !o.IsPaid && o.AccountId is not null && o.Date <= monthEnd)
@@ -76,7 +81,11 @@ public sealed class AccountBalanceQuery(
         var billsAndExpenses = (await expenseLedger.LoadAsync(cancellationToken)).Outputs()
             .Where(o => o.IsPaid && o.AccountId is not null && o.Date <= movementsUpTo)
             .Select(o => (AccountId: o.AccountId!.Value, Movement: new BalanceMovement(o.Date, -o.Amount)));
-        var movements = received.Concat(paid).Concat(cardPayments).Concat(billsAndExpenses).ToList();
+        // Paid monthly bills and extra payments of revolving cards (revolving FR-8).
+        var revolving = (await revolvingLedger.LoadAsync(cancellationToken)).Outputs()
+            .Where(o => o.IsPaid && o.AccountId is not null && o.Date <= movementsUpTo)
+            .Select(o => (AccountId: o.AccountId!.Value, Movement: new BalanceMovement(o.Date, -o.Amount)));
+        var movements = received.Concat(paid).Concat(cardPayments).Concat(billsAndExpenses).Concat(revolving).ToList();
         var accountIds = entries.Select(e => e.AccountId).Concat(movements.Select(m => m.AccountId)).Distinct();
         return accountIds.ToDictionary(id => id, id => new AccountBalance(
             entries.Where(e => e.AccountId == id).Select(ToCheckpoint),

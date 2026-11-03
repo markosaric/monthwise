@@ -28,6 +28,7 @@ export const cardPurchaseTexts = {
   },
   hints: {
     inInstallments: 'Without installments, the whole amount is charged with one card payment.',
+    revolving: 'A revolving card is charged the whole amount; it adds to the card’s debt.',
     installmentCount: (max: number) => `From 2 up to ${max}, the most this card allows.`,
     preview: 'Installments',
     lastOne: 'the last one',

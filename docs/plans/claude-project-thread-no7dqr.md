@@ -1,7 +1,7 @@
 # Plan: Revolving credit card
 
 - **Branch:** `claude/project-thread-no7dqr`
-- **Status:** Draft
+- **Status:** Done
 - **Date:** 2026-11-03
 - **Requirements:** [revolving-credit-card.md](../feature-requirements/revolving-credit-card.md) (approved)
 
@@ -264,6 +264,33 @@ New `Api/Endpoints/RevolvingEndpoints.cs` and `Monthwise.Application/Revolving`:
   - Expire it with a new revolving card and check that the debt moved.
   - Check the Cards screen, the card page, the Month screen, the Dashboard quick action, the chart
     and the report on desktop and phone width.
+
+## Changes during implementation
+- **Endpoints as built:**
+  - `GET /api/revolving-cards` (the cards with their debt and next bill, and the total debt);
+  - `GET /api/revolving-cards/{id}?to=yyyy-MM` (the card page; estimated bills up to `to`, at least
+    up to next month) and `GET /api/revolving-cards/{id}/debt?date=` (the debt at the end of a date,
+    for **Pay the whole debt** and the correction form);
+  - `GET /api/revolving-bills?month=` (the Month screen);
+  - `POST`/`DELETE /api/revolving-cards/{id}/bills/{month}/paid` and
+    `PUT`/`DELETE /api/revolving-cards/{id}/bills/{month}/correction`;
+  - `POST /api/revolving-cards/{id}/extra-payments`, `PUT`/`DELETE /api/extra-payments/{id}`;
+  - `POST /api/revolving-cards/{id}/debt-entries`, `PUT`/`DELETE /api/debt-entries/{id}`;
+  - `POST /api/cards/{id}/block` takes an optional `replacementCardId` for a revolving card.
+- **Bill payment amount:** a bill payment can be more than the minimum but not more than the bill's
+  debt on the bill day. An extra payment cannot be more than the debt on its date.
+- **Month screen:** a paid bill is listed in the month of its paid date, an unpaid one in the month of
+  its due date. The **Revolving cards** section is its own section after **Card payments**, and its
+  bills count in the month's overdue figure and in the card payments slice of the outputs chart.
+- **Purchases:** revolving cards are not in the installments card list (`/api/card-purchases/cards`);
+  the purchase form adds the usable revolving cards from `/api/revolving-cards`, and the **Cards with
+  installments** part of the Cards screen does not show them.
+- **Over-limit warning:** after a bill, expense or purchase is saved on a revolving card, a warning
+  toast says when the card is now over its limit. The charge is saved either way.
+- **Starting debt date:** prefilled with today on the card form.
+- **Export and import:** the four new tables are household data and are exported. A file of the
+  release before this one has no revolving tables; it imports as before (the import test knows
+  which tables a file of that release has).
 
 ## Open questions
 - None. Decisions taken in this plan that the requirements leave open:

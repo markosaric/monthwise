@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Navigate, useNavigate, useParams } from 'react-router'
 import { toast } from 'sonner'
+import { warnIfOverLimit } from '@/components/revolving/overLimit'
 import { useCards } from '@/api/cards'
 import { useBill, useChangeBill } from '@/api/expenses'
 import { CardActionDialog } from '@/components/cards/CardActionDialog'
@@ -37,6 +38,7 @@ export function BillNewPage() {
         onSubmit={async (request) => {
           await change.mutateAsync({ action: 'create', month: yearMonth, request })
           toast.success(t.saved)
+          await warnIfOverLimit(request.paidFromId)
           navigate(returnTo ?? `/month/${yearMonth}`, { replace: true })
         }}
       />
@@ -82,6 +84,7 @@ export function BillEditPage() {
           onSubmit={async (request) => {
             await change.mutateAsync({ action: 'update', id: bill.id, request })
             toast.success(t.saved)
+            await warnIfOverLimit(request.paidFromId)
             navigate(back, { replace: true })
           }}
         />

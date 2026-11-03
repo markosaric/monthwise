@@ -37,6 +37,8 @@ import { LoanEditPage, LoanNewPage } from '@/pages/loans/LoanFormPages'
 import { InputCategoriesSettingsPage } from '@/pages/settings/InputCategoriesSettingsPage'
 import { LoanCategoriesSettingsPage } from '@/pages/settings/LoanCategoriesSettingsPage'
 import { PayersSettingsPage } from '@/pages/settings/PayersSettingsPage'
+import { ExtraPaymentEditPage, ExtraPaymentNewPage } from '@/pages/revolving/ExtraPaymentPages'
+import { RevolvingCardPage } from '@/pages/revolving/RevolvingCardPage'
 import { ExpenseCategoriesSettingsPage } from '@/pages/settings/ExpenseCategoriesSettingsPage'
 
 export const routes: RouteObject[] = [
@@ -66,6 +68,13 @@ export const routes: RouteObject[] = [
       { path: 'cards/purchases/new', element: <PurchaseNewPage /> },
       { path: 'cards/purchases/:id', element: <PurchaseDetailsPage /> },
       { path: 'cards/purchases/:id/edit', element: <PurchaseEditPage /> },
+      { path: 'cards/revolving/:cardId', element: <RevolvingCardPage /> },
+      { path: 'cards/revolving/:cardId/pay', element: <ExtraPaymentNewPage /> },
+      {
+        path: 'cards/revolving/:cardId/payments/:paymentId/edit',
+        element: <ExtraPaymentEditPage />,
+      },
+      { path: 'pay-revolving', element: <ExtraPaymentNewPage /> },
       { path: 'cards/:cardId', element: <InstallmentCardPage /> },
       { path: 'cards/:cardId/payments/:month', element: <CardPaymentPage /> },
       { path: 'loans', element: <LoansPage /> },

@@ -77,6 +77,7 @@ export const cardTexts = {
     Charge: 'Charge',
     Credit: 'Credit',
     Prepaid: 'Prepaid',
+    Revolving: 'Revolving credit',
   } satisfies Record<CardType, string>,
   dialogs: {
     reason: 'Reason (optional)',

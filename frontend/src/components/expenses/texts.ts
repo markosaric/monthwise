@@ -88,6 +88,7 @@ export const expenseTexts = {
     notIssued:
       'Amount, issue date and due date go together. Clear all three to keep the bill not issued.',
     creditCard: 'Paid with a credit card, it goes into that card’s card payment.',
+    revolvingCard: 'Paid with a revolving card, it adds to that card’s debt.',
     cashAccount: 'Cash can only be withdrawn from a primary account.',
   },
   labels: {

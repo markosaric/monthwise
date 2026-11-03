@@ -53,6 +53,36 @@ public static class CardErrors
         "card.allowsInstallments.inUse",
         "This card has purchases, so it must keep allowing monthly installments.",
         "allowsInstallments");
+    public static readonly DomainError DebtLimitRequired =
+        new("card.debtLimit.required", "A revolving card needs its max debt limit.", "debtLimitCents");
+    public static readonly DomainError RevolvingRequired = new(
+        "card.revolving.required", "A revolving card needs its minimum payment, interest rate, bill day and due day.", "minPaymentBasisPoints");
+    public static readonly DomainError MinPaymentPercentInvalid = new(
+        "card.minPaymentPercent.invalid", "Minimum payment % must be more than 0 and at most 100.", "minPaymentBasisPoints");
+    public static readonly DomainError MinPaymentAmountNegative = new(
+        "card.minPaymentAmount.negative", "Minimum payment amount cannot be negative.", "minPaymentAmountCents");
+    public static readonly DomainError InterestRateNegative =
+        new("card.interestRate.negative", "Interest rate cannot be negative.", "interestBasisPoints");
+    public static readonly DomainError MinPaymentInterestInvalid = new(
+        "card.minPaymentInterest.invalid",
+        "Minimum payment interest rate must be between 0 and the minimum payment %.",
+        "minPaymentInterestBasisPoints");
+    public static readonly DomainError BillDayInvalid = new(
+        "card.billDay.invalid", $"Bill day must be a day between {RevolvingTerms.MinDay} and {RevolvingTerms.MaxDay}.", "billDay");
+    public static readonly DomainError DueDayInvalid = new(
+        "card.dueDay.invalid", $"Due day must be a day between {RevolvingTerms.MinDay} and {RevolvingTerms.MaxDay}.", "dueDay");
+    public static readonly DomainError RevolvingPayingAccountRequired =
+        new("card.payingAccount.required", "Choose the account the monthly bills are paid from.", "payingAccountId");
+    public static readonly DomainError RevolvingPayingAccountUnusable = new(
+        "card.payingAccount.unusable", "Choose an account that is not blocked, expired or archived.", "payingAccountId");
+    public static readonly DomainError TypeLocked = new(
+        "card.type.locked", "This card has a revolving debt, charges or payments, so its type cannot change to or from Revolving.", "type");
+    public static readonly DomainError ReplacementNotRevolving = new(
+        "card.replacement.notRevolving", "A revolving card can only be replaced by a revolving card.", "replacementCardId");
+    public static readonly DomainError ArchiveWithDebt = new(
+        "card.archive.debt",
+        "This revolving card still has debt. Pay the whole debt, or mark it as expired with a replacement card, before archiving it.",
+        Kind: ErrorKind.Conflict);
     public static readonly DomainError ReasonTooLong =
         new("card.reason.tooLong", $"Reason can be at most {Card.ReasonMaxLength} characters.", "reason");
     public static readonly DomainError ReplacementIsSameCard =

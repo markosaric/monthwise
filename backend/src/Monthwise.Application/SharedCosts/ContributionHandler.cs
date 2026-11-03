@@ -44,7 +44,7 @@ public sealed class ContributionHandler(
             {
                 errors.Add(CashFlowErrors.AccountUnknown);
             }
-            else if (PaidFromRules.IsCreditCard(account) || !InputDetailsResolver.CanReceive(account, timeProvider.Today()))
+            else if (PaidFromRules.IsCardCharge(account) || !InputDetailsResolver.CanReceive(account, timeProvider.Today()))
             {
                 errors.Add(CashFlowErrors.AccountUnusable);
             }

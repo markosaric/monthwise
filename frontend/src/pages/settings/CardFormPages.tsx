@@ -6,6 +6,7 @@ import { emptyCardFormValues, type CardFormValues } from '@/components/cards/car
 import { cardTexts } from '@/components/cards/texts'
 import { yearMonthToCardMonth } from '@/lib/dates'
 import { centsToEuroInput } from '@/lib/money'
+import { basisPointsToPercentInput } from '@/lib/percent'
 import { PageHeader } from '@/pages/PageHeader'
 
 function detailsOf(card: Card): Partial<CardFormValues> {
@@ -26,6 +27,21 @@ function detailsOf(card: Card): Partial<CardFormValues> {
           maxInstallments: String(
             card.billing.maxInstallments,
           ) as CardFormValues['maxInstallments'],
+        }
+      : {}),
+    ...(card.revolving
+      ? {
+          minPaymentPercent: basisPointsToPercentInput(card.revolving.minPaymentBasisPoints),
+          minPaymentAmount: centsToEuroInput(card.revolving.minPaymentAmountCents),
+          interestPercent: basisPointsToPercentInput(card.revolving.interestBasisPoints),
+          minPaymentInterestPercent:
+            card.revolving.minPaymentInterestBasisPoints == null
+              ? ''
+              : basisPointsToPercentInput(card.revolving.minPaymentInterestBasisPoints),
+          billDay: String(card.revolving.billDay),
+          dueDay: String(card.revolving.dueDay),
+          payingAccountId: card.revolving.payingAccount.id,
+          paysFromAccountDirectly: card.revolving.paysFromAccountDirectly,
         }
       : {}),
   }

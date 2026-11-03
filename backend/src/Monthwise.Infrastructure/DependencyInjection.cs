@@ -11,6 +11,7 @@ using Monthwise.Application.Common;
 using Monthwise.Application.DataTransfer;
 using Monthwise.Application.Expenses;
 using Monthwise.Application.Loans;
+using Monthwise.Application.Revolving;
 using Monthwise.Application.SharedCosts;
 using Monthwise.Infrastructure.DataTransfer;
 using Monthwise.Infrastructure.Persistence;
@@ -61,6 +62,9 @@ public static class DependencyInjection
         services.AddScoped<IBillRepository, BillRepository>();
         services.AddScoped<IExpenseRepository, ExpenseRepository>();
         services.AddScoped<IParticipantRepository, ParticipantRepository>();
+        services.AddScoped<IDebtEntryRepository, DebtEntryRepository>();
+        services.AddScoped<IExtraPaymentRepository, ExtraPaymentRepository>();
+        services.AddScoped<IRevolvingBillRepository, RevolvingBillRepository>();
         services.AddScoped<IDataTransferRepository, DataTransferRepository>();
         services.AddScoped<IHouseholdDataStore, HouseholdDataStore>();
         services.AddSingleton<IExportFileCodec, ExportFileCodec>();
