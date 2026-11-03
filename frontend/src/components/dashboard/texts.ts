@@ -14,6 +14,14 @@ export const dashboardTexts = {
   outputs: 'Outputs',
   monthResult: 'Month result',
   stillToPay: 'Still to pay',
+  overallBalance: {
+    label: 'Overall balance',
+    primaryAccounts: (count: number) => `${count} primary accounts`,
+    withoutAccount: (count: number) =>
+      `${count} ${count === 1 ? 'output' : 'outputs'} without account`,
+    missingStartingBalance: 'starting balance missing',
+    noPrimary: 'Mark a primary account',
+  },
   received: (amount: string) => `${amount} received`,
   paid: (amount: string) => `${amount} paid`,
   items: (count: number) => `${count} ${count === 1 ? 'item' : 'items'}`,

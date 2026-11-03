@@ -31,35 +31,48 @@ public sealed class AccountBalanceQuery(
         var today = timeProvider.Today();
         var monthEnd = YearMonth.FromDate(today).LastDay;
         var calculators = await CalculatorsAsync(today, cancellationToken);
-        var expected = await ledger.ExpectedUpToAsync(monthEnd, cancellationToken);
-        // Expected loan payments due by the end of the month, overdue ones included. A bill without an
-        // account yet, or a standing order that needs a new account, is not counted (Appendix 1).
-        var expectedPayments = (await loanLedger.LoadAsync(cancellationToken)).Payments()
-            .Where(p => !p.IsPaid && !p.NeedsAccount && p.AccountId is not null && p.DueDate <= monthEnd)
-            .Select(p => (AccountId: p.AccountId!.Value, p.Amount))
-            .ToList();
-        // Expected card payments due by the end of the month on their paying account (installments FR-9).
-        expectedPayments.AddRange((await cardPaymentLedger.LoadAsync(cancellationToken)).Payments()
-            .Where(p => !p.IsPaid && !p.NeedsAccount && p.AccountId is not null && p.PaymentDate <= monthEnd)
-            .Select(p => (AccountId: p.AccountId!.Value, p.Amount)));
-        // Expected monthly bills of revolving cards due by the end of the month on their paying account (revolving FR-8).
-        expectedPayments.AddRange((await revolvingLedger.LoadAsync(cancellationToken)).Outputs()
-            .Where(o => !o.IsPaid && o.AccountId is not null && o.Date <= monthEnd)
-            .Select(o => (AccountId: o.AccountId!.Value, o.Amount)));
-        // Expected bills due by the end of the month on the account they will be paid from (bills FR-10).
-        expectedPayments.AddRange((await expenseLedger.LoadAsync(cancellationToken)).Outputs()
-            .Where(o => !o.IsPaid && o.AccountId is not null && o.Date <= monthEnd)
-            .Select(o => (AccountId: o.AccountId!.Value, o.Amount)));
+        var expected = await ExpectedMovementsAsync(monthEnd, cancellationToken);
 
         return accountIds.Distinct().ToDictionary(id => id, id =>
         {
             var balance = calculators.TryGetValue(id, out var calculator) ? calculator : new AccountBalance([], []);
             var current = balance.BalanceOn(today);
-            var expectedInputs = expected.Where(e => e.Details.AccountId == id).Select(e => e.Details.Amount);
-            var expectedOutputs = expectedPayments.Where(p => p.AccountId == id).Select(p => -p.Amount);
-            var expectedBalance = balance.ExpectedBalance(today, expectedInputs.Concat(expectedOutputs));
+            var expectedBalance = balance.ExpectedBalance(today, expected.ForAccount(id));
             return new AccountBalanceResponse(id, current.Cents, expectedBalance.Cents, balance.HasCheckpoint);
         });
+    }
+
+    /// <summary>
+    /// The movements not made yet that are due by <paramref name="upTo"/>, overdue ones included: expected
+    /// inputs (positive) and expected loan payments, card payments, revolving card bills and bills
+    /// (negative) on the account they will be paid from (FR-10, Appendix 1; installments FR-9; bills
+    /// FR-10; revolving FR-8). Outputs that have no account yet, or a standing order that needs a new
+    /// account, are kept apart: they are not counted in any account's expected balance.
+    /// </summary>
+    public async Task<ExpectedMovements> ExpectedMovementsAsync(DateOnly upTo, CancellationToken cancellationToken)
+    {
+        var withAccount = (await ledger.ExpectedUpToAsync(upTo, cancellationToken))
+            .Select(e => (AccountId: (Guid?)e.Details.AccountId, Amount: e.Details.Amount))
+            .ToList();
+        var outputs = new List<(Guid? AccountId, Money Amount)>();
+        outputs.AddRange((await loanLedger.LoadAsync(cancellationToken)).Payments()
+            .Where(p => !p.IsPaid && p.DueDate <= upTo)
+            .Select(p => (p.NeedsAccount ? null : p.AccountId, p.Amount)));
+        outputs.AddRange((await cardPaymentLedger.LoadAsync(cancellationToken)).Payments()
+            .Where(p => !p.IsPaid && p.PaymentDate <= upTo)
+            .Select(p => (p.NeedsAccount ? null : p.AccountId, p.Amount)));
+        outputs.AddRange((await revolvingLedger.LoadAsync(cancellationToken)).Outputs()
+            .Where(o => !o.IsPaid && o.Date <= upTo)
+            .Select(o => (o.AccountId, o.Amount)));
+        outputs.AddRange((await expenseLedger.LoadAsync(cancellationToken)).Outputs()
+            .Where(o => !o.IsPaid && o.Date <= upTo)
+            .Select(o => (o.AccountId, o.Amount)));
+
+        withAccount.AddRange(outputs.Where(o => o.AccountId is not null).Select(o => (o.AccountId, -o.Amount)));
+        var withoutAccount = outputs.Where(o => o.AccountId is null && o.Amount.IsPositive).Select(o => o.Amount).ToList();
+        return new ExpectedMovements(
+            withAccount.Select(m => (m.AccountId!.Value, m.Amount)).ToList(),
+            withoutAccount);
     }
 
     /// <summary>
@@ -200,4 +213,16 @@ public sealed class BalanceEntryHandler(
             entry.Id, entry.AccountId, entry.Kind, entry.Date, entry.Balance.Cents,
             calculator.DifferenceOf(entry.Id).Cents, entry.Note);
     }
+}
+
+/// <summary>
+/// Expected movements due by a date (<see cref="AccountBalanceQuery.ExpectedMovementsAsync"/>): the ones on
+/// an account, signed (inputs positive, outputs negative), and the outputs without an account (positive).
+/// </summary>
+public sealed record ExpectedMovements(
+    IReadOnlyList<(Guid AccountId, Money Amount)> OnAccounts,
+    IReadOnlyList<Money> OutputsWithoutAccount)
+{
+    public IEnumerable<Money> ForAccount(Guid accountId) =>
+        OnAccounts.Where(m => m.AccountId == accountId).Select(m => m.Amount);
 }

@@ -1,7 +1,7 @@
 # Plan: Overall balance tile
 
 - **Branch:** `claude/project-thread-snccf3`
-- **Status:** In progress
+- **Status:** Done
 - **Date:** 2026-11-03
 - **Requirements:** [overall-balance-tile.md](../feature-requirements/overall-balance-tile.md) (approved),
   [design-refresh.md Appendix 1](../feature-requirements/design-refresh.md#appendix-1-overall-balance-key-figure)
@@ -51,7 +51,7 @@ changes FR-9, FR-10 and FR-15 of the design refresh:
   - `GET /api/overall-balance?month=yyyy-MM` (month optional, default the current month; an invalid
     month is a validation problem, like the other month endpoints).
   - `OverallBalanceResponse(string Month, bool IsExpected, long? BalanceCents, int PrimaryAccountCount,
-    string? PrimaryAccountName, int OutputsWithoutAccountCount, bool MissingStartingBalance)`.
+    int OutputsWithoutAccountCount, bool MissingStartingBalance)`.
   - Regenerate `frontend/src/api/schema.d.ts`.
 - **Front-end changes:**
   - `frontend/src/api/cashFlow.ts`: `useOverallBalance(month)` with query key
@@ -105,3 +105,11 @@ changes FR-9, FR-10 and FR-15 of the design refresh:
 - None. Known limit (from how the app works today, not a new rule): for future months, recurring
   bills that are not issued yet have no amount, so they do not lower the expected overall balance
   until they are issued.
+
+## Changes during implementation
+- After review, the tile shows no account name and no "expected" marker (requirements FR-3 and FR-4
+  changed on this branch); `PrimaryAccountName` was removed from the response.
+- The detail text is built in `components/dashboard/overallBalance.ts`, apart from the card
+  component, so the component file only exports components (lint rule).
+- Outputs without account with a zero amount (bills not issued yet) are not counted.
+

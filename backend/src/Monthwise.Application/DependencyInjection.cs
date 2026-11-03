@@ -38,6 +38,7 @@ public static class DependencyInjection
         services.AddScoped<InputResponder>();
         services.AddScoped<OccurrenceFinder>();
         services.AddScoped<AccountBalanceQuery>();
+        services.AddScoped<OverallBalanceQuery>();
         services.AddScoped<GetMonthInputsHandler>();
         services.AddScoped<GetInputHandler>();
         services.AddScoped<CreateInputHandler>();

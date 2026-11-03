@@ -53,9 +53,8 @@ after every input of the month is received and every output of the month is paid
   negative month result.
 
 **FR-3 Detail line**
-- Under the number, the tile names what it covers:
-  - with one primary account: its name, e.g. "Overall balance · Tekući ZaBa";
-  - with several: their number, e.g. "Overall balance · 2 primary accounts".
+- Under the number, the tile shows the label **Overall balance**. It never shows an account name.
+- With several primary accounts, it adds their number, e.g. "Overall balance · 2 primary accounts".
 - With several primary accounts and outputs without account in the month, it adds how many are
   not counted, e.g. "3 outputs without account".
 - When any primary account has no starting balance, the detail line says so ("starting balance
@@ -68,8 +67,6 @@ after every input of the month is received and every output of the month is paid
   what was received and paid by then.
 - For a **future** month, it is the **expected** balance at the end of that month, counting the
   expected inputs and outputs of every month up to and including it, by the same rules as FR-2.
-- The tile shows which kind it is: future and current values are marked as expected (dimmed or
-  with the word "expected"), past values are not.
 
 **FR-5 No primary account**
 - When no account is marked as primary, the tile shows "–" and the hint "Mark a primary account",
@@ -106,7 +103,7 @@ after every input of the month is received and every output of the month is paid
 
 1. The Dashboard and the Month screen show five key figures, with Overall balance last.
 2. With one primary account, the overall balance equals that account's expected end-of-month
-   balance on the Cards screen and the detail line names the account.
+   balance on the Cards screen, and the tile shows no account name.
 3. With two primary accounts, the overall balance is the sum of both expected balances and the
    detail line says "2 primary accounts".
 4. Marking an expected bill paid from the primary account as paid does not change the overall
@@ -119,7 +116,7 @@ after every input of the month is received and every output of the month is paid
    €40.00; with two primary accounts it does not, and the detail line says "1 output without
    account".
 8. On the Month screen, a past month shows the actual balance at the end of that month, and a
-   future month shows the expected balance at its end, marked as expected.
+   future month shows the expected balance at its end.
 9. A negative overall balance is shown in red.
 10. Without a primary account, the tile shows "–" and "Mark a primary account", and opens the
     Cards screen.

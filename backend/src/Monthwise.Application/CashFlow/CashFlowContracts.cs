@@ -120,6 +120,19 @@ public sealed record AccountBalanceResponse(
     long ExpectedBalanceCents,
     bool HasStartingBalance);
 
+/// <summary>
+/// The overall balance of a month (overall balance tile FR-2 to FR-5). <paramref name="BalanceCents"/> is
+/// null without a primary account. <paramref name="OutputsWithoutAccountCount"/> counts the outputs without an account that are
+/// left out, which only happens with several primary accounts.
+/// </summary>
+public sealed record OverallBalanceResponse(
+    string Month,
+    bool IsExpected,
+    long? BalanceCents,
+    int PrimaryAccountCount,
+    int OutputsWithoutAccountCount,
+    bool MissingStartingBalance);
+
 public sealed record AccountBalanceDetailsResponse(AccountBalanceResponse Balance, IReadOnlyList<BalanceEntryResponse> Entries);
 
 public enum ChartGranularity

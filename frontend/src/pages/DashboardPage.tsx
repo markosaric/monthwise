@@ -18,6 +18,7 @@ import { useRevolvingCards } from '@/api/revolving'
 import { useDashboard, type Dashboard, type DashboardItem } from '@/api/dashboard'
 import { formatDate } from '@/components/cards/format'
 import { ExportReminder } from '@/components/dataTransfer/ExportReminder'
+import { OverallBalanceCard } from '@/components/dashboard/OverallBalanceCard'
 import { dashboardTexts } from '@/components/dashboard/texts'
 import { addActions } from '@/components/design/actions'
 import { ChangePill } from '@/components/design/ChangePill'
@@ -37,7 +38,8 @@ const t = dashboardTexts
 
 /**
  * The Dashboard: how the current month is going (design refresh FR-9 to FR-11, FR-14). It shows no
- * account balances; those are on the Cards screen.
+ * account balances, except the Overall balance key figure (design refresh Appendix 1); the balance of
+ * each account is on the Cards screen.
  */
 export function DashboardPage() {
   const { data, isPending, isError } = useDashboard()
@@ -119,7 +121,7 @@ function DashboardContent({ data }: { data: Dashboard }) {
   const { inputs, outputs, stillToPay } = data
   return (
     <>
-      <StatGrid label={t.keyFigures}>
+      <StatGrid label={t.keyFigures} five>
         <StatCard
           icon={ArrowDownLeft}
           color={meaningColors.moneyIn}
@@ -178,6 +180,7 @@ function DashboardContent({ data }: { data: Dashboard }) {
           problem={stillToPay.overdueCount > 0}
           to="/month"
         />
+        <OverallBalanceCard month={data.month} />
       </StatGrid>
 
       <div className="grid gap-4 lg:grid-cols-2">
