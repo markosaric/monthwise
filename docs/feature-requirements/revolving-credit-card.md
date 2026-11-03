@@ -254,3 +254,31 @@ card).
     replacement card moves its debt to the replacement, and the next monthly bill comes on the
     replacement card.
 14. The minimum payment interest rate (R3a) is shown on the card and changes no amount.
+
+## Appendix 1: Starting debt order and daily interest
+
+- **Date:** 2026-11-03
+- **Branch:** `claude/project-thread-no7dqr`
+- **Changes:** FR-5 (starting debt on a day with other changes), FR-7 (interest), FR-4 (estimated
+  bills)
+
+Found in use: a starting debt and an extra payment were entered on the same day, and the payment
+did not lower the debt.
+
+**FR-5 Starting debt and corrections on a day with other changes**
+- A **starting debt** is the debt at the **start** of its date: charges, payments and transfers on
+  the same date come after it.
+- A **debt correction** stays the debt at the **end** of its date, as the bank shows it: changes on
+  the same date come before it.
+
+**FR-7 Interest (replaces the bill-day rule)**
+- Interest is calculated on each day's debt: for every day from the day after the previous bill day
+  up to and including this bill day, the debt at the end of that day × interest rate (R3) ÷ 365.
+  The sum is rounded to the cent and added to the debt on the bill day, before the minimum payment
+  is calculated.
+- For the first bill of a card, the days are counted from its starting debt (or its first charge).
+- The user can still correct the interest of a monthly bill to the amount the bank charged (FR-4).
+
+**FR-4 Estimated bills**
+- Estimated future bills use the same daily interest, assuming only the minimum payment is paid on
+  each due date and no new charges are made.

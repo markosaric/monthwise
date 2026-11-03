@@ -23,8 +23,22 @@ public class RevolvingMathTests
     [InlineData(-1, 5_000, 1, -1)]
     [InlineData(1, 4_999, 1, 0)]
     [InlineData(100_000, 1_275, 12, 1_063)] // 12.75 % a year on 1,000.00 EUR for one month is 10.625 EUR
+    [InlineData(3_000_000, 1_275, 365, 1_048)] // 30 days of 1,000.00 EUR at 12.75 % a year is 10.479 EUR
     public void Percentages_are_rounded_to_the_cent_half_away_from_zero(long cents, long basisPoints, long divisor, long expected)
     {
         Assert.Equal(expected, RevolvingMath.PercentOf(Money.FromCents(cents), basisPoints, divisor).Cents);
+    }
+
+    [Theory]
+    [InlineData(3_000_000, 1_275, 1_048)] // 30 days of 1,000.00 EUR at 12.75 % a year
+    [InlineData(1_825, 1_000, 1)] // 1,825 cent-days at 10 % a year is half a cent, rounded up
+    [InlineData(1_824, 1_000, 0)]
+    [InlineData(0, 1_275, 0)] // no debt, no interest
+    [InlineData(-100_000, 1_275, 0)]
+    public void Daily_interest_is_the_sum_of_the_daily_debt_times_the_yearly_rate_divided_by_365(long centDays, int basisPoints, long expected)
+    {
+        var terms = RevolvingCard(Terms(interestBasisPoints: basisPoints)).RevolvingTermVersions[0];
+
+        Assert.Equal(expected, RevolvingMath.DailyInterest(centDays, terms).Cents);
     }
 }

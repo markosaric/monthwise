@@ -9,7 +9,7 @@ namespace Monthwise.Domain.Revolving;
 /// </summary>
 public static class RevolvingMath
 {
-    public const int MonthsPerYear = 12;
+    public const int DaysPerYear = 365;
 
     /// <summary><paramref name="basisPoints"/> of <paramref name="amount"/>, divided by <paramref name="divisor"/>, rounded to the cent.</summary>
     public static Money PercentOf(Money amount, long basisPoints, long divisor = 1)
@@ -41,10 +41,13 @@ public static class RevolvingMath
         return minimum > debt ? debt : minimum;
     }
 
-    /// <summary>The interest of one month on <paramref name="debt"/> (FR-7): debt × yearly rate ÷ 12. Zero without debt.</summary>
-    public static Money MonthlyInterest(Money debt, RevolvingTerms terms)
+    /// <summary>
+    /// The interest of one bill (FR-7, Appendix 1): the sum of each day's debt in cents (cent-days) ×
+    /// yearly rate ÷ 365, rounded once to the cent. Zero without debt.
+    /// </summary>
+    public static Money DailyInterest(long debtCentDays, RevolvingTerms terms)
     {
         ArgumentNullException.ThrowIfNull(terms);
-        return debt.IsPositive ? PercentOf(debt, terms.InterestBasisPoints, MonthsPerYear) : Money.Zero;
+        return debtCentDays > 0 ? PercentOf(Money.FromCents(debtCentDays), terms.InterestBasisPoints, DaysPerYear) : Money.Zero;
     }
 }

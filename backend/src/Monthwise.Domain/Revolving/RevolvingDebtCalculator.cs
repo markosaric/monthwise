@@ -87,11 +87,14 @@ public sealed record ScheduledRevolvingBill(
 /// Calculates the debt and the monthly bills of one revolving card (revolving FR-3 to FR-8), day by day
 /// in date order:
 /// <list type="bullet">
-/// <item>On each date, charges, credits, transfers and payments come first; a starting debt or a
-/// correction then sets the debt at the end of that date; the monthly bill of a bill date comes last,
-/// so everything dated on the bill day counts in that bill.</item>
-/// <item>On a bill date with debt, the interest of the past month is added (FR-7), then the minimum
-/// payment is calculated from the debt with interest (FR-3). Without debt there is no bill.</item>
+/// <item>On each date, a starting debt sets the debt at the start of that date; charges, credits,
+/// transfers and payments come next; a correction then sets the debt at the end of that date; the
+/// monthly bill of a bill date comes last, so everything dated on the bill day counts in that bill
+/// (FR-5, Appendix 1).</item>
+/// <item>Interest accrues daily (FR-7, Appendix 1): the debt at the end of every day after the previous
+/// bill date, up to and including this bill date, is summed and × yearly rate ÷ 365 is added on the
+/// bill date. Then the minimum payment is calculated from the debt with interest (FR-3). Without debt on
+/// the bill date there is no bill.</item>
 /// <item>A paid bill lowers the debt on its paid date. A bill of a card connected to its paying account
 /// is paid automatically with its minimum at the end of its due date, unless the user changed its state
 /// or the account stopped being usable before (<c>chargesStopOn</c>).</item>
@@ -128,8 +131,8 @@ public sealed class RevolvingDebtCalculator
         {
             events.Add(entry.Kind switch
             {
-                DebtEntryKind.Starting => new Event(entry.Date, Absolute, RevolvingMovementKind.Starting, entry.Amount, entry.Id),
-                DebtEntryKind.Correction => new Event(entry.Date, Absolute, RevolvingMovementKind.Correction, entry.Amount, entry.Id),
+                DebtEntryKind.Starting => new Event(entry.Date, StartOfDay, RevolvingMovementKind.Starting, entry.Amount, entry.Id),
+                DebtEntryKind.Correction => new Event(entry.Date, EndOfDay, RevolvingMovementKind.Correction, entry.Amount, entry.Id),
                 DebtEntryKind.TransferIn => new Event(entry.Date, Relative, RevolvingMovementKind.TransferIn, entry.Amount, entry.Id),
                 _ => new Event(entry.Date, Relative, RevolvingMovementKind.TransferOut, -entry.Amount, entry.Id),
             });
@@ -143,11 +146,14 @@ public sealed class RevolvingDebtCalculator
         Calculate(events, stored, horizon, chargesStopOn);
     }
 
-    /// <summary>Applied before an absolute entry on the same date.</summary>
+    /// <summary>A starting debt: sets the debt at the start of its date, before anything else on it.</summary>
+    private const int StartOfDay = -1;
+
+    /// <summary>A charge, credit, transfer or payment: changes the debt by its amount.</summary>
     private const int Relative = 0;
 
-    /// <summary>A starting debt or a correction: sets the debt at the end of its date.</summary>
-    private const int Absolute = 1;
+    /// <summary>A correction: sets the debt at the end of its date, after everything else on it.</summary>
+    private const int EndOfDay = 1;
 
     public Card Card { get; }
     public DateOnly Today { get; }
@@ -184,13 +190,34 @@ public sealed class RevolvingDebtCalculator
         }
 
         var debt = Money.Zero;
+
+        // Daily interest (FR-7): the sum of the debt at the end of each day since the previous bill date,
+        // in cent-days. countedThrough is the last day already in the sum.
+        long debtCentDays = 0;
+        var countedThrough = DateOnly.MinValue;
+        void CountDaysThrough(DateOnly date)
+        {
+            if (date <= countedThrough)
+            {
+                return;
+            }
+            if (debt.IsPositive && countedThrough != DateOnly.MinValue)
+            {
+                debtCentDays = checked(debtCentDays + (debt.Cents * (date.DayNumber - countedThrough.DayNumber)));
+            }
+            countedThrough = date;
+        }
+
         void ApplyUpTo(DateOnly date, bool includeDate)
         {
             while (queue.TryPeek(out var next, out _) && (next.Date < date || (includeDate && next.Date == date)))
             {
                 queue.Dequeue();
-                var change = next.Order == Absolute ? next.Amount - debt : next.Amount;
-                debt = next.Order == Absolute ? next.Amount : debt + next.Amount;
+                // Every day before this event ended with the debt as it is now.
+                CountDaysThrough(next.Date.AddDays(-1));
+                var absolute = next.Order != Relative;
+                var change = absolute ? next.Amount - debt : next.Amount;
+                debt = absolute ? next.Amount : debt + next.Amount;
                 _movements.Add(new RevolvingMovement(
                     next.Date, next.Kind, change, debt, next.SourceId, next.BillMonth, next.IsEstimated));
             }
@@ -199,10 +226,14 @@ public sealed class RevolvingDebtCalculator
         var calendar = Card.RevolvingDates();
         if (calendar is not null && events.Count > 0)
         {
+            countedThrough = events.Min(e => e.Date).AddDays(-1);
             for (var month = YearMonth.FromDate(events.Min(e => e.Date)); month <= horizon; month = month.Next())
             {
                 var billDate = calendar.BillDate(month);
                 ApplyUpTo(billDate, includeDate: true);
+                CountDaysThrough(billDate);
+                var centDays = debtCentDays;
+                debtCentDays = 0;
                 if (!debt.IsPositive)
                 {
                     continue;
@@ -210,7 +241,7 @@ public sealed class RevolvingDebtCalculator
 
                 stored.TryGetValue(month, out var state);
                 var terms = calendar.TermsFor(month);
-                var interest = state?.Interest ?? RevolvingMath.MonthlyInterest(debt, terms);
+                var interest = state?.Interest ?? RevolvingMath.DailyInterest(centDays, terms);
                 var estimated = billDate > Today;
                 if (!interest.IsZero)
                 {

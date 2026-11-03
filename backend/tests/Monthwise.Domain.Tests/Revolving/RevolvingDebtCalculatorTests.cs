@@ -22,35 +22,81 @@ public class RevolvingDebtCalculatorTests
     }
 
     [Fact]
-    public void A_bill_adds_the_interest_of_the_month_and_asks_for_the_minimum_of_the_debt_with_interest()
+    public void A_bill_adds_the_daily_interest_since_the_previous_bill_and_asks_for_the_minimum_of_the_debt_with_interest()
     {
         var card = RevolvingCard();
 
-        var calculator = Calculate(card, October10, entries: [Starting(card, new DateOnly(2026, 9, 30), 100_000)]);
+        // From 6 September up to and including the bill day on 5 October: 30 days of 1,000.00 EUR.
+        var calculator = Calculate(card, October10, entries: [Starting(card, new DateOnly(2026, 9, 6), 100_000)]);
 
+        Assert.Null(calculator.Bill(new YearMonth(2026, 9)));
         var bill = calculator.Bill(October)!;
         Assert.Equal(new DateOnly(2026, 10, 5), bill.BillDate);
         Assert.Equal(new DateOnly(2026, 10, 20), bill.DueDate);
-        Assert.Equal(1_063, bill.Interest.Cents);
-        Assert.Equal(101_063, bill.Debt.Cents);
-        Assert.Equal(8_419, bill.Minimum.Cents); // 8.33 % of 1,010.63 EUR
+        Assert.Equal(1_048, bill.Interest.Cents); // 30 × 1,000.00 EUR × 12.75 % ÷ 365 = 10.479 EUR
+        Assert.Equal(101_048, bill.Debt.Cents);
+        Assert.Equal(8_417, bill.Minimum.Cents); // 8.33 % of 1,010.48 EUR
         Assert.False(bill.IsEstimated);
         Assert.False(bill.IsPaid);
         Assert.False(bill.IsOverdue(October10));
-        Assert.Equal(101_063, calculator.Debt.Cents);
+        Assert.Equal(101_048, calculator.Debt.Cents);
     }
 
     [Fact]
-    public void Next_months_bill_is_estimated_as_if_only_the_minimum_is_paid_on_the_due_date()
+    public void The_first_bill_counts_only_the_days_since_the_starting_debt()
     {
         var card = RevolvingCard();
 
+        // 30 September up to and including 5 October: 6 days.
         var calculator = Calculate(card, October10, entries: [Starting(card, new DateOnly(2026, 9, 30), 100_000)]);
+
+        Assert.Equal(210, calculator.Bill(October)!.Interest.Cents); // 6 × 1,000.00 EUR × 12.75 % ÷ 365 = 2.096 EUR
+    }
+
+    [Fact]
+    public void A_payment_during_the_month_lowers_the_interest_from_its_date()
+    {
+        var card = RevolvingCard();
+
+        // 15 days of 1,000.00 EUR (6 to 20 September), then 15 days of 500.00 EUR (21 September to 5 October).
+        var calculator = Calculate(
+            card, October10, entries: [Starting(card, new DateOnly(2026, 9, 6), 100_000)],
+            payments: [Payment(card, new DateOnly(2026, 9, 21), 50_000)]);
+
+        Assert.Equal(786, calculator.Bill(October)!.Interest.Cents); // 22,500.00 EUR-days × 12.75 % ÷ 365 = 7.860 EUR
+    }
+
+    [Fact]
+    public void Next_months_bill_is_estimated_with_daily_interest_as_if_only_the_minimum_is_paid_on_the_due_date()
+    {
+        var card = RevolvingCard();
+
+        var calculator = Calculate(card, October10, entries: [Starting(card, new DateOnly(2026, 9, 6), 100_000)]);
 
         var november = calculator.Bill(November)!;
         Assert.True(november.IsEstimated);
-        Assert.Equal(101_063 - 8_419 + 984, november.Debt.Cents);
-        Assert.Equal(101_063, calculator.Debt.Cents); // the assumed payment is not counted before its date
+        // 6 to 19 October: 14 days of 1,010.48 EUR; 20 October to 5 November: 17 days of 926.31 EUR.
+        var centDays = (14 * 101_048L) + (17 * (101_048L - 8_417));
+        Assert.Equal(1_044, november.Interest.Cents);
+        Assert.Equal(RevolvingMath.DailyInterest(centDays, card.RevolvingTermVersions[0]), november.Interest);
+        Assert.Equal(101_048 - 8_417 + 1_044, november.Debt.Cents);
+        Assert.Equal(101_048, calculator.Debt.Cents); // the assumed payment is not counted before its date
+    }
+
+    [Fact]
+    public void A_starting_debt_is_the_debt_at_the_start_of_its_date_so_a_payment_on_that_date_lowers_it()
+    {
+        var card = RevolvingCard();
+        var date = new DateOnly(2026, 10, 7);
+        var starting = Starting(card, date, 150_000);
+        var payment = Payment(card, date, 40_000);
+
+        var calculator = Calculate(card, date, entries: [starting], payments: [payment]);
+
+        Assert.Equal(110_000, calculator.Debt.Cents);
+        Assert.Equal(
+            [RevolvingMovementKind.Starting, RevolvingMovementKind.ExtraPayment],
+            calculator.Movements.Where(m => m.Date == date).Select(m => m.Kind));
     }
 
     [Fact]
@@ -151,10 +197,11 @@ public class RevolvingDebtCalculatorTests
         var calculator = Calculate(
             card, new DateOnly(2026, 9, 20),
             entries: [Starting(card, new DateOnly(2026, 9, 1), 100_000), correction],
-            charges: [Charge(card, new DateOnly(2026, 9, 10), 5_000), Charge(card, new DateOnly(2026, 9, 15), 1_000)]);
+            charges: [Charge(card, new DateOnly(2026, 9, 10), 5_000), Charge(card, new DateOnly(2026, 9, 15), 1_000)],
+            payments: [Payment(card, new DateOnly(2026, 9, 15), 3_000)]);
 
         Assert.Equal(200_000, calculator.Debt.Cents);
-        Assert.Equal(200_000 - 106_000, calculator.Movements.Single(m => m.SourceId == correction.Id).Change.Cents);
+        Assert.Equal(200_000 - 103_000, calculator.Movements.Single(m => m.SourceId == correction.Id).Change.Cents);
     }
 
     [Fact]
