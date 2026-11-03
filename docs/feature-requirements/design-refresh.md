@@ -436,3 +436,24 @@ appendix.
 17. The Shared costs screen shows its key figures, a card per participant with outstanding amount
     and progress, the outstanding list with one-tap received, and the per-participant chart.
 18. Settings shows grouped tiles with coloured icons and counts, including Recurring bills.
+
+## Appendix 1: Overall balance key figure
+
+- **Date:** 2026-11-03
+- **Branch:** `claude/project-thread-snccf3`
+- **Changes:** FR-9, FR-10, FR-15, acceptance criteria 7, 11 and 14
+
+The Dashboard and the Month screen get a fifth key figure, **Overall balance**, placed last after
+Still to pay, as described in [overall-balance-tile.md](overall-balance-tile.md):
+
+| # | Key figure | Value | Change pill against last month | Opens |
+|---|---|---|---|---|
+| K5 | Overall balance | The sum of the balances of all primary accounts at the end of the month once everything is received and paid; expected for the current and future months, actual for past months. | No | Cards |
+
+- FR-9: the Dashboard shows no account balances, expected end-of-month balances or starting
+  balances, **except** the Overall balance key figure. Balances per account stay on the Cards
+  screen.
+- FR-10: the Dashboard shows five key figures (K1 to K5) instead of four.
+- FR-15: the Month screen's key figures are Inputs, Outputs, Month result, Still to pay and
+  Overall balance.
+- Acceptance criteria 7, 11 and 14 are read with these changes.
