@@ -87,12 +87,15 @@ public sealed class BillHandler(
         errors.AddRange(await CheckAsync(details, request.PaidDate, existing: null, cancellationToken));
         var share = await shareResolver.ResolveAsync(request.Share, existing: null, cancellationToken);
         errors.AddRange(share.Errors);
+        var recurring = await RecurringFromAsync(existing: null, details, request.Recurring, now, cancellationToken);
+        errors.AddRange(recurring.Errors);
         if (errors.Count > 0)
         {
-            return Result.Failure<BillResponse>(errors);
+            return Result.Failure<BillResponse>(errors.Distinct());
         }
         created.Value.SetShare(share.Value, recurringShare: null, now);
         bills.Add(created.Value);
+        MakeRecurring(created.Value, recurring.Value, share.Value, now);
         await unitOfWork.SaveChangesAsync(cancellationToken);
         return Result.Success((await ledger.LoadAsync(cancellationToken)).ToResponse(created.Value));
     }
@@ -113,14 +116,17 @@ public sealed class BillHandler(
         errors.AddRange(share.Errors);
         var updated = bill.Update(details, request.PaidDate, now);
         errors.InsertRange(0, updated.Errors);
+        var recurring = await RecurringFromAsync(bill, details, request.Recurring, now, cancellationToken);
+        errors.AddRange(recurring.Errors);
         if (errors.Count > 0)
         {
-            return Result.Failure<BillResponse>(errors);
+            return Result.Failure<BillResponse>(errors.Distinct());
         }
         var recurringShare = bill.RecurringBillId is { } recurringId
             ? (await recurringBills.GetAsync(recurringId, cancellationToken))?.Share
             : null;
         bill.SetShare(share.Value, recurringShare, now);
+        MakeRecurring(bill, recurring.Value, share.Value, now);
         await unitOfWork.SaveChangesAsync(cancellationToken);
         // A bill that is no longer shared or no longer issued has no contribution (shared bills FR-6).
         await contributionCleaner.CleanUpAsync(cancellationToken);
@@ -191,6 +197,54 @@ public sealed class BillHandler(
         bills.Remove(bill);
         await unitOfWork.SaveChangesAsync(cancellationToken);
         return Result.Success();
+    }
+
+    /// <summary>
+    /// The recurring bill to add when the user ticks Recurring on a one-off bill (Appendix 2, A2.3): the
+    /// bill's details with the chosen amount, issue day and due day. Null when not ticked, or when the
+    /// bill already has a recurring bill. The bill's own checks cover name, category and paid from; this
+    /// adds the options and the name being unique among active recurring bills.
+    /// </summary>
+    private async Task<Result<RecurringBill?>> RecurringFromAsync(
+        Bill? existing, BillDetails details, RecurringOptionsRequest? options, DateTimeOffset now, CancellationToken cancellationToken)
+    {
+        if (options is null || existing?.RecurringBillId is not null)
+        {
+            return Result.Success<RecurringBill?>(null);
+        }
+        var created = RecurringBill.Create(
+            new RecurringBillDetails(
+                details.Name,
+                details.CategoryId,
+                details.Payee,
+                details.PaidFromId,
+                details.Description,
+                options.AmountCents is { } cents ? Money.FromCents(cents) : null,
+                options.IssueDay,
+                options.DueDay),
+            now);
+        var optionFields = new[] { ExpenseErrors.RecurringAmountNotPositive, ExpenseErrors.IssueDayOutOfRange, ExpenseErrors.DueDayOutOfRange };
+        var errors = created.IsFailure
+            ? created.Errors.Select(e => optionFields.Contains(e) ? e with { Field = $"recurring.{e.Field}" } : e).ToList()
+            : [];
+        var name = details.Name?.Trim();
+        if (!string.IsNullOrEmpty(name) && await recurringBills.NameInUseAsync(name, null, cancellationToken))
+        {
+            errors.Add(ExpenseErrors.NameInUse);
+        }
+        return errors.Count > 0 ? Result.Failure<RecurringBill?>(errors) : Result.Success<RecurringBill?>(created.Value);
+    }
+
+    /// <summary>Adds the recurring bill made from <paramref name="bill"/>, with its share, and makes the bill its bill for the month.</summary>
+    private void MakeRecurring(Bill bill, RecurringBill? recurringBill, CostShare? share, DateTimeOffset now)
+    {
+        if (recurringBill is null)
+        {
+            return;
+        }
+        recurringBill.SetShare(share, now);
+        recurringBills.Add(recurringBill);
+        bill.LinkTo(recurringBill, now);
     }
 
     /// <summary>

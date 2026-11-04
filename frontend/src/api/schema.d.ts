@@ -1900,6 +1900,7 @@ export interface components {
             /** Format: date */
             paidDate: null | string;
             share?: null | components["schemas"]["ShareRequest"];
+            recurring?: null | components["schemas"]["RecurringOptionsRequest"];
         };
         BillResponse: {
             /** Format: uuid */
@@ -2957,6 +2958,12 @@ export interface components {
             paidFromId: null | string;
             description: null | string;
             share?: null | components["schemas"]["ShareRequest"];
+            /** Format: int64 */
+            amountCents?: null | number;
+            /** Format: int32 */
+            issueDay?: null | number;
+            /** Format: int32 */
+            dueDay?: null | number;
         };
         RecurringBillResponse: {
             /** Format: uuid */
@@ -2971,6 +2978,12 @@ export interface components {
             stoppedOn: null | string;
             canBeDeleted: boolean;
             share?: null | components["schemas"]["ShareResponse"];
+            /** Format: int64 */
+            amountCents?: null | number;
+            /** Format: int32 */
+            issueDay?: null | number;
+            /** Format: int32 */
+            dueDay?: null | number;
         };
         RecurringInputRequest: {
             payerName: string;
@@ -3006,6 +3019,14 @@ export interface components {
             /** Format: date */
             endDate: null | string;
             isStopped: boolean;
+        };
+        RecurringOptionsRequest: {
+            /** Format: int64 */
+            amountCents: null | number;
+            /** Format: int32 */
+            issueDay: null | number;
+            /** Format: int32 */
+            dueDay: null | number;
         };
         ReportBalanceEntryResponse: {
             account: components["schemas"]["NamedReference"];

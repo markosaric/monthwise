@@ -9,6 +9,7 @@ import {
   anExpense,
   anExpenseMonth,
   aNotIssuedBill,
+  aRecurringBill,
   expenseCategories,
   tekuciPaidFrom,
   visaPaidFrom,
@@ -294,6 +295,149 @@ describe('Dates typed as DD.MM.YYYY (design refresh Appendix 2)', () => {
     await waitFor(async () =>
       expect(await lastBody(fetchMock, 'POST')).toMatchObject({ paidDate: '2026-10-09' }),
     )
+  })
+})
+
+describe('Recurring bill options', () => {
+  it('makes a one-off bill recurring with the amount and days prefilled from the bill', async () => {
+    const fetchMock = stubApi({
+      ...lists,
+      'POST /api/bills': () => json(aBill({ id: 'bill-9', name: 'Life insurance' })),
+      'GET /api/bills': () => json(aBillMonth([])),
+    })
+    renderRoute(`/month/${month}/bills/new`)
+
+    await userEvent.type(await screen.findByLabelText(t.fields.name), 'Life insurance')
+    await userEvent.selectOptions(screen.getByLabelText(t.fields.category), 'electricity')
+    await userEvent.type(screen.getByLabelText(t.fields.amount), '48,87')
+    await userEvent.clear(screen.getByLabelText(t.fields.issueDate))
+    await userEvent.type(screen.getByLabelText(t.fields.issueDate), '01102026')
+    await userEvent.type(screen.getByLabelText(t.fields.dueDate), '16102026')
+    expect(screen.queryByLabelText(t.fields.issueDay)).not.toBeInTheDocument()
+    await userEvent.click(screen.getByRole('switch', { name: t.fields.recurring }))
+
+    expect(screen.getByLabelText<HTMLInputElement>(t.fields.optionalAmount).value).toBe('48,87')
+    expect(screen.getByLabelText<HTMLInputElement>(t.fields.issueDay).value).toBe('1')
+    expect(screen.getByLabelText<HTMLInputElement>(t.fields.dueDay).value).toBe('16')
+    await userEvent.clear(screen.getByLabelText(t.fields.optionalAmount))
+    await userEvent.click(screen.getByRole('button', { name: t.bills.addBill }))
+
+    await waitFor(async () =>
+      expect(await lastBody(fetchMock, 'POST')).toMatchObject({
+        name: 'Life insurance',
+        amountCents: 4887,
+        recurring: { amountCents: null, issueDay: 1, dueDay: 16 },
+      }),
+    )
+  })
+
+  it('checks the recurring days and sends no recurring bill when the box stays empty', async () => {
+    const fetchMock = stubApi({
+      ...lists,
+      'POST /api/bills': () => json(aBill({ id: 'bill-9' })),
+      'GET /api/bills': () => json(aBillMonth([])),
+    })
+    renderRoute(`/month/${month}/bills/new`)
+
+    await userEvent.type(await screen.findByLabelText(t.fields.name), 'Plumber')
+    await userEvent.selectOptions(screen.getByLabelText(t.fields.category), 'electricity')
+    await userEvent.type(screen.getByLabelText(t.fields.amount), '80')
+    await userEvent.type(screen.getByLabelText(t.fields.dueDate), '31122099')
+    await userEvent.click(screen.getByRole('switch', { name: t.fields.recurring }))
+    await userEvent.clear(screen.getByLabelText(t.fields.dueDay))
+    await userEvent.type(screen.getByLabelText(t.fields.dueDay), '32')
+    await userEvent.click(screen.getByRole('button', { name: t.bills.addBill }))
+    expect(await screen.findByText(t.errors.dayInvalid)).toBeInTheDocument()
+    expect(fetchMock.mock.calls.some(([r]) => (r as Request).method === 'POST')).toBe(false)
+
+    await userEvent.click(screen.getByRole('switch', { name: t.fields.recurring }))
+    await userEvent.click(screen.getByRole('button', { name: t.bills.addBill }))
+    await waitFor(async () =>
+      expect(await lastBody(fetchMock, 'POST')).toMatchObject({ name: 'Plumber', recurring: null }),
+    )
+  })
+
+  it('shows a bill from a recurring bill as recurring, locked, with a link to it', async () => {
+    stubApi({
+      ...lists,
+      'GET /api/bills/bill-1': () => json(aBill()),
+    })
+    renderRoute('/bills/bill-1/edit')
+
+    const toggle = await screen.findByRole('switch', { name: t.fields.recurring })
+    expect(toggle).toBeChecked()
+    expect(toggle).toBeDisabled()
+    expect(screen.getByRole('link', { name: t.hints.openRecurring })).toHaveAttribute(
+      'href',
+      '/recurring-bills/recurring-1/edit',
+    )
+  })
+
+  it('keeps the stored amount of a not issued bill and saves it without dates', async () => {
+    const fetchMock = stubApi({
+      ...lists,
+      'GET /api/bills/bill-2': () =>
+        json(
+          aNotIssuedBill({ amountCents: 2100, issueDate: null, dueDate: null, dueDateHint: null }),
+        ),
+      'PUT /api/bills/bill-2': () => json(aNotIssuedBill({ amountCents: 2100 })),
+      'GET /api/bills': () => json(aBillMonth([])),
+    })
+    renderRoute('/bills/bill-2/edit')
+
+    const amount = await screen.findByLabelText<HTMLInputElement>(t.fields.amount)
+    expect(amount.value).toBe('21')
+    await userEvent.clear(screen.getByLabelText(t.fields.issueDate))
+    await userEvent.click(screen.getByRole('button', { name: t.actions.save }))
+
+    await waitFor(async () =>
+      expect(await lastBody(fetchMock, 'PUT')).toMatchObject({
+        amountCents: 2100,
+        issueDate: null,
+        dueDate: null,
+        recurring: null,
+      }),
+    )
+  })
+
+  it('saves the optional amount, issue day and due day of a recurring bill', async () => {
+    const fetchMock = stubApi({
+      ...lists,
+      'GET /api/recurring-bills/recurring-1': () =>
+        json(aRecurringBill({ amountCents: 3900, issueDay: 1, dueDay: 10 })),
+      'PUT /api/recurring-bills/recurring-1': () => json(aRecurringBill()),
+      'GET /api/recurring-bills': () => json([]),
+    })
+    renderRoute('/recurring-bills/recurring-1/edit')
+
+    const amount = await screen.findByLabelText<HTMLInputElement>(t.fields.optionalAmount)
+    expect(amount.value).toBe('39')
+    await userEvent.clear(amount)
+    await userEvent.clear(screen.getByLabelText(t.fields.issueDay))
+    await userEvent.type(screen.getByLabelText(t.fields.issueDay), '0')
+    await userEvent.click(screen.getByRole('button', { name: t.actions.save }))
+    expect(await screen.findByText(t.errors.dayInvalid)).toBeInTheDocument()
+
+    await userEvent.clear(screen.getByLabelText(t.fields.issueDay))
+    await userEvent.click(screen.getByRole('button', { name: t.actions.save }))
+    await waitFor(async () =>
+      expect(await lastBody(fetchMock, 'PUT')).toMatchObject({
+        amountCents: null,
+        issueDay: null,
+        dueDay: 10,
+      }),
+    )
+  })
+
+  it('lists the amount and days of a recurring bill', async () => {
+    stubApi({
+      ...lists,
+      'GET /api/recurring-bills': () =>
+        json([aRecurringBill({ amountCents: 3900, issueDay: 1, dueDay: 10 })]),
+    })
+    renderRoute('/recurring-bills')
+
+    expect(await screen.findByText(/39,00 € · issued on day 1 · due on day 10/)).toBeInTheDocument()
   })
 })
 

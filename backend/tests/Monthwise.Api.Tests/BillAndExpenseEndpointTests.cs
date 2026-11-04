@@ -256,10 +256,129 @@ public sealed class BillAndExpenseEndpointTests : IAsyncLifetime
         Assert.Equal(PostgresErrorCodes.CheckViolation, error.SqlState);
     }
 
-    private object Recurring(string name, Guid? paidFromId) =>
-        new { name, categoryId = _electricity, payee = "HEP", paidFromId, description = (string?)null };
+    [Fact]
+    public async Task Recurring_bills_keep_an_optional_amount_issue_day_and_due_day()
+    {
+        var created = await SendAsync(HttpMethod.Post, "/api/recurring-bills",
+            Recurring("Gym", _account, amountCents: 3_900, issueDay: 1, dueDay: 10));
+        Assert.Equal(3_900, created.GetProperty("amountCents").GetInt64());
+        Assert.Equal(1, created.GetProperty("issueDay").GetInt32());
+        Assert.Equal(10, created.GetProperty("dueDay").GetInt32());
 
-    private object Bill(string name, long amountCents, DateOnly? issue, DateOnly? due, Guid? paidFromId, DateOnly? paidDate) =>
+        var id = created.GetProperty("id").GetGuid();
+        var cleared = await SendAsync(HttpMethod.Put, $"/api/recurring-bills/{id}", Recurring("Gym", _account));
+        Assert.Equal(JsonValueKind.Null, cleared.GetProperty("amountCents").ValueKind);
+        Assert.Equal(JsonValueKind.Null, cleared.GetProperty("issueDay").ValueKind);
+        Assert.Equal(JsonValueKind.Null, cleared.GetProperty("dueDay").ValueKind);
+
+        var invalid = await Client.PostAsJsonAsync("/api/recurring-bills",
+            Recurring("Water", null, amountCents: 0, issueDay: 0, dueDay: 32), Ct);
+        Assert.Equal(HttpStatusCode.BadRequest, invalid.StatusCode);
+        var errors = (await invalid.Content.ReadFromJsonAsync<JsonElement>(Ct)).GetProperty("errors");
+        foreach (var field in new[] { "amountCents", "issueDay", "dueDay" })
+        {
+            Assert.True(errors.TryGetProperty(field, out _), $"Expected an error for {field}.");
+        }
+    }
+
+    [Fact]
+    public async Task Add_recurring_bills_adds_expected_bills_when_amount_and_days_are_set()
+    {
+        await SendAsync(HttpMethod.Post, "/api/recurring-bills", Recurring("Gym", _account, amountCents: 3_900, issueDay: 25, dueDay: 5));
+        await SendAsync(HttpMethod.Post, "/api/recurring-bills", Recurring("Water", _account, dueDay: 20));
+        var next = MonthStart.AddMonths(1);
+
+        Assert.Equal(2, (await SendAsync(HttpMethod.Post, $"/api/bills/add-recurring?month={Month(next)}")).GetProperty("added").GetInt32());
+        Assert.Equal(0, (await SendAsync(HttpMethod.Post, $"/api/bills/add-recurring?month={Month(next)}")).GetProperty("added").GetInt32());
+
+        var month = await GetAsync($"/api/bills?month={Month(next)}");
+        var bills = month.GetProperty("bills").EnumerateArray().ToDictionary(b => b.GetProperty("name").GetString()!);
+        var gym = bills["Gym"];
+        Assert.Equal("Expected", gym.GetProperty("state").GetString());
+        Assert.Equal(Iso(next.AddDays(24)), gym.GetProperty("issueDate").GetString());
+        Assert.Equal(Iso(next.AddMonths(1).AddDays(4)), gym.GetProperty("dueDate").GetString());
+        var water = bills["Water"];
+        Assert.Equal("NotIssued", water.GetProperty("state").GetString());
+        Assert.Equal(Iso(next.AddDays(19)), water.GetProperty("dueDate").GetString());
+        Assert.Equal(JsonValueKind.Null, water.GetProperty("issueDate").ValueKind);
+        Assert.Equal(JsonValueKind.Null, water.GetProperty("dueDateHint").ValueKind);
+        Assert.Equal(1, month.GetProperty("notIssuedCount").GetInt32());
+        Assert.Equal(3_900, month.GetProperty("totals").GetProperty("totalCents").GetInt64());
+
+        // The user enters only the amount: the bill stays Not issued and counts as 0.
+        var waterId = water.GetProperty("id").GetGuid();
+        var amountOnly = await SendAsync(HttpMethod.Put, $"/api/bills/{waterId}", Bill("Water", 2_100, null, next.AddDays(19), _account, paidDate: null));
+        Assert.Equal("NotIssued", amountOnly.GetProperty("state").GetString());
+        Assert.Equal(2_100, amountOnly.GetProperty("amountCents").GetInt64());
+        Assert.Equal(3_900, (await GetAsync($"/api/bills?month={Month(next)}")).GetProperty("totals").GetProperty("totalCents").GetInt64());
+        var notPaid = await Client.PostAsJsonAsync($"/api/bills/{waterId}/paid", new { paidDate = (string?)null, paidFromId = (Guid?)null }, Ct);
+        Assert.Equal(HttpStatusCode.BadRequest, notPaid.StatusCode);
+    }
+
+    [Fact]
+    public async Task Ticking_recurring_on_a_one_off_bill_adds_a_recurring_bill_for_the_following_months()
+    {
+        var created = await SendAsync(HttpMethod.Post, $"/api/bills?month={Month(MonthStart)}",
+            Bill("Life insurance", 4_887, MonthStart, MonthStart.AddDays(15), _account, paidDate: null,
+                recurring: new { amountCents = 4_887, issueDay = 1, dueDay = 16 }));
+        var recurringId = created.GetProperty("recurringBillId").GetGuid();
+        Assert.Equal("Expected", created.GetProperty("state").GetString());
+
+        var recurring = await GetAsync($"/api/recurring-bills/{recurringId}");
+        Assert.True(recurring.GetProperty("isActive").GetBoolean());
+        Assert.Equal("Life insurance", recurring.GetProperty("name").GetString());
+        Assert.Equal(_account, recurring.GetProperty("paidFrom").GetProperty("id").GetGuid());
+        Assert.Equal(4_887, recurring.GetProperty("amountCents").GetInt64());
+        Assert.Equal(16, recurring.GetProperty("dueDay").GetInt32());
+        Assert.False(recurring.GetProperty("canBeDeleted").GetBoolean());
+
+        Assert.Equal(0, (await SendAsync(HttpMethod.Post, $"/api/bills/add-recurring?month={Month(MonthStart)}")).GetProperty("added").GetInt32());
+        var next = MonthStart.AddMonths(1);
+        Assert.Equal(1, (await SendAsync(HttpMethod.Post, $"/api/bills/add-recurring?month={Month(next)}")).GetProperty("added").GetInt32());
+        var nextBill = Assert.Single((await GetAsync($"/api/bills?month={Month(next)}")).GetProperty("bills").EnumerateArray());
+        Assert.Equal("Expected", nextBill.GetProperty("state").GetString());
+        Assert.Equal(Iso(next.AddDays(15)), nextBill.GetProperty("dueDate").GetString());
+
+        // Recurring on a bill that already has a recurring bill is ignored.
+        var again = await SendAsync(HttpMethod.Put, $"/api/bills/{created.GetProperty("id").GetGuid()}",
+            Bill("Life insurance", 4_887, MonthStart, MonthStart.AddDays(15), _account, paidDate: null,
+                recurring: new { amountCents = (long?)null, issueDay = (int?)null, dueDay = (int?)null }));
+        Assert.Equal(recurringId, again.GetProperty("recurringBillId").GetGuid());
+        Assert.Single((await GetAsync("/api/recurring-bills")).EnumerateArray());
+    }
+
+    [Fact]
+    public async Task Editing_a_one_off_bill_with_recurring_links_it_and_a_taken_name_saves_nothing()
+    {
+        await SendAsync(HttpMethod.Post, "/api/recurring-bills", Recurring("Internet", null));
+        var emptyOptions = new { amountCents = (long?)null, issueDay = (int?)null, dueDay = (int?)null };
+
+        var taken = await Client.PostAsJsonAsync($"/api/bills?month={Month(MonthStart)}",
+            Bill("internet", 2_000, MonthStart, MonthStart.AddDays(10), _account, paidDate: null, recurring: emptyOptions), Ct);
+        Assert.Equal(HttpStatusCode.BadRequest, taken.StatusCode);
+        Assert.True((await taken.Content.ReadFromJsonAsync<JsonElement>(Ct)).GetProperty("errors").TryGetProperty("name", out _));
+        Assert.Empty((await GetAsync($"/api/bills?month={Month(MonthStart)}")).GetProperty("bills").EnumerateArray());
+
+        var invalidDay = await Client.PostAsJsonAsync($"/api/bills?month={Month(MonthStart)}",
+            Bill("Phone", 2_000, MonthStart, MonthStart.AddDays(10), _account, paidDate: null,
+                recurring: new { amountCents = (long?)null, issueDay = 40, dueDay = (int?)null }), Ct);
+        Assert.Equal(HttpStatusCode.BadRequest, invalidDay.StatusCode);
+        Assert.True((await invalidDay.Content.ReadFromJsonAsync<JsonElement>(Ct)).GetProperty("errors").TryGetProperty("recurring.issueDay", out _));
+
+        var oneOff = await SendAsync(HttpMethod.Post, $"/api/bills?month={Month(MonthStart)}",
+            Bill("Phone", 2_000, MonthStart, MonthStart.AddDays(10), _account, paidDate: null));
+        Assert.Equal(JsonValueKind.Null, oneOff.GetProperty("recurringBillId").ValueKind);
+        var linked = await SendAsync(HttpMethod.Put, $"/api/bills/{oneOff.GetProperty("id").GetGuid()}",
+            Bill("Phone", 2_000, MonthStart, MonthStart.AddDays(10), _account, paidDate: null, recurring: emptyOptions));
+        var recurring = await GetAsync($"/api/recurring-bills/{linked.GetProperty("recurringBillId").GetGuid()}");
+        Assert.Equal("Phone", recurring.GetProperty("name").GetString());
+        Assert.Equal(JsonValueKind.Null, recurring.GetProperty("amountCents").ValueKind);
+    }
+
+    private object Recurring(string name, Guid? paidFromId, long? amountCents = null, int? issueDay = null, int? dueDay = null) =>
+        new { name, categoryId = _electricity, payee = "HEP", paidFromId, description = (string?)null, amountCents, issueDay, dueDay };
+
+    private object Bill(string name, long amountCents, DateOnly? issue, DateOnly? due, Guid? paidFromId, DateOnly? paidDate, object? recurring = null) =>
         new
         {
             name,
@@ -271,6 +390,7 @@ public sealed class BillAndExpenseEndpointTests : IAsyncLifetime
             paidFromId,
             description = (string?)null,
             paidDate = paidDate is { } p ? Iso(p) : null,
+            recurring,
         };
 
     private static object Expense(long amountCents, Guid categoryId, Guid paidFromId, string? description) =>

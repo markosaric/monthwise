@@ -1,6 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useMemo, useState } from 'react'
 import { Controller, useForm, useWatch } from 'react-hook-form'
+import { Link } from 'react-router'
 import { useCards } from '@/api/cards'
 import { useExpenseCategories, type BillRequest, type PaidFrom } from '@/api/expenses'
 import type { Contribution, Share } from '@/api/sharedCosts'
@@ -14,7 +15,13 @@ import { ContributionWarning } from '@/components/sharedCosts/ContributionWarnin
 import { ShareFields } from '@/components/sharedCosts/ShareFields'
 import { shareErrorFields } from '@/components/sharedCosts/shareModel'
 import { parseEuroInput } from '@/lib/money'
-import { billFormSchema, toBillRequest, type BillFormValues } from './billFormModel'
+import {
+  billFormSchema,
+  recurringErrorFields,
+  recurringOptionsOf,
+  toBillRequest,
+  type BillFormValues,
+} from './billFormModel'
 import { applyApiErrors } from './formErrors'
 import { CategorySelect, Field } from './formParts'
 import { isCreditCard, isRevolvingCard } from './paidFrom'
@@ -27,10 +34,13 @@ const t = expenseTexts
  * Add a one-off bill, enter (issue) a bill added from a recurring bill, or edit a bill (FR-4, FR-5):
  * name, category, payee, amount, issue and due date, what it is paid with, the paid state, and how it
  * is shared (shared bills FR-3). A received contribution that would differ is pointed out (FR-6).
+ * A one-off bill can be made recurring with the Recurring switch (Appendix 2, A2.3); a bill from a
+ * recurring bill shows it ticked and links to its recurring bill.
  */
 export function BillForm({
   defaultValues,
   requireIssued,
+  recurringBillId = null,
   currentPaidFrom,
   dueDateHinted = false,
   submitLabel,
@@ -43,6 +53,8 @@ export function BillForm({
   defaultValues: BillFormValues
   /** A one-off bill is always issued; one from a recurring bill can stay Not issued. */
   requireIssued: boolean
+  /** The recurring bill this bill was added from; null for a one-off bill. */
+  recurringBillId?: string | null
   currentPaidFrom?: PaidFrom | null
   /** The due date was prefilled from the last bill (FR-2). */
   dueDateHinted?: boolean
@@ -64,12 +76,25 @@ export function BillForm({
     control,
     handleSubmit,
     setError,
+    getValues,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<BillFormValues>({ resolver: zodResolver(schema), defaultValues })
-  const [paid, paidFromId, amount, share] = useWatch({
+  const [paid, paidFromId, amount, share, recurring] = useWatch({
     control,
-    name: ['paid', 'paidFromId', 'amount', 'share'],
+    name: ['paid', 'paidFromId', 'amount', 'share', 'recurring'],
   })
+  const fromRecurring = recurringBillId !== null
+
+  function toggleRecurring(checked: boolean) {
+    setValue('recurring', checked)
+    if (checked) {
+      const options = recurringOptionsOf(getValues())
+      setValue('recurringAmount', options.recurringAmount)
+      setValue('recurringIssueDay', options.recurringIssueDay)
+      setValue('recurringDueDay', options.recurringDueDay)
+    }
+  }
   const amountCents = parseEuroInput(amount)
   const withCard = cards.some((c) => c.id === paidFromId && isCreditCard(c))
   const withRevolving = cards.some((c) => c.id === paidFromId && isRevolvingCard(c))
@@ -82,6 +107,7 @@ export function BillForm({
       setFormError(
         applyApiErrors(error, defaultValues, setError, {
           amountCents: 'amount',
+          ...recurringErrorFields,
           ...shareErrorFields,
         }),
       )
@@ -231,6 +257,73 @@ export function BillForm({
         amountCents={amountCents}
         share={share}
       />
+      <div className="flex flex-col gap-3 rounded-lg border p-4">
+        <div className="flex items-center gap-3">
+          <Switch
+            id="recurring"
+            checked={fromRecurring || recurring}
+            disabled={fromRecurring}
+            onCheckedChange={toggleRecurring}
+          />
+          <Label htmlFor="recurring">{t.fields.recurring}</Label>
+        </div>
+        {fromRecurring ? (
+          <p className="text-sm text-muted-foreground">
+            {t.hints.fromRecurring}.{' '}
+            <Link to={`/recurring-bills/${recurringBillId}/edit`} className="underline">
+              {t.hints.openRecurring}
+            </Link>
+          </p>
+        ) : (
+          <p className="text-sm text-muted-foreground">{t.hints.recurring}</p>
+        )}
+        {!fromRecurring && recurring && (
+          <fieldset className="flex flex-col gap-3">
+            <legend className="mb-2 text-sm font-medium">{t.fields.recurringSection}</legend>
+            <div className="grid gap-4 sm:grid-cols-3">
+              <Field
+                id="recurringAmount"
+                label={t.fields.optionalAmount}
+                error={errors.recurringAmount?.message}
+              >
+                <Input
+                  id="recurringAmount"
+                  inputMode="decimal"
+                  aria-invalid={!!errors.recurringAmount}
+                  {...register('recurringAmount')}
+                />
+              </Field>
+              <Field
+                id="recurringIssueDay"
+                label={t.fields.issueDay}
+                error={errors.recurringIssueDay?.message}
+              >
+                <Input
+                  id="recurringIssueDay"
+                  inputMode="numeric"
+                  maxLength={2}
+                  aria-invalid={!!errors.recurringIssueDay}
+                  {...register('recurringIssueDay')}
+                />
+              </Field>
+              <Field
+                id="recurringDueDay"
+                label={t.fields.dueDay}
+                error={errors.recurringDueDay?.message}
+              >
+                <Input
+                  id="recurringDueDay"
+                  inputMode="numeric"
+                  maxLength={2}
+                  aria-invalid={!!errors.recurringDueDay}
+                  {...register('recurringDueDay')}
+                />
+              </Field>
+            </div>
+            <p className="text-xs text-muted-foreground">{t.recurring.optionsHint}</p>
+          </fieldset>
+        )}
+      </div>
 
       {warning && <p className="text-sm font-medium">{warning}</p>}
       {formError && (

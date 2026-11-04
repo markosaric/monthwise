@@ -18,6 +18,14 @@ public static class ExpenseErrors
         "expense.description.tooLong", $"Description can be at most {Expense.DescriptionMaxLength} characters.", "description");
     public static readonly DomainError AmountNotPositive =
         new("expense.amount.notPositive", "Amount must be greater than zero.", "amountCents");
+    public static readonly DomainError RecurringAmountNotPositive =
+        new("recurringBill.amount.notPositive", "Amount must be greater than zero, or empty.", "amountCents");
+    public static readonly DomainError IssueDayOutOfRange =
+        new("recurringBill.issueDay.outOfRange", "Enter a day from 1 to 31, or leave it empty.", "issueDay");
+    public static readonly DomainError DueDayOutOfRange =
+        new("recurringBill.dueDay.outOfRange", "Enter a day from 1 to 31, or leave it empty.", "dueDay");
+    public static readonly DomainError BillAlreadyRecurring =
+        new("bill.recurring.alreadyRecurring", "This bill already belongs to a recurring bill.", "recurring");
     public static readonly DomainError IssueDateRequired = new("bill.issueDate.required", "Issue date is required.", "issueDate");
     public static readonly DomainError DueDateRequired = new("bill.dueDate.required", "Due date is required.", "dueDate");
     public static readonly DomainError DueBeforeIssue =

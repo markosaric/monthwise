@@ -24,12 +24,18 @@ internal sealed class RecurringBillConfiguration : IEntityTypeConfiguration<Recu
     public void Configure(EntityTypeBuilder<RecurringBill> builder)
     {
         builder.ToTable("recurring_bill", table =>
-            table.HasCheckConstraint("ck_recurring_bill_share", ShareColumnsConfiguration.ShareCheck()));
+        {
+            table.HasCheckConstraint("ck_recurring_bill_share", ShareColumnsConfiguration.ShareCheck());
+            table.HasCheckConstraint("ck_recurring_bill_amount_positive", "amount_cents > 0");
+            table.HasCheckConstraint("ck_recurring_bill_issue_day", $"issue_day BETWEEN 1 AND {RecurringBill.MaxDay}");
+            table.HasCheckConstraint("ck_recurring_bill_due_day", $"due_day BETWEEN 1 AND {RecurringBill.MaxDay}");
+        });
         builder.HasKey(r => r.Id);
         builder.Property(r => r.Id).ValueGeneratedNever();
         builder.Property(r => r.Name).HasMaxLength(RecurringBill.NameMaxLength);
         builder.Property(r => r.Payee).HasMaxLength(RecurringBill.PayeeMaxLength);
         builder.Property(r => r.Description).HasMaxLength(RecurringBill.DescriptionMaxLength);
+        builder.Property(r => r.Amount).HasColumnName("amount_cents");
         builder.Ignore(r => r.IsActive);
         builder.Ignore(r => r.Details);
         builder.ConfigureShare("recurring_bill");
@@ -48,16 +54,19 @@ internal sealed class RecurringBillConfiguration : IEntityTypeConfiguration<Recu
 
 internal sealed class BillConfiguration : IEntityTypeConfiguration<Bill>
 {
+    private const string Issued = "amount_cents > 0 AND issue_date IS NOT NULL AND due_date IS NOT NULL";
+
     public void Configure(EntityTypeBuilder<Bill> builder)
     {
         builder.ToTable("bill", table =>
         {
-            table.HasCheckConstraint("ck_bill_dates", "(issue_date IS NULL) = (due_date IS NULL)");
-            table.HasCheckConstraint(
-                "ck_bill_amount", "(issue_date IS NULL AND amount_cents = 0) OR (issue_date IS NOT NULL AND amount_cents > 0)");
+            // A bill from a recurring bill may hold any of amount, issue date and due date while Not
+            // issued; a one-off or paid bill has all three (Appendix 2 of monthly bills).
+            table.HasCheckConstraint("ck_bill_amount_not_negative", "amount_cents >= 0");
+            table.HasCheckConstraint("ck_bill_one_off_issued", $"recurring_bill_id IS NOT NULL OR ({Issued})");
             table.HasCheckConstraint("ck_bill_due_after_issue", "due_date >= issue_date");
             table.HasCheckConstraint("ck_bill_paid", "is_paid = (paid_date IS NOT NULL)");
-            table.HasCheckConstraint("ck_bill_paid_issued", "NOT is_paid OR issue_date IS NOT NULL");
+            table.HasCheckConstraint("ck_bill_paid_issued", $"NOT is_paid OR ({Issued})");
             table.HasCheckConstraint("ck_bill_paid_from", "NOT is_paid OR paid_from_id IS NOT NULL");
             table.HasCheckConstraint("ck_bill_paid_after_issue", "paid_date >= issue_date");
             table.HasCheckConstraint("ck_bill_share", ShareColumnsConfiguration.ShareCheck());

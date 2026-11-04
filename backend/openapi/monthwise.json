@@ -8418,6 +8418,16 @@
                 "$ref": "#/components/schemas/ShareRequest"
               }
             ]
+          },
+          "recurring": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/RecurringOptionsRequest"
+              }
+            ]
           }
         }
       },
@@ -12391,6 +12401,27 @@
                 "$ref": "#/components/schemas/ShareRequest"
               }
             ]
+          },
+          "amountCents": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int64"
+          },
+          "issueDay": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "dueDay": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
           }
         }
       },
@@ -12462,6 +12493,27 @@
                 "$ref": "#/components/schemas/ShareResponse"
               }
             ]
+          },
+          "amountCents": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int64"
+          },
+          "issueDay": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "dueDay": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
           }
         }
       },
@@ -12579,6 +12631,37 @@
           },
           "isStopped": {
             "type": "boolean"
+          }
+        }
+      },
+      "RecurringOptionsRequest": {
+        "required": [
+          "amountCents",
+          "issueDay",
+          "dueDay"
+        ],
+        "type": "object",
+        "properties": {
+          "amountCents": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int64"
+          },
+          "issueDay": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "dueDay": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
           }
         }
       },

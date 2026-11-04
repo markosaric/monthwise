@@ -73,6 +73,7 @@ export function BillEditPage() {
       <div className="flex max-w-xl flex-col gap-6">
         <BillForm
           requireIssued={bill.recurringBillId === null}
+          recurringBillId={bill.recurringBillId}
           currentPaidFrom={bill.paidFrom}
           currentShare={bill.share}
           contribution={bill.contribution}

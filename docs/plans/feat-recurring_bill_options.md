@@ -1,7 +1,7 @@
 # Plan: Recurring bill options
 
 - **Branch:** `feat/recurring_bill_options`
-- **Status:** In progress
+- **Status:** Done
 - **Date:** 2026-11-04
 - **Requirements:** [monthly-bills-and-expenses.md, Appendix 2](../feature-requirements/monthly-bills-and-expenses.md#appendix-2-recurring-bill-from-a-bill-optional-amount-and-dates)
 
@@ -63,24 +63,25 @@ changes FR-2, FR-3, FR-4 (states) and acceptance criteria 3, 4 and 5:
     `LinkTo` it in the same save, so either both are stored or neither (A2.3). Errors use the field
     names of the bill form (`name`, `recurring.amountCents`, `recurring.issueDay`,
     `recurring.dueDay`). Ignored when the bill already has a recurring bill.
-  - Extract the shared name/category/paid-from check of `RecurringBillHandler` into a small
-    `RecurringBillChecker` used by both handlers.
+  - The bill's own checks already cover name, category and paid from, so `BillHandler` only adds the
+    option errors and the unique-name check (no shared checker class was needed).
   - `ExpenseLedger.DueDateHint`: unchanged logic, but returns null when the bill already has a due
     date (it now can while Not issued).
-  - `BillResponse` gets `string? RecurringBillName` for the link in the form.
+  - `BillResponse` is unchanged: the form links to the recurring bill by its `recurringBillId`.
 - **API changes:** the new fields above on `POST/PUT /api/recurring-bills`, `GET /api/recurring-bills`,
   `POST /api/bills?month=yyyy-MM` and `PUT /api/bills/{id}`; no new endpoints. Regenerate
   `backend/openapi/monthwise.json` and `frontend/src/api/schema.d.ts` (`npm run api:generate`).
 - **Front-end changes:**
   - `billFormModel.ts`: recurring bill schema and values with `amount`, `issueDay`, `dueDay`
     (empty allowed); `billFormSchema` relaxes the "all three" rule for bills from a recurring bill
-    and adds the `recurring` block (`isRecurring`, `amount`, `issueDay`, `dueDay`) for one-off bills;
+    and adds the flat fields `recurring`, `recurringAmount`, `recurringIssueDay` and `recurringDueDay`
+    for one-off bills (flat so API errors such as `recurring.issueDay` map to a form field);
     `billFormValuesOf` shows the stored amount and dates of a Not issued bill.
   - `BillForm.tsx`: a **Recurring** switch (same style as **Paid** and **Shared**) under the
     Description, with a **Recurring bill** section holding Amount (€), Issue day and Due day
     (numeric, 1 to 31). Ticking it prefills them from the bill's amount and the days of its issue
     and due dates. On a bill from a recurring bill the switch is ticked and disabled, with
-    "From recurring bill <name>" linking to `/recurring-bills/<id>/edit`.
+    "From the recurring bill. Edit recurring bill" linking to `/recurring-bills/<id>/edit`.
   - `RecurringBillsPages.tsx`: the three optional fields in the form; the list row shows the amount
     and "issued on day N, due on day M" when set.
   - `texts.ts`: labels and messages in English, easy to translate (NFR-5).
