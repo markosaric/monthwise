@@ -10,11 +10,12 @@ import { messageOf } from '@/components/loans/messageOf'
 import { PaymentDialog } from '@/components/loans/PaymentDialogs'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { DateInput } from '@/components/DateInput'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { NativeSelect } from '@/components/ui/native-select'
 import { centsToEuroInput, formatCents, parseEuroInput } from '@/lib/money'
-import { todayIso } from '@/lib/dates'
+import { dateEntryMessage, isInvalidDateEntry, todayIso } from '@/lib/dates'
 import { cn } from '@/lib/utils'
 import { sharedCostTexts } from './texts'
 
@@ -159,6 +160,10 @@ function ContributionDialog({
       setError(t.amountInvalid)
       return false
     }
+    if (isInvalidDateEntry(expectedDate) || isInvalidDateEntry(receivedDate)) {
+      setError(dateEntryMessage)
+      return false
+    }
     setError(null)
     try {
       const ref = contributionRefOf(contribution)
@@ -222,21 +227,11 @@ function ContributionDialog({
         </div>
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="contribution-expected">{t.expectedDate}</Label>
-          <Input
-            id="contribution-expected"
-            type="date"
-            value={expectedDate}
-            onChange={(e) => setExpectedDate(e.target.value)}
-          />
+          <DateInput id="contribution-expected" value={expectedDate} onChange={setExpectedDate} />
         </div>
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="contribution-received">{t.receivedDate}</Label>
-          <Input
-            id="contribution-received"
-            type="date"
-            value={receivedDate}
-            onChange={(e) => setReceivedDate(e.target.value)}
-          />
+          <DateInput id="contribution-received" value={receivedDate} onChange={setReceivedDate} />
         </div>
       </div>
       <p className="text-xs text-muted-foreground">{t.part(contribution.partCents)}</p>

@@ -3,9 +3,10 @@ import { toast } from 'sonner'
 import { useChangeDebtEntry, useRevolvingDebt, type DebtEntry } from '@/api/revolving'
 import { PaymentDialog } from '@/components/loans/PaymentDialogs'
 import { messageOf } from '@/components/loans/messageOf'
+import { DateInput } from '@/components/DateInput'
 import { Input } from '@/components/ui/input'
 import { NativeSelect } from '@/components/ui/native-select'
-import { todayIso } from '@/lib/dates'
+import { dateEntryMessage, isInvalidDateEntry, todayIso } from '@/lib/dates'
 import { centsToEuroInput, formatCents, parseEuroInput } from '@/lib/money'
 import { FormField } from './ExtraPaymentForm'
 import { revolvingTexts } from './texts'
@@ -40,6 +41,10 @@ export function DebtEntryDialog({
   async function save() {
     if (entered === null) {
       setError(t.errors.debtInvalid)
+      return false
+    }
+    if (isInvalidDateEntry(date)) {
+      setError(dateEntryMessage)
       return false
     }
     if (date === '') {
@@ -90,13 +95,7 @@ export function DebtEntryDialog({
         </FormField>
       )}
       <FormField id="entry-date" label={t.date}>
-        <Input
-          id="entry-date"
-          type="date"
-          max={todayIso()}
-          value={date}
-          onChange={(e) => setDate(e.target.value)}
-        />
+        <DateInput id="entry-date" value={date} onChange={setDate} />
       </FormField>
       <FormField
         id="entry-debt"

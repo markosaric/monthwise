@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import type { CardPurchaseDetails, CardPurchaseRequest } from '@/api/cardPurchases'
+import { requiredDate } from '@/lib/dateSchema'
 import { centsToEuroInput, parseEuroInput } from '@/lib/money'
 import { cardPurchaseTexts } from './texts'
 
@@ -15,7 +16,7 @@ export function purchaseFormSchema(maxInstallments: number) {
         .trim()
         .min(1, t.errors.descriptionRequired)
         .max(100, t.errors.descriptionTooLong),
-      purchaseDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, t.errors.dateRequired),
+      purchaseDate: requiredDate(t.errors.dateRequired),
       amount: z.string(),
       inInstallments: z.boolean(),
       installmentCount: z.string(),

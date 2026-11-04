@@ -5,6 +5,7 @@ import { type CardPurchaseRequest, type InstallmentCard } from '@/api/cardPurcha
 import { ApiError } from '@/api/cards'
 import { useExpenseCategories } from '@/api/expenses'
 import { Button } from '@/components/ui/button'
+import { DateInput } from '@/components/DateInput'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { NativeSelect } from '@/components/ui/native-select'
@@ -134,11 +135,19 @@ export function PurchaseForm({
       </Field>
       <div className="grid gap-4 sm:grid-cols-2">
         <Field id="purchaseDate" label={t.fields.purchaseDate} error={errors.purchaseDate?.message}>
-          <Input
-            id="purchaseDate"
-            type="date"
-            aria-invalid={!!errors.purchaseDate}
-            {...register('purchaseDate')}
+          <Controller
+            control={control}
+            name="purchaseDate"
+            render={({ field }) => (
+              <DateInput
+                id="purchaseDate"
+                aria-invalid={!!errors.purchaseDate}
+                value={field.value}
+                onChange={field.onChange}
+                onBlur={field.onBlur}
+                ref={field.ref}
+              />
+            )}
           />
         </Field>
         <Field id="amount" label={t.fields.amount} error={errors.amount?.message}>

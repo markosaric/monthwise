@@ -4,10 +4,11 @@ import { ApiError } from '@/api/http'
 import { useRevolvingDebt, type ExtraPaymentRequest, type RevolvingCard } from '@/api/revolving'
 import { payableAccounts } from '@/components/expenses/paidFrom'
 import { Button } from '@/components/ui/button'
+import { DateInput } from '@/components/DateInput'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { NativeSelect } from '@/components/ui/native-select'
-import { todayIso } from '@/lib/dates'
+import { dateEntryMessage, isInvalidDateEntry, todayIso } from '@/lib/dates'
 import { centsToEuroInput, formatCents, parseEuroInput } from '@/lib/money'
 import { revolvingTexts } from './texts'
 
@@ -78,7 +79,8 @@ export function ExtraPaymentForm({
     const amount = parseEuroInput(values.amount)
     if (amount === null || amount === 0) found.amount = t.errors.amountInvalid
     else if (wholeDebt !== null && amount > wholeDebt) found.amount = t.errors.overDebt
-    if (values.date === '') found.date = t.errors.dateRequired
+    if (isInvalidDateEntry(values.date)) found.date = dateEntryMessage
+    else if (values.date === '') found.date = t.errors.dateRequired
     else if (values.date > today) found.date = t.errors.dateInFuture
     if (values.description.trim().length > 100) found.description = t.errors.descriptionTooLong
     return found
@@ -174,13 +176,11 @@ export function ExtraPaymentForm({
         </div>
       </FormField>
       <FormField id="date" label={t.date} error={errors.date}>
-        <Input
+        <DateInput
           id="date"
-          type="date"
-          max={today}
           aria-invalid={!!errors.date}
           value={values.date}
-          onChange={(e) => set('date', e.target.value)}
+          onChange={(value) => set('date', value)}
         />
       </FormField>
       <FormField id="description" label={t.descriptionField} error={errors.description}>

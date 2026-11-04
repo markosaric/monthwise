@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
+import { DateInput } from '@/components/DateInput'
 import { ContributionWarning } from '@/components/sharedCosts/ContributionWarning'
 import { ShareFields } from '@/components/sharedCosts/ShareFields'
 import { shareErrorFields } from '@/components/sharedCosts/shareModel'
@@ -117,11 +118,19 @@ export function BillForm({
           />
         </Field>
         <Field id="issueDate" label={t.fields.issueDate} error={errors.issueDate?.message}>
-          <Input
-            id="issueDate"
-            type="date"
-            aria-invalid={!!errors.issueDate}
-            {...register('issueDate')}
+          <Controller
+            control={control}
+            name="issueDate"
+            render={({ field }) => (
+              <DateInput
+                id="issueDate"
+                aria-invalid={!!errors.issueDate}
+                value={field.value}
+                onChange={field.onChange}
+                onBlur={field.onBlur}
+                ref={field.ref}
+              />
+            )}
           />
         </Field>
         <Field
@@ -130,11 +139,19 @@ export function BillForm({
           hint={dueDateHinted ? t.hints.dueDateHint : undefined}
           error={errors.dueDate?.message}
         >
-          <Input
-            id="dueDate"
-            type="date"
-            aria-invalid={!!errors.dueDate}
-            {...register('dueDate')}
+          <Controller
+            control={control}
+            name="dueDate"
+            render={({ field }) => (
+              <DateInput
+                id="dueDate"
+                aria-invalid={!!errors.dueDate}
+                value={field.value}
+                onChange={field.onChange}
+                onBlur={field.onBlur}
+                ref={field.ref}
+              />
+            )}
           />
         </Field>
       </div>
@@ -171,11 +188,19 @@ export function BillForm({
       </div>
       {paid && (
         <Field id="paidDate" label={t.fields.paidDate} error={errors.paidDate?.message}>
-          <Input
-            id="paidDate"
-            type="date"
-            aria-invalid={!!errors.paidDate}
-            {...register('paidDate')}
+          <Controller
+            control={control}
+            name="paidDate"
+            render={({ field }) => (
+              <DateInput
+                id="paidDate"
+                aria-invalid={!!errors.paidDate}
+                value={field.value}
+                onChange={field.onChange}
+                onBlur={field.onBlur}
+                ref={field.ref}
+              />
+            )}
           />
         </Field>
       )}

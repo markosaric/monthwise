@@ -16,7 +16,7 @@ import {
 import { aLoanMonth } from '@/test/loanFixtures'
 import { renderRoute } from '@/test/renderRoute'
 import { json, stubApi } from '@/test/stubApi'
-import { addMonths, currentMonth } from '@/lib/dates'
+import { addMonths, currentMonth, dateEntryMessage } from '@/lib/dates'
 import { expenseTexts } from './texts'
 
 const t = expenseTexts
@@ -188,7 +188,7 @@ describe('Bills on the Month screen', () => {
     renderRoute('/bills/bill-2/edit')
 
     const due = await screen.findByLabelText<HTMLInputElement>(t.fields.dueDate)
-    expect(due.value).toBe('2026-10-20')
+    expect(due.value).toBe('20.10.2026')
     expect(screen.getByText(t.hints.dueDateHint)).toBeInTheDocument()
     await userEvent.type(screen.getByLabelText(t.fields.amount), '39,90')
     await userEvent.click(screen.getByRole('button', { name: t.actions.save }))
@@ -215,6 +215,85 @@ describe('Bills on the Month screen', () => {
     expect(await screen.findByText(t.errors.amountInvalid)).toBeInTheDocument()
     expect(screen.getByText(t.errors.dueDateRequired)).toBeInTheDocument()
     expect(fetchMock.mock.calls.some(([r]) => (r as Request).method === 'POST')).toBe(false)
+  })
+})
+
+describe('Dates typed as DD.MM.YYYY (design refresh Appendix 2)', () => {
+  async function fillOneOffBill() {
+    renderRoute(`/month/${month}/bills/new`)
+    await userEvent.type(await screen.findByLabelText(t.fields.name), 'Allianz')
+    await userEvent.selectOptions(screen.getByLabelText(t.fields.category), 'electricity')
+    await userEvent.type(screen.getByLabelText(t.fields.amount), '48,87')
+    const issue = screen.getByLabelText<HTMLInputElement>(t.fields.issueDate)
+    await userEvent.clear(issue)
+    await userEvent.type(issue, '01112026')
+  }
+
+  it('adds a bill with a typed due date', async () => {
+    const fetchMock = stubApi({
+      ...lists,
+      'POST /api/bills': () => json(aBill()),
+      'GET /api/bills': () => json(aBillMonth([])),
+    })
+    await fillOneOffBill()
+    const due = screen.getByLabelText<HTMLInputElement>(t.fields.dueDate)
+    expect(due).toHaveAttribute('placeholder', 'DD.MM.YYYY')
+    await userEvent.type(due, '16112026')
+    expect(due.value).toBe('16.11.2026')
+    await userEvent.click(screen.getByRole('button', { name: t.bills.addBill }))
+
+    await waitFor(async () =>
+      expect(await lastBody(fetchMock, 'POST')).toMatchObject({
+        amountCents: 4887,
+        issueDate: '2026-11-01',
+        dueDate: '2026-11-16',
+      }),
+    )
+    expect(screen.queryByText(t.errors.dueDateRequired)).not.toBeInTheDocument()
+  })
+
+  it.each(['31022026', '161126', '1611'])('refuses "%s" as a due date', async (typed) => {
+    const fetchMock = stubApi(lists)
+    await fillOneOffBill()
+    await userEvent.type(screen.getByLabelText(t.fields.dueDate), typed)
+    await userEvent.click(screen.getByRole('button', { name: t.bills.addBill }))
+
+    expect(await screen.findByText(dateEntryMessage)).toBeInTheDocument()
+    expect(fetchMock.mock.calls.some(([r]) => (r as Request).method === 'POST')).toBe(false)
+  })
+
+  it('takes no letters in a date field', async () => {
+    stubApi(lists)
+    await fillOneOffBill()
+    const due = screen.getByLabelText<HTMLInputElement>(t.fields.dueDate)
+    await userEvent.type(due, 'abc')
+    expect(due.value).toBe('')
+  })
+
+  it('marks a bill paid on a typed date and refuses an incomplete one', async () => {
+    const fetchMock = stubApi({
+      ...monthApi,
+      'GET /api/expenses': () => json(anExpenseMonth([])),
+      'GET /api/bills': () => json(aBillMonth([aBill()])),
+      'POST /api/bills/bill-1/paid': () => json(aBill({ state: 'Paid', paidDate: '2026-10-09' })),
+    })
+    renderRoute(`/month/${month}`)
+
+    await userEvent.click(await screen.findByRole('checkbox', { name: /Electricity, apartment/ }))
+    const dialog = await screen.findByRole('alertdialog')
+    const paidDate = within(dialog).getByLabelText<HTMLInputElement>(t.fields.paidDate)
+    await userEvent.clear(paidDate)
+    await userEvent.type(paidDate, '0910')
+    await userEvent.click(within(dialog).getByRole('button', { name: t.actions.save }))
+    expect(await within(dialog).findByText(dateEntryMessage)).toBeInTheDocument()
+    expect(fetchMock.mock.calls.some(([r]) => (r as Request).method === 'POST')).toBe(false)
+
+    await userEvent.type(paidDate, '2026')
+    expect(paidDate.value).toBe('09.10.2026')
+    await userEvent.click(within(dialog).getByRole('button', { name: t.actions.save }))
+    await waitFor(async () =>
+      expect(await lastBody(fetchMock, 'POST')).toMatchObject({ paidDate: '2026-10-09' }),
+    )
   })
 })
 

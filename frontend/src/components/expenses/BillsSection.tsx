@@ -17,9 +17,18 @@ import { SectionCard } from '@/components/design/SectionCard'
 import { StatusChip } from '@/components/design/StatusChip'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { DateInput } from '@/components/DateInput'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { addMonths, currentMonth, formatYearMonth, isYearMonth, todayIso } from '@/lib/dates'
+import {
+  addMonths,
+  currentMonth,
+  dateEntryMessage,
+  formatYearMonth,
+  isInvalidDateEntry,
+  isYearMonth,
+  todayIso,
+} from '@/lib/dates'
 import { formatCents } from '@/lib/money'
 import { PaidFromSelect } from './PaidFromSelect'
 import { expenseTexts } from './texts'
@@ -207,6 +216,10 @@ function BillPaidDialog({
   const [error, setError] = useState<string | null>(null)
 
   async function save() {
+    if (isInvalidDateEntry(paidDate)) {
+      setError(dateEntryMessage)
+      return false
+    }
     if (paidDate === '') {
       setError(t.errors.dateRequired)
       return false
@@ -239,13 +252,7 @@ function BillPaidDialog({
     >
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="bill-paid-date">{t.fields.paidDate}</Label>
-        <Input
-          id="bill-paid-date"
-          type="date"
-          min={bill.issueDate ?? undefined}
-          value={paidDate}
-          onChange={(e) => setPaidDate(e.target.value)}
-        />
+        <DateInput id="bill-paid-date" value={paidDate} onChange={setPaidDate} />
       </div>
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="bill-paid-from">{t.fields.paidFrom}</Label>

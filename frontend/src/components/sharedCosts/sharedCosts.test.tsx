@@ -61,7 +61,7 @@ describe('Sharing a bill', () => {
     await userEvent.selectOptions(screen.getByLabelText('Category'), 'Electricity')
     await userEvent.type(screen.getByLabelText('Amount (€)'), '85,01')
     // The due date may not be before the issue date, which defaults to today.
-    await userEvent.type(screen.getByLabelText('Due date'), '2099-12-15')
+    await userEvent.type(screen.getByLabelText('Due date'), '15122099')
     await userEvent.click(screen.getByLabelText(t.share.shared))
 
     const shares = screen.getByLabelText(t.share.shares)

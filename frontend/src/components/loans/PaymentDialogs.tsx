@@ -13,10 +13,11 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
+import { DateInput } from '@/components/DateInput'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { NativeSelect } from '@/components/ui/native-select'
-import { todayIso } from '@/lib/dates'
+import { dateEntryMessage, isInvalidDateEntry, todayIso } from '@/lib/dates'
 import { centsToEuroInput, formatCents, parseEuroInput } from '@/lib/money'
 import { onlyPrimaryAccountId, payingAccounts } from './loanFormModel'
 import { messageOf } from './messageOf'
@@ -109,6 +110,10 @@ export function ChangePaymentDialog({
       setFieldError(t.errors.amountInvalid)
       return false
     }
+    if (isInvalidDateEntry(dueDate)) {
+      setFieldError(dateEntryMessage)
+      return false
+    }
     if (dueDate.slice(0, 7) !== payment.month) {
       setFieldError(t.errors.dueDateOutsideMonth)
       return false
@@ -140,12 +145,7 @@ export function ChangePaymentDialog({
       </div>
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="payment-due-date">{t.payment.dueDate}</Label>
-        <Input
-          id="payment-due-date"
-          type="date"
-          value={dueDate}
-          onChange={(e) => setDueDate(e.target.value)}
-        />
+        <DateInput id="payment-due-date" value={dueDate} onChange={setDueDate} />
       </div>
       {(fieldError ?? error) && (
         <p role="alert" className="text-sm text-destructive">
@@ -182,6 +182,10 @@ export function PaidDialog({
       : accounts
 
   async function save() {
+    if (isInvalidDateEntry(paidDate)) {
+      setFieldError(dateEntryMessage)
+      return false
+    }
     if (paidDate === '') {
       setFieldError(t.errors.dateRequired)
       return false
@@ -204,13 +208,7 @@ export function PaidDialog({
     >
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="paid-date">{t.payment.paidDate}</Label>
-        <Input
-          id="paid-date"
-          type="date"
-          min={payment.billDate}
-          value={paidDate}
-          onChange={(e) => setPaidDate(e.target.value)}
-        />
+        <DateInput id="paid-date" value={paidDate} onChange={setPaidDate} />
       </div>
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="paid-account">{t.payment.account}</Label>

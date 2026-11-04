@@ -92,7 +92,7 @@ describe('Card form for a revolving card', () => {
     await userEvent.type(screen.getByLabelText(t.form.dueDay), '20')
     await userEvent.type(screen.getByLabelText(t.form.startingDebt), '1000')
     await userEvent.clear(screen.getByLabelText(t.form.startingDebtDate))
-    await userEvent.type(screen.getByLabelText(t.form.startingDebtDate), '2026-09-01')
+    await userEvent.type(screen.getByLabelText(t.form.startingDebtDate), '01092026')
     await waitFor(() =>
       expect(screen.getByLabelText(t.form.payingAccount)).toHaveValue('account-1'),
     )
@@ -160,7 +160,7 @@ describe('Extra payment form', () => {
     )
     await userEvent.type(screen.getByLabelText(t.payment.amount), '2000')
     await userEvent.clear(screen.getByLabelText(t.payment.date))
-    await userEvent.type(screen.getByLabelText(t.payment.date), '2999-01-01')
+    await userEvent.type(screen.getByLabelText(t.payment.date), '01012999')
     await userEvent.click(screen.getByRole('button', { name: t.payment.save }))
 
     expect(await screen.findByText(t.payment.errors.dateInFuture)).toBeInTheDocument()

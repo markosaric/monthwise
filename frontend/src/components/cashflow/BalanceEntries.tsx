@@ -10,8 +10,9 @@ import { ApiError } from '@/api/cards'
 import { CardActionDialog } from '@/components/cards/CardActionDialog'
 import { formatDate } from '@/components/cards/format'
 import { Button } from '@/components/ui/button'
+import { DateInput } from '@/components/DateInput'
 import { Input } from '@/components/ui/input'
-import { todayIso } from '@/lib/dates'
+import { dateEntryMessage, isInvalidDateEntry, todayIso } from '@/lib/dates'
 import { centsToEuroInput, formatCents, parseSignedEuroInput } from '@/lib/money'
 import { cn } from '@/lib/utils'
 import { Field } from './InputForm'
@@ -168,6 +169,10 @@ function BalanceEntryForm({
   async function submit(event: React.FormEvent) {
     event.preventDefault()
     const cents = parseSignedEuroInput(amount)
+    if (isInvalidDateEntry(date)) {
+      setError(dateEntryMessage)
+      return
+    }
     if (cents === null || date === '') {
       setError(t.amountInvalid)
       return
@@ -197,12 +202,7 @@ function BalanceEntryForm({
       <p className="text-sm font-medium">{t.kinds[kind]}</p>
       <div className="grid gap-3 sm:grid-cols-2">
         <Field id="balance-date" label={t.date}>
-          <Input
-            id="balance-date"
-            type="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-          />
+          <DateInput id="balance-date" value={date} onChange={setDate} />
         </Field>
         <Field id="balance-amount" label={t.amount} hint={t.amountHint}>
           <Input

@@ -495,8 +495,8 @@ received date, purchase date, payment date, starting debt date and the like) is 
    is on) *Paid date* with the `DD.MM.YYYY` placeholder or prefilled value. Typing `16112026` in
    *Due date* shows `16.11.2026` and the bill is saved with the due date 16 November 2026, without
    the message *Enter the due date.*
-2. `31.02.2026`, `16.11.26`, `1611` and letters are rejected with *Enter the date as DD.MM.YYYY,
-   e.g. 16.11.2026.*
+2. `31.02.2026`, `16.11.26` and `1611` are rejected with *Enter the date as DD.MM.YYYY,
+   e.g. 16.11.2026.* Letters cannot be typed into a date field.
 3. Editing a bill due on 20 October 2026 shows `20.10.2026` in *Due date*.
 4. Every other form and dialog with a date field (expenses, inputs, card purchases and payments,
    revolving cards, loan payments, shared costs contributions, card balances) behaves as in

@@ -8,6 +8,8 @@ import type {
 } from '@/api/cashFlow'
 import { frequencies } from '@/api/cashFlow'
 import type { Card } from '@/api/cards'
+import { dateEntryMessage, isInvalidDateEntry } from '@/lib/dates'
+import { optionalDate, requiredDate } from '@/lib/dateSchema'
 import { centsToEuroInput, parseEuroInput } from '@/lib/money'
 import { cashFlowTexts } from './texts'
 
@@ -20,14 +22,14 @@ export const inputFormSchema = z
     accountId: z.string().min(1, t.errors.accountRequired),
     categoryId: z.string().min(1, t.errors.categoryRequired),
     amount: z.string(),
-    issueDate: z.string().regex(isoDate, t.errors.dateRequired),
-    expectedDate: z.string().regex(isoDate, t.errors.dateRequired),
+    issueDate: requiredDate(t.errors.dateRequired),
+    expectedDate: requiredDate(t.errors.dateRequired),
     received: z.boolean(),
     receivedDate: z.string(),
     description: z.string().max(200, t.errors.descriptionTooLong),
     recurring: z.boolean(),
     frequency: z.enum(frequencies as [RecurrenceFrequency, ...RecurrenceFrequency[]]),
-    endDate: z.string(),
+    endDate: optionalDate(),
   })
   .superRefine((values, ctx) => {
     const cents = parseEuroInput(values.amount)
@@ -46,7 +48,9 @@ export const inputFormSchema = z
       })
     }
     if (values.received) {
-      if (!isoDate.test(values.receivedDate)) {
+      if (isInvalidDateEntry(values.receivedDate)) {
+        ctx.addIssue({ code: 'custom', path: ['receivedDate'], message: dateEntryMessage })
+      } else if (!isoDate.test(values.receivedDate)) {
         ctx.addIssue({ code: 'custom', path: ['receivedDate'], message: t.errors.dateRequired })
       } else if (isoDate.test(values.issueDate) && values.receivedDate < values.issueDate) {
         ctx.addIssue({
@@ -56,7 +60,7 @@ export const inputFormSchema = z
         })
       }
     }
-    if (values.recurring && values.endDate !== '' && values.endDate < values.expectedDate) {
+    if (values.recurring && isoDate.test(values.endDate) && values.endDate < values.expectedDate) {
       ctx.addIssue({ code: 'custom', path: ['endDate'], message: t.errors.endBeforeStart })
     }
   })

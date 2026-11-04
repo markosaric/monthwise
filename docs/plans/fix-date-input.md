@@ -1,7 +1,7 @@
 # Plan: Dates entered as DD.MM.YYYY
 
 - **Branch:** `fix/date-input`
-- **Status:** In progress
+- **Status:** Done
 - **Date:** 2026-11-04
 - **Requirements:** [design-refresh.md, Appendix 2](../feature-requirements/design-refresh.md#appendix-2-dates-entered-as-ddmmyyyy)
 
