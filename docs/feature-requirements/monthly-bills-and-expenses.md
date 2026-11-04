@@ -273,3 +273,94 @@ shared with one participant, who pays back a part of it as an agreed contributio
   input.
 - The Month screen also shows the own part of a shared bill and of the bills totals (see
   [shared-bills.md](shared-bills.md) FR-7).
+
+## Appendix 2: Recurring bill from a bill, optional amount and dates
+
+- **Date:** 2026-11-04
+- **Branch:** `feat/recurring_bill_options`
+- **Changes:** FR-2, FR-3, FR-4 (states), acceptance criteria 3, 4 and 5
+
+### A2.1 Optional amount, issue day and due day on a recurring bill
+
+A recurring bill no longer has to be without amount and dates. FR-2 gets three optional
+attributes, so that a bill that is always the same (e.g. a gym membership) does not have to be
+filled in every month:
+
+| # | Attribute | Required | Description and rules |
+|---|---|---|---|
+| R6 | Amount | No | Amount in EUR, exact to the cent, greater than zero. Empty when the amount changes every month. |
+| R7 | Issue day | No | Day of the month (1 to 31) the bill is usually issued. The last day of the month when the month is shorter. |
+| R8 | Due day | No | Day of the month (1 to 31) the bill is usually due. The last day of the month when the month is shorter. When it is earlier than the issue day, the bill is due in the following month. |
+
+- Each of the three can be left empty, alone or together. The FR-2 sentence "A recurring bill has
+  no dates and no amount" no longer applies.
+- They are days of the month, not full dates, because a recurring bill stands for every month.
+- The user can enter, change and clear them when adding or editing a recurring bill. A change
+  applies to bills added to months later; bills already in a month keep their values.
+
+### A2.2 Bills added from a recurring bill (changes FR-3 and FR-4)
+
+When **Add recurring bills** adds a bill to a month (FR-3), the bill takes the amount, issue day
+and due day of its recurring bill, turned into dates of that month (the due date can fall in the
+following month, see R8):
+
+- **All three are set:** the bill is added directly as **Expected**, with that amount, issue date
+  and due date. It counts in the totals, the account balance and the cash flow like any expected
+  bill (FR-4, FR-10).
+- **Some or none are set:** the bill is added as **Not issued**, as before. The values that are set
+  are already filled in, and the user enters the rest when the bill arrives. A Not issued bill still
+  counts as 0 in totals and cannot be marked as paid (FR-4).
+- In both cases the user can change the amount and dates of the bill in that month without
+  changing the recurring bill.
+- **Due date hint:** when the recurring bill has a due day, that day is used instead of the hint
+  from the last issued bill (FR-2). Without a due day, the hint works as before.
+- In FR-4, the state **Not issued** now means: added from a recurring bill and not yet issued
+  (amount, issue date or due date still missing), instead of "amount 0, no dates".
+
+### A2.3 Mark a bill as recurring
+
+The user can turn a bill into a recurring bill, so that it arrives in the following months without
+setting it up again in the Recurring bills list.
+
+- The **Add bill** and **Edit bill** forms on the Month screen get a **Recurring** tick box for a
+  one-off bill (a bill that has no recurring bill).
+- Ticking it shows a **Recurring bill** section with the optional **Amount**, **Issue day** and
+  **Due day** of the new recurring bill (A2.1). They are prefilled from the bill (its amount, and
+  the day of the month of its issue date and due date), and each can be changed or cleared.
+- On saving, a new active recurring bill is added with the bill's name, category, payee, paid from,
+  description and shares (see [shared-bills.md](shared-bills.md) FR-3), plus the amount and days
+  from the Recurring bill section. The rules of FR-2 apply; e.g. when an active recurring bill
+  already has the same name, the app says so and nothing is saved.
+- The bill itself is saved as entered and becomes the bill of the new recurring bill for its month,
+  so **Add recurring bills** for that month skips it (FR-3) and it is the "last issued bill" for the
+  due date hint. From the following month on, Add recurring bills adds it like any other recurring
+  bill.
+- A bill that was added from a recurring bill shows **Recurring** as ticked, with a link to its
+  recurring bill, and the tick cannot be removed there: the user stops or edits the recurring bill
+  in the Recurring bills list (FR-2). Deleting such a bill still removes it only from its month.
+- Leaving the tick box empty keeps the bill a one-off bill, as before.
+
+### A2.4 Unchanged
+
+- Expenses (FR-7) and cash withdrawals (FR-8) cannot be recurring.
+- Bills paid with a credit card (FR-6), paying a bill (FR-5) and shared bills keep their rules.
+- The Recurring bills small card on the Dashboard (see
+  [design-refresh.md](design-refresh.md) FR-10) keeps showing the number of active recurring bills
+  and how many of this month's bills are not issued; it shows no monthly total.
+
+### A2.5 Acceptance criteria
+
+These replace acceptance criteria 3, 4 and 5 where they differ:
+
+1. The user can add, edit, stop and (when never used) delete recurring bills, and can leave their
+   amount, issue day and due day empty or fill in any of them.
+2. Add recurring bills adds a bill as Expected, with dates in the chosen month, for each recurring
+   bill that has an amount, issue day and due day, and as Not issued, with the known values filled
+   in, for the others. Running it again adds nothing new.
+3. A bill's due date is prefilled from its recurring bill's due day when it has one, otherwise from
+   the due day of the last issued bill of that recurring bill.
+4. Ticking Recurring on a one-off bill and saving it adds an active recurring bill with the bill's
+   details and the chosen optional amount, issue day and due day; Add recurring bills does not add
+   it again to that bill's month, and adds it to the following months.
+5. A bill added from a recurring bill shows Recurring as ticked and cannot be unticked in the bill
+   form.
