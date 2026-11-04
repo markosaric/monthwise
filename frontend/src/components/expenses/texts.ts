@@ -43,7 +43,12 @@ export const expenseTexts = {
     saved: 'Recurring bill saved.',
     deleted: 'Recurring bill deleted.',
     noDates:
-      'Recurring bills have no dates or amount: you enter them on each bill when it arrives.',
+      'Amount, issue day and due day are optional. When all three are set, its bills are added as expected; otherwise you enter the rest on each bill when it arrives.',
+    options: 'Usual amount and days (optional)',
+    optionsHint:
+      'Leave a field empty when it changes every month. A due day earlier than the issue day means the following month.',
+    issuedOn: (day: number) => `issued on day ${day}`,
+    dueOn: (day: number) => `due on day ${day}`,
     deleteTitle: (name: string) => `Delete ${name}?`,
     deleteDescription: 'The recurring bill is removed. It was never added to a month.',
   },
@@ -74,6 +79,11 @@ export const expenseTexts = {
     paidDate: 'Paid on',
     paidFrom: 'Paid from',
     usualPaidFrom: 'Usually paid from (optional)',
+    recurring: 'Recurring',
+    recurringSection: 'Recurring bill',
+    optionalAmount: 'Amount (€, optional)',
+    issueDay: 'Issue day (optional)',
+    dueDay: 'Due day (optional)',
     account: 'Primary account',
     date: 'Date',
     month: 'Month',
@@ -85,8 +95,10 @@ export const expenseTexts = {
   },
   hints: {
     dueDateHint: 'Prefilled with the due day of last month’s bill.',
-    notIssued:
-      'Amount, issue date and due date go together. Clear all three to keep the bill not issued.',
+    notIssued: 'The bill stays not issued until amount, issue date and due date are all entered.',
+    recurring: 'Adds this bill to the recurring bills, so it is added to the following months too.',
+    fromRecurring: 'From the recurring bill',
+    openRecurring: 'Edit recurring bill',
     creditCard: 'Paid with a credit card, it goes into that card’s card payment.',
     revolvingCard: 'Paid with a revolving card, it adds to that card’s debt.',
     cashAccount: 'Cash can only be withdrawn from a primary account.',
@@ -111,6 +123,9 @@ export const expenseTexts = {
     paidBeforeIssue: 'Paid date must be the same as or later than the issue date.',
     paidFromRequired: 'Choose what it was paid with.',
     accountRequired: 'Choose the primary account.',
+    optionalAmountInvalid:
+      'Enter an amount in euros greater than zero, e.g. 42,50, or leave it empty.',
+    dayInvalid: 'Enter a day from 1 to 31, or leave it empty.',
   },
   paidDialog: {
     title: (name: string) => `${name} paid`,

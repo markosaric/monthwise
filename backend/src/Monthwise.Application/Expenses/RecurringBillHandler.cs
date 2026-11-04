@@ -170,8 +170,19 @@ public sealed class RecurringBillHandler(
             r.IsActive,
             r.StoppedOn,
             canBeDeleted,
-            book.Shared.ToResponse(r.Share));
+            book.Shared.ToResponse(r.Share),
+            r.Amount?.Cents,
+            r.IssueDay,
+            r.DueDay);
 
     private static RecurringBillDetails ToDetails(RecurringBillRequest request) =>
-        new(request.Name, request.CategoryId, request.Payee, request.PaidFromId, request.Description);
+        new(
+            request.Name,
+            request.CategoryId,
+            request.Payee,
+            request.PaidFromId,
+            request.Description,
+            request.AmountCents is { } cents ? Money.FromCents(cents) : null,
+            request.IssueDay,
+            request.DueDay);
 }

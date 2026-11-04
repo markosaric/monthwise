@@ -14,14 +14,20 @@ public sealed record ExpenseCategoryResponse(Guid Id, string Name, bool IsPredef
 /// </summary>
 public sealed record PaidFromResponse(Guid Id, string Name, bool IsCreditCard);
 
-/// <summary>Add or edit a recurring bill (FR-2); <see cref="Share"/> shares its bills (shared bills FR-3).</summary>
+/// <summary>
+/// Add or edit a recurring bill (FR-2); <see cref="Share"/> shares its bills (shared bills FR-3). The
+/// amount, issue day and due day are optional (Appendix 2, R6 to R8).
+/// </summary>
 public sealed record RecurringBillRequest(
     string Name,
     Guid CategoryId,
     string? Payee,
     Guid? PaidFromId,
     string? Description,
-    ShareRequest? Share = null);
+    ShareRequest? Share = null,
+    long? AmountCents = null,
+    int? IssueDay = null,
+    int? DueDay = null);
 
 /// <summary>A recurring bill (FR-2). <see cref="CanBeDeleted"/> is true while no bill was added from it.</summary>
 public sealed record RecurringBillResponse(
@@ -34,12 +40,23 @@ public sealed record RecurringBillResponse(
     bool IsActive,
     DateOnly? StoppedOn,
     bool CanBeDeleted,
-    ShareResponse? Share = null);
+    ShareResponse? Share = null,
+    long? AmountCents = null,
+    int? IssueDay = null,
+    int? DueDay = null);
 
 /// <summary>
-/// Add a one-off bill or edit a bill (FR-4). Amount 0 without dates keeps a bill from a recurring bill
-/// Not issued. <see cref="PaidDate"/> set means paid on that day; null means not paid.
-/// <see cref="Share"/> shares the bill, or stops sharing it when null (shared bills FR-3).
+/// Ticks Recurring on a one-off bill (Appendix 2, A2.3): the optional amount, issue day and due day of
+/// the recurring bill made from it. Its other details come from the bill.
+/// </summary>
+public sealed record RecurringOptionsRequest(long? AmountCents, int? IssueDay, int? DueDay);
+
+/// <summary>
+/// Add a one-off bill or edit a bill (FR-4). A bill from a recurring bill stays Not issued while its
+/// amount (0), issue date or due date is missing (Appendix 2). <see cref="PaidDate"/> set means paid on
+/// that day; null means not paid. <see cref="Share"/> shares the bill, or stops sharing it when null
+/// (shared bills FR-3). <see cref="Recurring"/> on a one-off bill also adds a recurring bill from it
+/// (Appendix 2, A2.3); it is ignored on a bill that already has one.
 /// </summary>
 public sealed record BillRequest(
     string Name,
@@ -51,7 +68,8 @@ public sealed record BillRequest(
     Guid? PaidFromId,
     string? Description,
     DateOnly? PaidDate,
-    ShareRequest? Share = null);
+    ShareRequest? Share = null,
+    RecurringOptionsRequest? Recurring = null);
 
 /// <summary>
 /// A bill (FR-4). <see cref="PaidFrom"/> is what it was paid with, or what it will usually be paid with

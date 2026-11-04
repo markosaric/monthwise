@@ -1164,11 +1164,11 @@ namespace Monthwise.Infrastructure.Persistence.Migrations
 
                     b.ToTable("bill", null, t =>
                         {
-                            t.HasCheckConstraint("ck_bill_amount", "(issue_date IS NULL AND amount_cents = 0) OR (issue_date IS NOT NULL AND amount_cents > 0)");
-
-                            t.HasCheckConstraint("ck_bill_dates", "(issue_date IS NULL) = (due_date IS NULL)");
+                            t.HasCheckConstraint("ck_bill_amount_not_negative", "amount_cents >= 0");
 
                             t.HasCheckConstraint("ck_bill_due_after_issue", "due_date >= issue_date");
+
+                            t.HasCheckConstraint("ck_bill_one_off_issued", "recurring_bill_id IS NOT NULL OR (amount_cents > 0 AND issue_date IS NOT NULL AND due_date IS NOT NULL)");
 
                             t.HasCheckConstraint("ck_bill_paid", "is_paid = (paid_date IS NOT NULL)");
 
@@ -1176,7 +1176,7 @@ namespace Monthwise.Infrastructure.Persistence.Migrations
 
                             t.HasCheckConstraint("ck_bill_paid_from", "NOT is_paid OR paid_from_id IS NOT NULL");
 
-                            t.HasCheckConstraint("ck_bill_paid_issued", "NOT is_paid OR issue_date IS NOT NULL");
+                            t.HasCheckConstraint("ck_bill_paid_issued", "NOT is_paid OR (amount_cents > 0 AND issue_date IS NOT NULL AND due_date IS NOT NULL)");
 
                             t.HasCheckConstraint("ck_bill_share", "(share_participant_id IS NULL AND share_count IS NULL AND participant_share_count IS NULL AND contribution_account_id IS NULL) OR (share_participant_id IS NOT NULL AND share_count BETWEEN 2 AND 4 AND participant_share_count >= 1 AND participant_share_count < share_count)");
                         });
@@ -1271,6 +1271,10 @@ namespace Monthwise.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<long?>("Amount")
+                        .HasColumnType("bigint")
+                        .HasColumnName("amount_cents");
+
                     b.Property<Guid>("CategoryId")
                         .HasColumnType("uuid")
                         .HasColumnName("category_id");
@@ -1287,6 +1291,14 @@ namespace Monthwise.Infrastructure.Persistence.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)")
                         .HasColumnName("description");
+
+                    b.Property<int?>("DueDay")
+                        .HasColumnType("integer")
+                        .HasColumnName("due_day");
+
+                    b.Property<int?>("IssueDay")
+                        .HasColumnType("integer")
+                        .HasColumnName("issue_day");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -1340,6 +1352,12 @@ namespace Monthwise.Infrastructure.Persistence.Migrations
 
                     b.ToTable("recurring_bill", null, t =>
                         {
+                            t.HasCheckConstraint("ck_recurring_bill_amount_positive", "amount_cents > 0");
+
+                            t.HasCheckConstraint("ck_recurring_bill_due_day", "due_day BETWEEN 1 AND 31");
+
+                            t.HasCheckConstraint("ck_recurring_bill_issue_day", "issue_day BETWEEN 1 AND 31");
+
                             t.HasCheckConstraint("ck_recurring_bill_share", "(share_participant_id IS NULL AND share_count IS NULL AND participant_share_count IS NULL AND contribution_account_id IS NULL) OR (share_participant_id IS NOT NULL AND share_count BETWEEN 2 AND 4 AND participant_share_count >= 1 AND participant_share_count < share_count)");
                         });
                 });

@@ -4,8 +4,8 @@ using Monthwise.Domain.SharedCosts;
 namespace Monthwise.Domain.Expenses;
 
 /// <summary>
-/// What the user enters for a bill (FR-4, B1 to B10, without the paid state). A bill without amount
-/// and dates is Not issued; once one of them is given, all three are needed.
+/// What the user enters for a bill (FR-4, B1 to B10, without the paid state). A one-off bill needs
+/// amount and dates; a bill from a recurring bill is Not issued until all three are given (Appendix 2).
 /// </summary>
 public sealed record BillDetails(
     string? Name,
@@ -20,7 +20,7 @@ public sealed record BillDetails(
 /// <summary>The state of a bill (FR-4).</summary>
 public enum BillState
 {
-    /// <summary>Added from a recurring bill: amount 0, no dates yet.</summary>
+    /// <summary>Added from a recurring bill: amount, issue date or due date still missing (Appendix 2).</summary>
     NotIssued,
 
     /// <summary>Issued (amount and dates entered), not paid yet.</summary>
@@ -52,7 +52,7 @@ public sealed class Bill
     public Guid CategoryId { get; private set; }
     public string? Payee { get; private set; }
 
-    /// <summary>0 while Not issued, then greater than zero.</summary>
+    /// <summary>0 when not known yet (Not issued), otherwise greater than zero.</summary>
     public Money Amount { get; private set; }
 
     public DateOnly? IssueDate { get; private set; }
@@ -77,7 +77,8 @@ public sealed class Bill
     public DateTimeOffset CreatedAt { get; private set; }
     public DateTimeOffset UpdatedAt { get; private set; }
 
-    public bool IsIssued => IssueDate is not null;
+    /// <summary>Amount, issue date and due date are all entered (FR-4, Appendix 2).</summary>
+    public bool IsIssued => Amount.IsPositive && IssueDate is not null && DueDate is not null;
 
     /// <summary>How the bill is shared (shared bills FR-2, FR-3).</summary>
     public CostShare? Share => CostShareColumns.Read(ShareParticipantId, ShareCount, ParticipantShareCount, ContributionAccountId);
@@ -92,10 +93,15 @@ public sealed class Bill
     /// <summary>Expected and its due date has passed (FR-4).</summary>
     public bool IsOverdue(DateOnly today) => State == BillState.Expected && DueDate < today;
 
-    /// <summary>A Not issued bill of <paramref name="month"/> from a recurring bill (FR-3).</summary>
+    /// <summary>
+    /// The bill of <paramref name="month"/> from a recurring bill (FR-3): with the recurring bill's
+    /// amount and dates when it has them, so Expected when all three are set, otherwise Not issued
+    /// (Appendix 2, A2.2).
+    /// </summary>
     public static Bill CreateFromRecurring(RecurringBill recurringBill, YearMonth month, DateTimeOffset now)
     {
         ArgumentNullException.ThrowIfNull(recurringBill);
+        var (issueDate, dueDate) = recurringBill.DatesIn(month);
         return new Bill
         {
             Id = Guid.CreateVersion7(now),
@@ -104,7 +110,9 @@ public sealed class Bill
             Name = recurringBill.Name,
             CategoryId = recurringBill.CategoryId,
             Payee = recurringBill.Payee,
-            Amount = Money.Zero,
+            Amount = recurringBill.Amount ?? Money.Zero,
+            IssueDate = issueDate,
+            DueDate = dueDate,
             PaidFromId = recurringBill.PaidFromId,
             Description = recurringBill.Description,
             ShareParticipantId = recurringBill.ShareParticipantId,
@@ -147,6 +155,22 @@ public sealed class Bill
             return Result.Failure(errors);
         }
         Apply(details, paidDate, now);
+        return Result.Success();
+    }
+
+    /// <summary>
+    /// Makes a one-off bill the bill of <paramref name="recurringBill"/> for its month, when the user
+    /// ticks Recurring on it (Appendix 2, A2.3).
+    /// </summary>
+    public Result LinkTo(RecurringBill recurringBill, DateTimeOffset now)
+    {
+        ArgumentNullException.ThrowIfNull(recurringBill);
+        if (RecurringBillId is not null)
+        {
+            return Result.Failure(ExpenseErrors.BillAlreadyRecurring);
+        }
+        RecurringBillId = recurringBill.Id;
+        UpdatedAt = now;
         return Result.Success();
     }
 
@@ -220,9 +244,9 @@ public sealed class Bill
             errors.Add(ExpenseErrors.BillDescriptionTooLong);
         }
 
-        var issued = requireIssued || paidDate is not null
-            || details.IssueDate is not null || details.DueDate is not null || !details.Amount.IsZero;
-        if (issued)
+        // A one-off or paid bill needs all three; a bill from a recurring bill may keep any of them
+        // empty and stays Not issued until all three are entered (Appendix 2, A2.2).
+        if (requireIssued || paidDate is not null)
         {
             if (!details.Amount.IsPositive)
             {
@@ -237,6 +261,17 @@ public sealed class Bill
                 errors.Add(ExpenseErrors.DueDateRequired);
             }
             else if (details.DueDate < details.IssueDate)
+            {
+                errors.Add(ExpenseErrors.DueBeforeIssue);
+            }
+        }
+        else
+        {
+            if (details.Amount.IsNegative)
+            {
+                errors.Add(ExpenseErrors.AmountNotPositive);
+            }
+            if (details.DueDate < details.IssueDate)
             {
                 errors.Add(ExpenseErrors.DueBeforeIssue);
             }

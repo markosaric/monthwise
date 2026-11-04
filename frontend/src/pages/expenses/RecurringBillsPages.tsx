@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useState } from 'react'
-import { Controller, useForm } from 'react-hook-form'
+import { Controller, useForm, useWatch } from 'react-hook-form'
 import { Link, useNavigate, useParams } from 'react-router'
 import { toast } from 'sonner'
 import { useCards } from '@/api/cards'
@@ -34,6 +34,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { ShareFields } from '@/components/sharedCosts/ShareFields'
 import { shareErrorFields } from '@/components/sharedCosts/shareModel'
 import { sharedCostTexts } from '@/components/sharedCosts/texts'
+import { formatCents, parseEuroInput } from '@/lib/money'
 import { PageHeader } from '@/pages/PageHeader'
 
 const t = expenseTexts
@@ -121,7 +122,15 @@ function RecurringBillRow({ bill }: { bill: RecurringBill }) {
         </span>
       </div>
       <span className="text-sm text-muted-foreground">
-        {[bill.payee, bill.paidFrom?.name].filter(Boolean).join(' · ')}
+        {[
+          bill.payee,
+          bill.paidFrom?.name,
+          bill.amountCents ? formatCents(bill.amountCents) : null,
+          bill.issueDay ? t.recurring.issuedOn(bill.issueDay) : null,
+          bill.dueDay ? t.recurring.dueOn(bill.dueDay) : null,
+        ]
+          .filter(Boolean)
+          .join(' · ')}
       </span>
       {error && <p className="text-sm text-destructive">{error}</p>}
       <CardActionDialog
@@ -191,8 +200,8 @@ export function RecurringBillEditPage() {
 }
 
 /**
- * Name, category, payee, what it is usually paid with, a note and how its bills are shared; no dates
- * or amount (FR-2, shared bills FR-3).
+ * Name, category, payee, what it is usually paid with, a note, how its bills are shared, and the
+ * optional amount, issue day and due day (FR-2, shared bills FR-3, Appendix 2 A2.1).
  */
 function RecurringBillForm({
   defaultValues,
@@ -218,13 +227,19 @@ function RecurringBillForm({
     resolver: zodResolver(recurringBillFormSchema),
     defaultValues,
   })
+  const amount = useWatch({ control, name: 'amount' })
 
   async function submit(values: RecurringBillFormValues) {
     setFormError(null)
     try {
       await onSubmit(toRecurringBillRequest(values))
     } catch (error) {
-      setFormError(applyApiErrors(error, defaultValues, setError, shareErrorFields))
+      setFormError(
+        applyApiErrors(error, defaultValues, setError, {
+          amountCents: 'amount',
+          ...shareErrorFields,
+        }),
+      )
     }
   }
 
@@ -267,6 +282,38 @@ function RecurringBillForm({
           )}
         />
       </Field>
+      <fieldset className="flex flex-col gap-3">
+        <legend className="mb-2 text-sm font-medium">{t.recurring.options}</legend>
+        <div className="grid gap-4 sm:grid-cols-3">
+          <Field id="amount" label={t.fields.optionalAmount} error={errors.amount?.message}>
+            <Input
+              id="amount"
+              inputMode="decimal"
+              aria-invalid={!!errors.amount}
+              {...register('amount')}
+            />
+          </Field>
+          <Field id="issueDay" label={t.fields.issueDay} error={errors.issueDay?.message}>
+            <Input
+              id="issueDay"
+              inputMode="numeric"
+              maxLength={2}
+              aria-invalid={!!errors.issueDay}
+              {...register('issueDay')}
+            />
+          </Field>
+          <Field id="dueDay" label={t.fields.dueDay} error={errors.dueDay?.message}>
+            <Input
+              id="dueDay"
+              inputMode="numeric"
+              maxLength={2}
+              aria-invalid={!!errors.dueDay}
+              {...register('dueDay')}
+            />
+          </Field>
+        </div>
+        <p className="text-xs text-muted-foreground">{t.recurring.optionsHint}</p>
+      </fieldset>
       <Field id="description" label={t.fields.description} error={errors.description?.message}>
         <Textarea id="description" maxLength={200} rows={2} {...register('description')} />
       </Field>
@@ -278,6 +325,7 @@ function RecurringBillForm({
             id="share"
             value={field.value}
             onChange={field.onChange}
+            amountCents={parseEuroInput(amount)}
             cards={cards}
             current={current?.share}
             error={

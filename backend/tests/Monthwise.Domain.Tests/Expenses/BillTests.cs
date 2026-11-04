@@ -54,17 +54,90 @@ public class BillTests
     }
 
     [Fact]
-    public void An_issued_bill_needs_amount_issue_date_and_a_due_date_not_before_it()
+    public void A_bill_from_a_recurring_bill_keeps_what_is_entered_and_is_issued_only_when_complete()
     {
         var bill = Bill.CreateFromRecurring(Recurring(), November, Now);
 
-        var noDates = bill.Update(Issued() with { IssueDate = null, DueDate = null }, null, Now);
+        var amountOnly = bill.Update(Issued() with { IssueDate = null, DueDate = null }, null, Now);
+        var stateWithAmountOnly = bill.State;
         var dueBeforeIssue = bill.Update(Issued(due: new DateOnly(2026, 11, 1)), null, Now);
+        var negative = bill.Update(Issued(amountCents: -1) with { IssueDate = null, DueDate = null }, null, Now);
 
-        Assert.Contains(ExpenseErrors.IssueDateRequired, noDates.Errors);
-        Assert.Contains(ExpenseErrors.DueDateRequired, noDates.Errors);
+        Assert.True(amountOnly.IsSuccess);
+        Assert.Equal(BillState.NotIssued, stateWithAmountOnly);
         Assert.Equal(ExpenseErrors.DueBeforeIssue, Assert.Single(dueBeforeIssue.Errors));
+        Assert.Equal(ExpenseErrors.AmountNotPositive, Assert.Single(negative.Errors));
+        Assert.Equal(4_250, bill.Amount.Cents);
         Assert.Equal(BillState.NotIssued, bill.State);
+
+        Assert.True(bill.Update(Issued(), null, Now).IsSuccess);
+        Assert.Equal(BillState.Expected, bill.State);
+    }
+
+    [Fact]
+    public void A_bill_from_a_recurring_bill_cannot_be_paid_or_saved_as_paid_while_incomplete()
+    {
+        var bill = Bill.CreateFromRecurring(Recurring(), November, Now);
+        bill.Update(Issued() with { DueDate = null }, null, Now);
+
+        var paid = bill.MarkPaid(new DateOnly(2026, 11, 10), Account, Now);
+        var savedPaid = bill.Update(Issued(paidFrom: Account) with { DueDate = null }, new DateOnly(2026, 11, 10), Now);
+
+        Assert.Equal(ExpenseErrors.BillNotIssued, Assert.Single(paid.Errors));
+        Assert.Contains(ExpenseErrors.DueDateRequired, savedPaid.Errors);
+        Assert.Equal(BillState.NotIssued, bill.State);
+    }
+
+    [Fact]
+    public void A_one_off_bill_still_needs_amount_issue_date_and_due_date()
+    {
+        var created = Bill.CreateOneOff(November, Issued() with { IssueDate = null, DueDate = null }, null, Now);
+
+        Assert.Contains(ExpenseErrors.IssueDateRequired, created.Errors);
+        Assert.Contains(ExpenseErrors.DueDateRequired, created.Errors);
+    }
+
+    [Fact]
+    public void A_recurring_bill_with_amount_and_days_adds_an_expected_bill()
+    {
+        var recurring = RecurringBill.Create(
+            new RecurringBillDetails("Gym", Electricity, null, Account, null, Money.FromCents(3_900), 1, 10), Now).Value;
+
+        var bill = Bill.CreateFromRecurring(recurring, November, Now);
+
+        Assert.Equal(BillState.Expected, bill.State);
+        Assert.Equal(3_900, bill.Amount.Cents);
+        Assert.Equal(new DateOnly(2026, 11, 1), bill.IssueDate);
+        Assert.Equal(new DateOnly(2026, 11, 10), bill.DueDate);
+    }
+
+    [Fact]
+    public void A_recurring_bill_with_some_values_adds_a_not_issued_bill_with_them()
+    {
+        var recurring = RecurringBill.Create(
+            new RecurringBillDetails("Water", Electricity, null, null, null, null, null, 20), Now).Value;
+
+        var bill = Bill.CreateFromRecurring(recurring, November, Now);
+
+        Assert.Equal(BillState.NotIssued, bill.State);
+        Assert.True(bill.Amount.IsZero);
+        Assert.Null(bill.IssueDate);
+        Assert.Equal(new DateOnly(2026, 11, 20), bill.DueDate);
+    }
+
+    [Fact]
+    public void Linking_a_one_off_bill_makes_it_the_bill_of_the_recurring_bill_once()
+    {
+        var bill = Bill.CreateOneOff(November, Issued(), null, Now).Value;
+        var recurring = Recurring();
+
+        var linked = bill.LinkTo(recurring, Now);
+        var again = bill.LinkTo(Recurring(), Now);
+
+        Assert.True(linked.IsSuccess);
+        Assert.Equal(recurring.Id, bill.RecurringBillId);
+        Assert.Equal(ExpenseErrors.BillAlreadyRecurring, Assert.Single(again.Errors));
+        Assert.Equal(BillState.Expected, bill.State);
     }
 
     [Fact]

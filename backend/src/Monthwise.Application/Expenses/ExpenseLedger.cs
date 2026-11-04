@@ -81,12 +81,13 @@ public sealed class ExpenseBook
 
     /// <summary>
     /// The due date hint of a Not issued bill (FR-2): the due date of the last issued bill of the same
-    /// recurring bill, moved to this bill's month (the last day of the month when it is shorter).
+    /// recurring bill, moved to this bill's month (the last day of the month when it is shorter). None
+    /// when the bill already has a due date, e.g. from the due day of its recurring bill (Appendix 2).
     /// </summary>
     public DateOnly? DueDateHint(Bill bill)
     {
         ArgumentNullException.ThrowIfNull(bill);
-        if (bill.IsIssued || bill.RecurringBillId is null)
+        if (bill.IsIssued || bill.DueDate is not null || bill.RecurringBillId is null)
         {
             return null;
         }

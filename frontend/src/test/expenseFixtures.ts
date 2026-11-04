@@ -133,6 +133,9 @@ export function aRecurringBill(overrides: Partial<RecurringBill> = {}): Recurrin
     isActive: true,
     stoppedOn: null,
     canBeDeleted: false,
+    amountCents: null,
+    issueDay: null,
+    dueDay: null,
     ...overrides,
   }
 }
