@@ -82,3 +82,46 @@ export function cardMonthToYearMonth(text: string): string | null {
 export function yearMonthToCardMonth(yearMonth: string): string {
   return `${yearMonth.slice(5, 7)}/${yearMonth.slice(2, 4)}`
 }
+
+/** The message for a date field that is filled in but is not a complete, existing date. */
+export const dateEntryMessage = 'Enter the date as DD.MM.YYYY, e.g. 16.11.2026.'
+
+/**
+ * Formats what was typed or pasted into a date field as "DD.MM.YYYY": keeps up to 8 digits and
+ * inserts a dot once the next part has started ("16112026" → "16.11.2026", "161" → "16.1",
+ * "16" → "16"), so deleting back over a dot works.
+ */
+export function formatDateInput(text: string): string {
+  const digits = text.replace(/\D/g, '').slice(0, 8)
+  if (digits.length <= 2) return digits
+  if (digits.length <= 4) return `${digits.slice(0, 2)}.${digits.slice(2)}`
+  return `${digits.slice(0, 2)}.${digits.slice(2, 4)}.${digits.slice(4)}`
+}
+
+const dateEntry = /^(\d{2})\.(\d{2})\.(\d{4})$/
+
+/** "16.11.2026" → "2026-11-16", or null when the text is not a complete, existing date. */
+export function dateInputToIso(text: string): string | null {
+  const match = dateEntry.exec(text)
+  if (!match) return null
+  const [, day, month, year] = match
+  const d = Number(day)
+  const m = Number(month)
+  const y = Number(year)
+  if (y < 1 || m < 1 || m > 12 || d < 1) return null
+  const leap = (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0
+  const daysInMonth = [31, leap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][m - 1] ?? 0
+  if (d > daysInMonth) return null
+  return `${year}-${month}-${day}`
+}
+
+/** "2026-11-16" → "16.11.2026"; anything that is not an ISO date is returned unchanged. */
+export function isoToDateInput(value: string): string {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value)
+  return match ? `${match[3]}.${match[2]}.${match[1]}` : value
+}
+
+/** A date form value that was filled in but is not a complete, existing date (Appendix 2). */
+export function isInvalidDateEntry(value: string): boolean {
+  return value !== '' && !/^\d{4}-\d{2}-\d{2}$/.test(value)
+}

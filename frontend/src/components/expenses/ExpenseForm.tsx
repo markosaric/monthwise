@@ -4,6 +4,7 @@ import { Controller, useForm, useWatch } from 'react-hook-form'
 import { useCards } from '@/api/cards'
 import { useExpenseCategories, type ExpenseRequest, type PaidFrom } from '@/api/expenses'
 import { Button } from '@/components/ui/button'
+import { DateInput } from '@/components/DateInput'
 import { Input } from '@/components/ui/input'
 import { expenseFormSchema, toExpenseRequest, type ExpenseFormValues } from './expenseFormModel'
 import { applyApiErrors } from './formErrors'
@@ -79,7 +80,20 @@ export function ExpenseForm({
           />
         </Field>
         <Field id="date" label={t.fields.date} error={errors.date?.message}>
-          <Input id="date" type="date" aria-invalid={!!errors.date} {...register('date')} />
+          <Controller
+            control={control}
+            name="date"
+            render={({ field }) => (
+              <DateInput
+                id="date"
+                aria-invalid={!!errors.date}
+                value={field.value}
+                onChange={field.onChange}
+                onBlur={field.onBlur}
+                ref={field.ref}
+              />
+            )}
+          />
         </Field>
       </div>
       {!cashWithdrawal && (

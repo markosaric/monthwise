@@ -4,7 +4,7 @@ import { aCard } from '@/test/cardFixtures'
 import { aMonth, anEntry, otherIncome, salary } from '@/test/cashFlowFixtures'
 import { renderRoute } from '@/test/renderRoute'
 import { healthy, json, stubApi } from '@/test/stubApi'
-import { addMonths, lastDayOf, todayIso } from '@/lib/dates'
+import { addMonths, isoToDateInput, lastDayOf, todayIso } from '@/lib/dates'
 import { parseSignedEuroInput } from '@/lib/money'
 import { cashFlowTexts } from './texts'
 
@@ -90,7 +90,9 @@ describe('Add input form', () => {
     await userEvent.selectOptions(screen.getByLabelText(t.fields.category), salary.id)
     await userEvent.type(screen.getByLabelText(t.fields.amount), '1.850,00')
     await userEvent.click(screen.getByLabelText(t.fields.received))
-    expect(screen.getByLabelText<HTMLInputElement>(t.fields.receivedDate).value).toBe(todayIso())
+    expect(screen.getByLabelText<HTMLInputElement>(t.fields.receivedDate).value).toBe(
+      isoToDateInput(todayIso()),
+    )
     await userEvent.click(screen.getByRole('button', { name: t.addInput }))
 
     await waitFor(() => expect(body).toBeDefined())

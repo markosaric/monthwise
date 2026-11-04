@@ -457,3 +457,54 @@ Still to pay, as described in [overall-balance-tile.md](overall-balance-tile.md)
 - FR-15: the Month screen's key figures are Inputs, Outputs, Month result, Still to pay and
   Overall balance.
 - Acceptance criteria 7, 11 and 14 are read with these changes.
+
+## Appendix 2: Dates entered as DD.MM.YYYY
+
+- **Date:** 2026-11-04
+- **Branch:** `fix/date-input`
+- **Changes:** FR-5 (consistent look: date fields in all forms and dialogs), and how a date is entered in every form and dialog of the
+  earlier requirements documents (bills, expenses, inputs, card purchases and payments, revolving
+  cards, loans, shared costs, card balances)
+
+Every field where the user enters a **day** (issue date, due date, paid date, expected date,
+received date, purchase date, payment date, starting debt date and the like) is entered as
+**`DD.MM.YYYY`** (e.g. `16.11.2026`), the way dates are shown in the app.
+
+- The field works the same way in every supported browser (Safari on macOS and iOS, Chrome,
+  Firefox and Edge). A date that the field shows is always the date that is saved.
+- Each field shows the placeholder `DD.MM.YYYY`. On phones and tablets it opens a numeric keyboard.
+- The user only types digits: the dots are added automatically after the day and the month.
+  Typing the dots yourself, or pasting `16.11.2026`, `16/11/2026` or `16112026`, gives the same
+  result.
+- The year is always four digits. The date must exist in the calendar (`31.02.2026` does not).
+- An empty field follows the rules it had before: a required date blocks saving with its existing
+  message (e.g. *Enter the due date.*), an optional date stays empty.
+- A field that is not empty but is not a complete, existing date blocks saving with the message
+  *Enter the date as DD.MM.YYYY, e.g. 16.11.2026.*
+- A field that is prefilled (today, a due date hint, the stored date of an entry being edited)
+  shows that date as `DD.MM.YYYY`.
+- All other rules for dates (e.g. the due date is not before the issue date) are unchanged. What is
+  stored and how dates are shown elsewhere is unchanged; this appendix changes only how a date is
+  entered.
+- Out of scope: fields where only a **month** is entered (loan start and end month, loan payment
+  change, the bills section month); they get their own fix.
+
+**Acceptance criteria**
+
+1. In Safari, Chrome and Firefox, the Add bill form shows *Issue date*, *Due date* and (when Paid
+   is on) *Paid date* with the `DD.MM.YYYY` placeholder or prefilled value. Typing `16112026` in
+   *Due date* shows `16.11.2026` and the bill is saved with the due date 16 November 2026, without
+   the message *Enter the due date.*
+2. `31.02.2026`, `16.11.26` and `1611` are rejected with *Enter the date as DD.MM.YYYY,
+   e.g. 16.11.2026.* Letters cannot be typed into a date field.
+3. Editing a bill due on 20 October 2026 shows `20.10.2026` in *Due date*.
+4. Every other form and dialog with a date field (expenses, inputs, card purchases and payments,
+   revolving cards, loan payments, shared costs contributions, card balances) behaves as in
+   criteria 1 to 3.
+
+**Why:** in production (Safari) the Add bill form showed *Enter the due date.* although the due
+date field showed a complete date. Safari's built-in date field can show a full date while the
+value it passes to the page stays empty and no change is reported (reproduced in WebKit, the
+engine Safari uses, when the year is set with the arrow keys). The page cannot read a date the
+browser does not pass on, so the browser's date field is replaced by a typed one, the same
+approach as the `MM/YY` card validity fix.

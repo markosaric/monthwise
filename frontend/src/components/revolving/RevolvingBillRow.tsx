@@ -11,10 +11,11 @@ import { PaymentDialog } from '@/components/loans/PaymentDialogs'
 import { messageOf } from '@/components/loans/messageOf'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { DateInput } from '@/components/DateInput'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { NativeSelect } from '@/components/ui/native-select'
-import { formatYearMonth, todayIso } from '@/lib/dates'
+import { dateEntryMessage, formatYearMonth, isInvalidDateEntry, todayIso } from '@/lib/dates'
 import { centsToEuroInput, formatCents, parseEuroInput } from '@/lib/money'
 import { revolvingTexts } from './texts'
 
@@ -159,6 +160,10 @@ export function BillPaidDialog({
       setError(revolvingTexts.payment.errors.amountInvalid)
       return false
     }
+    if (isInvalidDateEntry(paidDate)) {
+      setError(dateEntryMessage)
+      return false
+    }
     if (paidDate === '') {
       setError(revolvingTexts.payment.errors.dateRequired)
       return false
@@ -196,14 +201,7 @@ export function BillPaidDialog({
       </div>
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="bill-paid-date">{t.date}</Label>
-        <Input
-          id="bill-paid-date"
-          type="date"
-          min={bill.billDate}
-          max={today}
-          value={paidDate}
-          onChange={(e) => setPaidDate(e.target.value)}
-        />
+        <DateInput id="bill-paid-date" value={paidDate} onChange={setPaidDate} />
       </div>
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="bill-account">{t.account}</Label>

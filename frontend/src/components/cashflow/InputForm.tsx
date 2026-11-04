@@ -5,6 +5,7 @@ import { Link } from 'react-router'
 import { frequencies, useInputCategories, usePayers, type InputCategory } from '@/api/cashFlow'
 import { ApiError, useCards, type Card } from '@/api/cards'
 import { Button } from '@/components/ui/button'
+import { DateInput } from '@/components/DateInput'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { NativeSelect } from '@/components/ui/native-select'
@@ -163,19 +164,35 @@ export function InputForm({
       )}
       <div className="grid gap-4 sm:grid-cols-2">
         <Field id="issueDate" label={t.fields.issueDate} error={errors.issueDate?.message}>
-          <Input
-            id="issueDate"
-            type="date"
-            aria-invalid={!!errors.issueDate}
-            {...register('issueDate')}
+          <Controller
+            control={control}
+            name="issueDate"
+            render={({ field }) => (
+              <DateInput
+                id="issueDate"
+                aria-invalid={!!errors.issueDate}
+                value={field.value}
+                onChange={field.onChange}
+                onBlur={field.onBlur}
+                ref={field.ref}
+              />
+            )}
           />
         </Field>
         <Field id="expectedDate" label={t.fields.expectedDate} error={errors.expectedDate?.message}>
-          <Input
-            id="expectedDate"
-            type="date"
-            aria-invalid={!!errors.expectedDate}
-            {...register('expectedDate')}
+          <Controller
+            control={control}
+            name="expectedDate"
+            render={({ field }) => (
+              <DateInput
+                id="expectedDate"
+                aria-invalid={!!errors.expectedDate}
+                value={field.value}
+                onChange={field.onChange}
+                onBlur={field.onBlur}
+                ref={field.ref}
+              />
+            )}
           />
         </Field>
       </div>
@@ -208,11 +225,19 @@ export function InputForm({
               hint={t.hints.received}
               error={errors.receivedDate?.message}
             >
-              <Input
-                id="receivedDate"
-                type="date"
-                aria-invalid={!!errors.receivedDate}
-                {...register('receivedDate')}
+              <Controller
+                control={control}
+                name="receivedDate"
+                render={({ field }) => (
+                  <DateInput
+                    id="receivedDate"
+                    aria-invalid={!!errors.receivedDate}
+                    value={field.value}
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                    ref={field.ref}
+                  />
+                )}
               />
             </Field>
           )}
@@ -252,11 +277,19 @@ export function InputForm({
             </NativeSelect>
           </Field>
           <Field id="endDate" label={t.fields.endDate} error={errors.endDate?.message}>
-            <Input
-              id="endDate"
-              type="date"
-              aria-invalid={!!errors.endDate}
-              {...register('endDate')}
+            <Controller
+              control={control}
+              name="endDate"
+              render={({ field }) => (
+                <DateInput
+                  id="endDate"
+                  aria-invalid={!!errors.endDate}
+                  value={field.value}
+                  onChange={field.onChange}
+                  onBlur={field.onBlur}
+                  ref={field.ref}
+                />
+              )}
             />
           </Field>
         </div>

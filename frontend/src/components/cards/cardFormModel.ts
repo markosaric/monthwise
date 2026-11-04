@@ -6,7 +6,7 @@ import {
   normalizeCardNumber,
   normalizeIban,
 } from '@/lib/cardNumbers'
-import { cardMonthToYearMonth, todayIso } from '@/lib/dates'
+import { cardMonthToYearMonth, dateEntryMessage, isInvalidDateEntry, todayIso } from '@/lib/dates'
 import { parseEuroInput } from '@/lib/money'
 import { parsePercentInput } from '@/lib/percent'
 import { cardPurchaseTexts } from '@/components/cardPurchases/texts'
@@ -152,7 +152,9 @@ function checkRevolving(values: Record<RevolvingField, string>, ctx: z.Refinemen
     if (parseEuroInput(values.startingDebt) === null) {
       issue('startingDebt', revolving.errors.amountInvalid)
     }
-    if (values.startingDebtDate === '') issue('startingDebtDate', revolving.errors.dateRequired)
+    if (isInvalidDateEntry(values.startingDebtDate)) issue('startingDebtDate', dateEntryMessage)
+    else if (values.startingDebtDate === '')
+      issue('startingDebtDate', revolving.errors.dateRequired)
   }
 }
 

@@ -8,6 +8,7 @@ import { payableAccounts } from '@/components/expenses/paidFrom'
 import { revolvingTexts } from '@/components/revolving/texts'
 import { onlyPrimaryAccountId, payingAccounts } from '@/components/loans/loanFormModel'
 import { Button } from '@/components/ui/button'
+import { DateInput } from '@/components/DateInput'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { NativeSelect } from '@/components/ui/native-select'
@@ -512,11 +513,19 @@ export function CardForm({
                 label={r.startingDebtDate}
                 error={errors.startingDebtDate?.message}
               >
-                <Input
-                  id="startingDebtDate"
-                  type="date"
-                  aria-invalid={!!errors.startingDebtDate}
-                  {...register('startingDebtDate')}
+                <Controller
+                  control={control}
+                  name="startingDebtDate"
+                  render={({ field }) => (
+                    <DateInput
+                      id="startingDebtDate"
+                      aria-invalid={!!errors.startingDebtDate}
+                      value={field.value}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      ref={field.ref}
+                    />
+                  )}
                 />
               </Field>
             </div>

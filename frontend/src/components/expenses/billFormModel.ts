@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import type { Bill, BillRequest, RecurringBill, RecurringBillRequest } from '@/api/expenses'
+import { dateEntryMessage, isInvalidDateEntry } from '@/lib/dates'
 import { centsToEuroInput, parseEuroInput } from '@/lib/money'
 import {
   noShare,
@@ -43,17 +44,23 @@ export function billFormSchema(requireIssued: boolean) {
         if (cents === null || cents <= 0) {
           ctx.addIssue({ code: 'custom', path: ['amount'], message: t.errors.amountInvalid })
         }
-        if (!isoDate.test(values.issueDate)) {
+        if (isInvalidDateEntry(values.issueDate)) {
+          ctx.addIssue({ code: 'custom', path: ['issueDate'], message: dateEntryMessage })
+        } else if (!isoDate.test(values.issueDate)) {
           ctx.addIssue({ code: 'custom', path: ['issueDate'], message: t.errors.issueDateRequired })
         }
-        if (!isoDate.test(values.dueDate)) {
+        if (isInvalidDateEntry(values.dueDate)) {
+          ctx.addIssue({ code: 'custom', path: ['dueDate'], message: dateEntryMessage })
+        } else if (!isoDate.test(values.dueDate)) {
           ctx.addIssue({ code: 'custom', path: ['dueDate'], message: t.errors.dueDateRequired })
         } else if (values.dueDate < values.issueDate) {
           ctx.addIssue({ code: 'custom', path: ['dueDate'], message: t.errors.dueBeforeIssue })
         }
       }
       if (values.paid) {
-        if (!isoDate.test(values.paidDate)) {
+        if (isInvalidDateEntry(values.paidDate)) {
+          ctx.addIssue({ code: 'custom', path: ['paidDate'], message: dateEntryMessage })
+        } else if (!isoDate.test(values.paidDate)) {
           ctx.addIssue({ code: 'custom', path: ['paidDate'], message: t.errors.dateRequired })
         } else if (values.paidDate < values.issueDate) {
           ctx.addIssue({ code: 'custom', path: ['paidDate'], message: t.errors.paidBeforeIssue })

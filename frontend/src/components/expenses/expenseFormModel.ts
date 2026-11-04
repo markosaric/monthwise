@@ -1,16 +1,16 @@
 import { z } from 'zod'
 import { cashWithdrawalCategoryId, type Expense, type ExpenseRequest } from '@/api/expenses'
+import { requiredDate } from '@/lib/dateSchema'
 import { centsToEuroInput, parseEuroInput } from '@/lib/money'
 import { expenseTexts } from './texts'
 
 const t = expenseTexts
-const isoDate = /^\d{4}-\d{2}-\d{2}$/
 
 /** The form values of an expense or a cash withdrawal (FR-7, FR-8). */
 export function expenseFormSchema(cashWithdrawal: boolean) {
   return z
     .object({
-      date: z.string().regex(isoDate, t.errors.dateRequired),
+      date: requiredDate(t.errors.dateRequired),
       amount: z.string(),
       categoryId: cashWithdrawal ? z.string() : z.string().min(1, t.errors.categoryRequired),
       paidFromId: z

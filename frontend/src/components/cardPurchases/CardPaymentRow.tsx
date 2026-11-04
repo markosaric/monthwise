@@ -11,10 +11,10 @@ import { CheckButton, ListRow } from '@/components/design/ListRow'
 import { StatusChip } from '@/components/design/StatusChip'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import { DateInput } from '@/components/DateInput'
 import { Label } from '@/components/ui/label'
 import { NativeSelect } from '@/components/ui/native-select'
-import { formatYearMonth, todayIso } from '@/lib/dates'
+import { dateEntryMessage, formatYearMonth, isInvalidDateEntry, todayIso } from '@/lib/dates'
 import { formatCents } from '@/lib/money'
 import { cardPurchaseTexts } from './texts'
 
@@ -148,6 +148,10 @@ function CardPaidDialog({
       : accounts
 
   async function save() {
+    if (isInvalidDateEntry(paidDate)) {
+      setError(dateEntryMessage)
+      return false
+    }
     if (paidDate === '') {
       setError(t.errors.dateRequired)
       return false
@@ -178,13 +182,7 @@ function CardPaidDialog({
     >
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="card-paid-date">{t.payment.paidDate}</Label>
-        <Input
-          id="card-paid-date"
-          type="date"
-          min={payment.statementDate}
-          value={paidDate}
-          onChange={(e) => setPaidDate(e.target.value)}
-        />
+        <DateInput id="card-paid-date" value={paidDate} onChange={setPaidDate} />
       </div>
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="card-paid-account">{t.payment.account}</Label>
