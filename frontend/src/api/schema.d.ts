@@ -1719,7 +1719,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Exports all household data to a file protected with the given password (at least 6 characters). */
+        /** Exports all household data to a file protected with the given password (at least 12 characters). */
         post: operations["ExportData"];
         delete?: never;
         options?: never;

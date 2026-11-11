@@ -5,7 +5,7 @@ namespace Monthwise.Domain.DataTransfer;
 /// <summary>Business rule errors of export and import (backup and restore requirements).</summary>
 public static class DataTransferErrors
 {
-    public const int PasswordMinLength = 6;
+    public const int PasswordMinLength = 12;
     public const string ConfirmationWord = "REPLACE";
 
     public static readonly DomainError PasswordTooShort = new(

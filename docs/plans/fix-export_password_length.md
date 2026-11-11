@@ -1,7 +1,7 @@
 # Plan: Longer export file password
 
 - **Branch:** `fix/export_password_length`
-- **Status:** Draft
+- **Status:** Done
 - **Date:** 2026-11-11
 - **Requirements:** [backup-and-restore.md, Appendix 1](../feature-requirements/backup-and-restore.md#appendix-1-longer-export-file-password)
 

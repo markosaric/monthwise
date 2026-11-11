@@ -39,7 +39,7 @@ internal static class DataEndpoints
                     .ToFile(file => TypedResults.File(file.Content, "application/octet-stream", file.FileName));
             })
             .WithName("ExportData")
-            .WithSummary("Exports all household data to a file protected with the given password (at least 6 characters).")
+            .WithSummary("Exports all household data to a file protected with the given password (at least 12 characters).")
             .Produces<byte[]>(StatusCodes.Status200OK, "application/octet-stream")
             .RequireAuthorization(HouseholdAdminPolicy);
 

@@ -22,9 +22,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { formatDateTime } from './format'
-import { dataTexts as t } from './texts'
-
-const minPasswordLength = 6
+import { minPasswordLength, dataTexts as t } from './texts'
 
 function errorText(error: unknown): string {
   if (error instanceof ApiError) {
@@ -41,7 +39,24 @@ function ErrorLine({ error }: { error: string | null }) {
   ) : null
 }
 
-/** Password twice, then the file is downloaded (FR-2, FR-3). */
+/** How long the export password must be and how many characters are still missing (Appendix 1). */
+function PasswordHint({ id, password }: { id: string; password: string }) {
+  const missing = minPasswordLength - password.length
+  return (
+    <p id={id} className="text-sm text-muted-foreground">
+      {t.export.hint}{' '}
+      <span aria-live="polite">
+        {password.length === 0
+          ? null
+          : missing > 0
+            ? t.export.missing(missing)
+            : t.export.longEnough}
+      </span>
+    </p>
+  )
+}
+
+/** Password twice, then the file is downloaded (FR-2, FR-3, Appendix 1). */
 export function ExportDialog({
   open,
   onOpenChange,
@@ -89,9 +104,11 @@ export function ExportDialog({
             id="export-password"
             type="password"
             autoComplete="new-password"
+            aria-describedby="export-password-hint"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           />
+          <PasswordHint id="export-password-hint" password={password} />
         </div>
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="export-repeat">{t.export.repeat}</Label>
