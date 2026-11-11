@@ -253,3 +253,32 @@ safety net (FR-12).
     screens and totals, to the cent, on Docker one-click, the native background service and
     Azure.
 12. The user manual has a Data and backups chapter, including Azure's own backups.
+
+## Appendix 1: Longer export file password
+
+- **Date:** 2026-11-11
+- **Branch:** `fix/export_password_length`
+- **Changes:** FR-3 (password length), acceptance criterion 3
+
+The export file holds all household data, including full card numbers and IBANs, so a short
+password is too easy to guess once someone has the file. The minimum length goes up from 6 to
+**12 characters**.
+
+- Before every export the password must be at least 12 characters long. A shorter password
+  blocks the export with the message *The password must be at least 12 characters long.*, and no
+  file is downloaded.
+- Under the password field the export dialog shows a hint: *At least 12 characters. A phrase of
+  a few unrelated words is easy to remember and hard to guess.* While the user types, the hint
+  shows how many characters are still missing (for example *4 more characters needed*) and
+  changes to *Long enough* once the minimum is reached.
+- The rule only applies to new exports. Import accepts the password of any existing export file,
+  whatever its length, so files exported with a 6 to 11 character password can still be checked
+  and imported.
+- Everything else in FR-3 (password entered twice, never stored, logged or shown, the
+  password-manager reminder) is unchanged.
+- The user manual's Data and backups chapter says *at least 12 characters*.
+
+Acceptance criterion 3 now reads: Export asks for a password (twice, at least 12 characters, with
+a hint showing how many characters are still missing) and downloads one file with all household
+data, named with its date and time and carrying the date, release and a summary inside; no data
+changes while exporting. A file exported earlier with a shorter password can still be imported.
