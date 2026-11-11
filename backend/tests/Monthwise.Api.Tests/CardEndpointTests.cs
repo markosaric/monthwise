@@ -6,7 +6,7 @@ using Npgsql;
 namespace Monthwise.Api.Tests;
 
 /// <summary>
-/// Card endpoints against a real PostgreSQL (skipped without MONTHWISE_TEST_DB). The tests in this
+/// Card endpoints against a real PostgreSQL (see TestDatabase). The tests in this
 /// class run one after another and each starts from an empty card table.
 /// </summary>
 [Collection(SharedDatabase.Name)]
@@ -29,8 +29,7 @@ public sealed class CardEndpointTests : IAsyncLifetime
 
     public async ValueTask InitializeAsync()
     {
-        _connectionString = MonthwiseApiFactory.TestDatabaseConnectionString ?? string.Empty;
-        Assert.SkipWhen(_connectionString.Length == 0, "MONTHWISE_TEST_DB is not set; no test database available.");
+        _connectionString = TestDatabase.ConnectionString;
 
         _factory = new MonthwiseApiFactory(_connectionString, migrateOnStartup: true);
         _client = _factory.CreateClient();

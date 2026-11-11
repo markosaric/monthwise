@@ -7,7 +7,7 @@ using Npgsql;
 namespace Monthwise.Api.Tests;
 
 /// <summary>
-/// Loan endpoints against a real PostgreSQL (skipped without MONTHWISE_TEST_DB). Each test starts from
+/// Loan endpoints against a real PostgreSQL (see TestDatabase). Each test starts from
 /// empty loan, cash flow and card tables; months are relative to today.
 /// </summary>
 [Collection(SharedDatabase.Name)]
@@ -33,8 +33,7 @@ public sealed class LoanEndpointTests : IAsyncLifetime
 
     public async ValueTask InitializeAsync()
     {
-        _connectionString = MonthwiseApiFactory.TestDatabaseConnectionString ?? string.Empty;
-        Assert.SkipWhen(_connectionString.Length == 0, "MONTHWISE_TEST_DB is not set; no test database available.");
+        _connectionString = TestDatabase.ConnectionString;
 
         _factory = new MonthwiseApiFactory(_connectionString, migrateOnStartup: true);
         _client = _factory.CreateClient();

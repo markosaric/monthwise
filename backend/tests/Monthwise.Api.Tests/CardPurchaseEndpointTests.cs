@@ -7,8 +7,8 @@ using Npgsql;
 namespace Monthwise.Api.Tests;
 
 /// <summary>
-/// Card purchase and card payment endpoints against a real PostgreSQL (skipped without
-/// MONTHWISE_TEST_DB). Each test starts from empty tables; purchases are dated next month, so their
+/// Card purchase and card payment endpoints against a real PostgreSQL (see
+/// TestDatabase). Each test starts from empty tables; purchases are dated next month, so their
 /// card payments are next month's (statement on the 5th, payment on the 20th).
 /// </summary>
 [Collection(SharedDatabase.Name)]
@@ -30,8 +30,7 @@ public sealed class CardPurchaseEndpointTests : IAsyncLifetime
 
     public async ValueTask InitializeAsync()
     {
-        _connectionString = MonthwiseApiFactory.TestDatabaseConnectionString ?? string.Empty;
-        Assert.SkipWhen(_connectionString.Length == 0, "MONTHWISE_TEST_DB is not set; no test database available.");
+        _connectionString = TestDatabase.ConnectionString;
 
         _factory = new MonthwiseApiFactory(_connectionString, migrateOnStartup: true);
         _client = _factory.CreateClient();

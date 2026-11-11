@@ -11,7 +11,7 @@ using Npgsql;
 namespace Monthwise.Api.Tests;
 
 /// <summary>
-/// Export and import against a real PostgreSQL (skipped without MONTHWISE_TEST_DB;
+/// Export and import against a real PostgreSQL (see TestDatabase;
 /// docs/feature-requirements/backup-and-restore.md). Each test starts from empty household data
 /// and an empty history.
 /// </summary>
@@ -39,8 +39,7 @@ public sealed class DataEndpointTests : IAsyncLifetime
 
     public async ValueTask InitializeAsync()
     {
-        _connectionString = MonthwiseApiFactory.TestDatabaseConnectionString ?? string.Empty;
-        Assert.SkipWhen(_connectionString.Length == 0, "MONTHWISE_TEST_DB is not set; no test database available.");
+        _connectionString = TestDatabase.ConnectionString;
 
         _factory = new MonthwiseApiFactory(_connectionString, migrateOnStartup: true);
         _client = _factory.CreateClient();
