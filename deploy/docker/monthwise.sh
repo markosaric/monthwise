@@ -53,7 +53,7 @@ ensure_docker() {
 }
 
 ensure_config() {
-  # The Monthwise folder is private to this user account; the container reads the files below it.
+  # The Monthwise folder is private to this user account; the containers read the files below it.
   mkdir -p "$BASE_DIR" "$CONFIG_DIR"
   chmod 700 "$BASE_DIR"
   chmod 755 "$CONFIG_DIR"
@@ -66,6 +66,7 @@ ensure_config() {
     } > "$ENV_FILE"
   fi
   ensure_secrets
+  protect_secrets
 }
 
 random_base64() { openssl rand -base64 32; }
@@ -91,13 +92,24 @@ the stored card numbers and IBANs unreadable, so none are created."
   printf 'k1' > "$SECRETS_DIR/SensitiveData__ActiveKeyId"
   random_base64 | tr -d '\n' > "$SECRETS_DIR/SensitiveData__EncryptionKeys__k1"
   random_base64 | tr -d '\n' > "$SECRETS_DIR/SensitiveData__HashKey"
-  chmod 644 "$SECRETS_DIR"/*
   say ""
   say "Monthwise created its secrets (database password and card number encryption keys) in:"
   say "  $SECRETS_DIR"
   say "Copy these files into your password manager now. Without them the stored card numbers"
   say "and IBANs can never be read again."
   say ""
+}
+
+protect_secrets() {
+  # On macOS, Docker Desktop and OrbStack let the containers read what this user account can read,
+  # so each secret file is private to it (FR-6, Appendix 1); this also fixes older installations.
+  # On Linux a bind mount keeps the file owner, so the postgres and app users in the containers
+  # could not read a 600 file; there the files stay 644 inside the private Monthwise folder.
+  if [[ "$(uname -s)" == "Darwin" ]]; then
+    chmod 600 "$SECRETS_DIR"/*
+  else
+    chmod 644 "$SECRETS_DIR"/*
+  fi
 }
 
 ensure_image() {

@@ -1,7 +1,7 @@
 # Plan: Private Docker secret files
 
 - **Branch:** `fix/secret_file_permissions`
-- **Status:** Draft
+- **Status:** Done
 - **Date:** 2026-11-11
 - **Requirements:** [production-packaging.md, Appendix 1](../feature-requirements/production-packaging.md#appendix-1-each-secret-file-is-private-on-its-own)
   (code review finding L4)
@@ -48,6 +48,9 @@ can read them" in FR-6 of [feat-production_packaging.md](feat-production_packagi
   the containers as the Mac user, so a container process can read any file that user can read,
   whatever its uid in the container. Step 1 checks this on the user's Mac before the script
   changes.
+- Step 1 result (2026-11-11, Docker Desktop 4.98.0): a `600` file owned by the Mac user was read
+  as uid 999 in `postgres:17`, as uid 1654 in `mcr.microsoft.com/dotnet/aspnet:10.0`, and as a
+  compose file secret; inside the containers the file shows as owned by the reading uid.
 
 ## Steps
 1. Check on the user's Mac (Docker Desktop or OrbStack, whichever is installed), with a throwaway
