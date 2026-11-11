@@ -16,7 +16,7 @@ namespace Monthwise.Api.Tests;
 [Collection(SharedDatabase.Name)]
 public sealed class RevolvingEndpointTests : IAsyncLifetime
 {
-    private const string Password = "secret1";
+    private const string Password = "secret-phrase-1";
     private static readonly Guid VisaIssuer = new("0199b0c0-0000-7000-8000-000000000001");
     private static readonly Guid ZaBa = new("0199b0c0-0000-7000-8000-000000000101");
     private static readonly DateOnly Today = DateOnly.FromDateTime(DateTime.Now);

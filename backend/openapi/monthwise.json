@@ -7817,7 +7817,7 @@
         "tags": [
           "Data and backups"
         ],
-        "summary": "Exports all household data to a file protected with the given password (at least 6 characters).",
+        "summary": "Exports all household data to a file protected with the given password (at least 12 characters).",
         "operationId": "ExportData",
         "requestBody": {
           "content": {

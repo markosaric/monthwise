@@ -21,7 +21,7 @@ public sealed class DataEndpointTests : IAsyncLifetime
     // Published test values only; never real card numbers or IBANs.
     private const string Visa = "4111111111111111";
     private const string CroatianIban = "HR1210010051863000160";
-    private const string Password = "secret1";
+    private const string Password = "secret-phrase-1";
     private const string PreviousMigration = "20261031063743_AddDataTransfer";
 
     /// <summary>The household tables added after <see cref="PreviousMigration"/>, which a file of that release does not have.</summary>
@@ -111,8 +111,12 @@ public sealed class DataEndpointTests : IAsyncLifetime
         Assert.False(row.ContainsKey("card_number_hash"));
         Assert.DoesNotContain(_factory!.LogMessages, m => m.Contains(Password, StringComparison.Ordinal));
 
-        var shortPassword = await Client.PostAsJsonAsync("/api/data/export", new { password = "12345" }, Ct);
+        var shortPassword = await Client.PostAsJsonAsync("/api/data/export", new { password = "12345678901" }, Ct);
         Assert.Equal(HttpStatusCode.BadRequest, shortPassword.StatusCode);
+        Assert.Contains(
+            "The password must be at least 12 characters long.", await ErrorsAsync(shortPassword), StringComparison.Ordinal);
+        var minimumPassword = await Client.PostAsJsonAsync("/api/data/export", new { password = "123456789012" }, Ct);
+        Assert.Equal(HttpStatusCode.OK, minimumPassword.StatusCode);
     }
 
     [Fact]
@@ -143,6 +147,23 @@ public sealed class DataEndpointTests : IAsyncLifetime
 
         Assert.Single((await GetJsonAsync("/api/cards")).EnumerateArray());
         Assert.Equal(JsonValueKind.Null, (await GetJsonAsync("/api/data")).GetProperty("lastImport").ValueKind);
+    }
+
+    [Fact]
+    public async Task A_file_exported_earlier_with_a_shorter_password_can_still_be_imported()
+    {
+        // Backup and restore Appendix 1: the 12 character minimum applies to new exports only.
+        const string OldPassword = "secret";
+        await CreateCardAsync("Family Visa", Visa, CroatianIban);
+        var before = await SnapshotAsync();
+        var oldFile = Codec.Write(Codec.Read(await ExportAsync(), Password).Value, OldPassword);
+        await ExecuteSqlAsync(CashFlowEndpointTests.DeleteAllSql);
+
+        Assert.Equal(HttpStatusCode.OK, (await PostFormAsync("/api/data/import/check", oldFile, OldPassword)).StatusCode);
+        var import = await PostFormAsync("/api/data/import", oldFile, OldPassword, "REPLACE");
+
+        Assert.Equal(HttpStatusCode.OK, import.StatusCode);
+        Assert.Equal(before, await SnapshotAsync());
     }
 
     [Fact]

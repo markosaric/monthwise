@@ -1,3 +1,6 @@
+/** Shortest password a new export file accepts (backup and restore Appendix 1). */
+export const minPasswordLength = 12
+
 /** Texts of the Data and backups section (docs/feature-requirements/backup-and-restore.md). */
 export const dataTexts = {
   section: 'Data and backups',
@@ -18,7 +21,11 @@ export const dataTexts = {
       'Choose a password for the file. You need it to import the file again; Monthwise does not keep it.',
     password: 'Password',
     repeat: 'Repeat password',
-    tooShort: 'The password must be at least 6 characters long.',
+    hint: `At least ${minPasswordLength} characters. A phrase of a few unrelated words is easy to remember and hard to guess.`,
+    missing: (count: number) =>
+      count === 1 ? '1 more character needed' : `${count} more characters needed`,
+    longEnough: 'Long enough',
+    tooShort: `The password must be at least ${minPasswordLength} characters long.`,
     mismatch: 'The passwords are not the same.',
     confirm: 'Export',
     done: (fileName: string) => `Exported to ${fileName}`,

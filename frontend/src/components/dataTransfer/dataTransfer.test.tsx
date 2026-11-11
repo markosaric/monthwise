@@ -65,7 +65,7 @@ describe('Data and backups', () => {
     expect(await screen.findByText(t.noExport)).toBeInTheDocument()
   })
 
-  it('exports with a password of at least 6 characters entered twice', async () => {
+  it('exports with a password of at least 12 characters entered twice', async () => {
     const user = userEvent.setup()
     let sent: unknown = null
     vi.stubGlobal(
@@ -86,21 +86,29 @@ describe('Data and backups', () => {
     renderRoute('/settings/data')
 
     await user.click(await screen.findByRole('button', { name: t.export.action }))
-    await user.type(screen.getByLabelText(t.export.password), '12345')
-    await user.type(screen.getByLabelText(t.export.repeat), '12345')
+    const hint = screen.getByText(/^At least 12 characters/)
+    expect(screen.getByLabelText(t.export.password)).toHaveAccessibleDescription(
+      expect.stringContaining(t.export.hint),
+    )
+    await user.type(screen.getByLabelText(t.export.password), '12345678')
+    expect(hint).toHaveTextContent(t.export.missing(4))
+    await user.type(screen.getByLabelText(t.export.password), '901')
+    expect(hint).toHaveTextContent(t.export.missing(1))
+    await user.type(screen.getByLabelText(t.export.repeat), '12345678901')
     await user.click(screen.getByRole('button', { name: t.export.confirm }))
     expect(screen.getByRole('alert')).toHaveTextContent(t.export.tooShort)
     expect(sent).toBeNull()
 
-    await user.type(screen.getByLabelText(t.export.password), '6')
-    await user.type(screen.getByLabelText(t.export.repeat), '7')
+    await user.type(screen.getByLabelText(t.export.password), '2')
+    expect(hint).toHaveTextContent(t.export.longEnough)
+    await user.type(screen.getByLabelText(t.export.repeat), '3')
     await user.click(screen.getByRole('button', { name: t.export.confirm }))
     expect(screen.getByRole('alert')).toHaveTextContent(t.export.mismatch)
 
     await user.clear(screen.getByLabelText(t.export.repeat))
-    await user.type(screen.getByLabelText(t.export.repeat), '123456')
+    await user.type(screen.getByLabelText(t.export.repeat), '123456789012')
     await user.click(screen.getByRole('button', { name: t.export.confirm }))
-    await waitFor(() => expect(sent).toEqual({ password: '123456' }))
+    await waitFor(() => expect(sent).toEqual({ password: '123456789012' }))
   })
 
   it('checks the file, compares it with the current data and imports only after typing REPLACE', async () => {
