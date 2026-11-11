@@ -1,5 +1,8 @@
+using System.IO.Compression;
+using System.Text;
 using System.Text.Json.Nodes;
 using Monthwise.Application.DataTransfer;
+using Monthwise.Domain.Common;
 using Monthwise.Domain.DataTransfer;
 using Monthwise.Infrastructure.DataTransfer;
 using Monthwise.Infrastructure.Security;
@@ -65,5 +68,98 @@ public class ExportFileCodecTests
 
         Assert.StartsWith("v1:test:", content, StringComparison.Ordinal);
         Assert.Equal(Data.Migration, codec.Unprotect(content).Migration);
+    }
+
+    [Theory]
+    [InlineData("""{"createdAt":null}""")]
+    [InlineData("""{"createdAt":20261031}""")]
+    [InlineData("""{"createdAt":"last week"}""")]
+    [InlineData("""{"release":12}""")]
+    [InlineData("""{"summary":{"cards":"1"}}""")]
+    [InlineData("""{"summary":{"cards":1.5}}""")]
+    [InlineData("""{"summary":{"cards":-1}}""")]
+    [InlineData("""{"summary":[]}""")]
+    [InlineData("""{"format":1}""")]
+    [InlineData("""{"migration":""}""")]
+    public void Content_with_a_wrong_field_is_incomplete(string change)
+    {
+        var content = ValidContent();
+        foreach (var (name, value) in JsonNode.Parse(change)!.AsObject())
+        {
+            content[name] = value?.DeepClone();
+        }
+
+        Assert.Equal(DataTransferErrors.FileIncomplete, Assert.Single(ReadContent(Gzip(content.ToJsonString())).Errors));
+    }
+
+    [Theory]
+    [InlineData("createdAt")]
+    [InlineData("format")]
+    [InlineData("migration")]
+    [InlineData("summary")]
+    [InlineData("tables")]
+    public void Content_without_a_required_field_is_incomplete(string name)
+    {
+        var content = ValidContent();
+        content.Remove(name);
+
+        Assert.Equal(DataTransferErrors.FileIncomplete, Assert.Single(ReadContent(Gzip(content.ToJsonString())).Errors));
+    }
+
+    [Theory]
+    [InlineData("[]")]
+    [InlineData("\"monthwise-export\"")]
+    [InlineData("{")]
+    public void Content_that_is_not_an_export_object_is_incomplete(string json)
+    {
+        Assert.Equal(DataTransferErrors.FileIncomplete, Assert.Single(ReadContent(Gzip(json)).Errors));
+    }
+
+    [Fact]
+    public void Content_that_is_not_compressed_is_incomplete()
+    {
+        Assert.Equal(DataTransferErrors.FileIncomplete, Assert.Single(ReadContent(Encoding.UTF8.GetBytes(ValidContent().ToJsonString())).Errors));
+    }
+
+    [Fact]
+    public void Release_and_summary_counts_are_optional()
+    {
+        var content = ValidContent();
+        content.Remove("release");
+        content["summary"] = new JsonObject();
+
+        var read = ReadContent(Gzip(content.ToJsonString()));
+
+        Assert.True(read.IsSuccess);
+        Assert.Equal("unknown", read.Value.Release);
+        Assert.Equal(new DataSummaryResponse(0, 0, 0, 0, 0, 0), read.Value.Summary);
+    }
+
+    /// <summary>The content <see cref="ExportFileCodec.Write"/> makes for <see cref="Data"/>, before compression.</summary>
+    private static JsonObject ValidContent() => new()
+    {
+        ["format"] = ExportFileCodec.FileFormat,
+        ["formatVersion"] = ExportFileCodec.FormatVersion,
+        ["createdAt"] = Data.CreatedAt,
+        ["release"] = Data.Release,
+        ["migration"] = Data.Migration,
+        ["summary"] = new JsonObject { ["cards"] = 1 },
+        ["tables"] = Data.Tables.DeepClone(),
+    };
+
+    private static Result<HouseholdData> ReadContent(byte[] plain)
+    {
+        var codec = Codec();
+        return codec.Read(codec.WritePayload(plain, "secret1"), "secret1");
+    }
+
+    private static byte[] Gzip(string json)
+    {
+        using var output = new MemoryStream();
+        using (var gzip = new GZipStream(output, CompressionLevel.Fastest))
+        {
+            gzip.Write(Encoding.UTF8.GetBytes(json));
+        }
+        return output.ToArray();
     }
 }

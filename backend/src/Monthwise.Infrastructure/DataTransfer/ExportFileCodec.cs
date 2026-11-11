@@ -38,8 +38,19 @@ internal sealed class ExportFileCodec(ISensitiveDataCipher cipher) : IExportFile
     {
         ArgumentNullException.ThrowIfNull(data);
         ArgumentNullException.ThrowIfNull(password);
-        var plain = Compress(Serialize(data));
+        return Seal(Compress(Serialize(data)), password);
+    }
 
+    /// <summary>Tests only: seals any JSON as an export file, to check how <see cref="Read"/> handles content <see cref="Write"/> never makes.</summary>
+    internal byte[] WritePayload(byte[] plain, string password)
+    {
+        ArgumentNullException.ThrowIfNull(plain);
+        ArgumentNullException.ThrowIfNull(password);
+        return Seal(plain, password);
+    }
+
+    private byte[] Seal(byte[] plain, string password)
+    {
         var file = new byte[HeaderSize + plain.Length + TagSize];
         var header = file.AsSpan(0, HeaderSize);
         Magic.CopyTo(header);
@@ -149,29 +160,68 @@ internal sealed class ExportFileCodec(ISensitiveDataCipher cipher) : IExportFile
         return JsonSerializer.SerializeToUtf8Bytes(root);
     }
 
+    /// <summary>
+    /// Reads the decrypted content, checking every field before it is used; <see langword="null"/>
+    /// when the content is not a complete export (backup and restore FR-4).
+    /// </summary>
     private static HouseholdData? Deserialize(byte[] json)
     {
         if (JsonNode.Parse(json) is not JsonObject root
-            || (string?)root["format"] != FileFormat
+            || !TryGetString(root["format"], out var format) || format != FileFormat
             || root["tables"] is not JsonObject tables
             || root["summary"] is not JsonObject summary
-            || (string?)root["migration"] is not { Length: > 0 } migration)
+            || !TryGetString(root["migration"], out var migration) || migration.Length == 0
+            || root["createdAt"] is not JsonValue createdAtValue
+            || !createdAtValue.TryGetValue<DateTimeOffset>(out var createdAt))
+        {
+            return null;
+        }
+
+        var release = "unknown";
+        if (root["release"] is { } releaseNode && !TryGetString(releaseNode, out release))
+        {
+            return null;
+        }
+
+        if (!TryGetCount(summary, "cards", out var cards)
+            || !TryGetCount(summary, "loans", out var loans)
+            || !TryGetCount(summary, "inputs", out var inputs)
+            || !TryGetCount(summary, "cardPurchases", out var cardPurchases)
+            || !TryGetCount(summary, "bills", out var bills)
+            || !TryGetCount(summary, "expenses", out var expenses))
         {
             return null;
         }
 
         return new HouseholdData(
-            root["createdAt"]!.GetValue<DateTimeOffset>(),
-            (string?)root["release"] ?? "unknown",
+            createdAt,
+            release,
             migration,
-            new DataSummaryResponse(
-                (int?)summary["cards"] ?? 0,
-                (int?)summary["loans"] ?? 0,
-                (int?)summary["inputs"] ?? 0,
-                (int?)summary["cardPurchases"] ?? 0,
-                (int?)summary["bills"] ?? 0,
-                (int?)summary["expenses"] ?? 0),
+            new DataSummaryResponse(cards, loans, inputs, cardPurchases, bills, expenses),
             tables);
+    }
+
+    private static bool TryGetString(JsonNode? node, out string value)
+    {
+        if (node is JsonValue jsonValue && jsonValue.TryGetValue<string>(out var text))
+        {
+            value = text;
+            return true;
+        }
+        value = string.Empty;
+        return false;
+    }
+
+    /// <summary>A summary count is optional (0 when missing) but must be a whole number of 0 or more.</summary>
+    private static bool TryGetCount(JsonObject summary, string name, out int count)
+    {
+        count = 0;
+        return summary[name] switch
+        {
+            null => true,
+            JsonValue value => value.TryGetValue(out count) && count >= 0,
+            _ => false,
+        };
     }
 
     private static byte[] Compress(byte[] data)

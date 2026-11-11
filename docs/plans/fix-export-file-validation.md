@@ -1,7 +1,7 @@
 # Plan: Refuse malformed export files with a plain message
 
 - **Branch:** `fix/export-file-validation`
-- **Status:** In progress
+- **Status:** Done
 - **Date:** 2026-11-11
 - **Requirements:** none (no behaviour change). The fix makes the code meet the existing
   [backup-and-restore.md](../feature-requirements/backup-and-restore.md) FR-4 and acceptance
@@ -41,9 +41,9 @@ of failing with a 500 error. This is item L1 of the main branch code review.
     decompression. `NullReferenceException` is not added to it: after the change nothing in
     `Deserialize` can throw it, and catching it would hide real bugs.
   - To test content that `Write` would never produce, the encryption part of `Write` moves into a
-    private `Seal(byte[] plain, string password)`, and an `internal` `WritePayload(JsonNode
-    payload, string password)` (tests only, like `Iterations`) seals any JSON. `Write` keeps its
-    behaviour and output format.
+    private `Seal(byte[] plain, string password)`, and an `internal` `WritePayload(byte[] plain,
+    string password)` (tests only, like `Iterations`) seals any bytes, so tests can also seal
+    content that is not gzip. `Write` keeps its behaviour and output format.
 - Front-end changes: none; the import page already shows the error message of a 400.
 - Database migrations: none.
 
@@ -59,6 +59,7 @@ of failing with a 500 error. This is item L1 of the main branch code review.
   - `createdAt` missing, `null`, a number, or a string that is not a date;
   - `release` a number;
   - a summary count that is a string, a decimal or negative;
+  - `format`, `migration`, `summary` or `tables` missing or of the wrong type;
   - content that is valid JSON but not an object (for example `[]`);
   - content that is not gzip, and gzip that is not JSON.
   - A file without `release` and without summary counts still reads, with `"unknown"` and 0.
