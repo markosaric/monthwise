@@ -206,3 +206,27 @@ described in their own requirements.
 9. The user manual has an installation chapter for each target on macOS and Windows, and
    `README.md` describes how to build a release.
 10. CI builds the release on every change to `main` and checks that it starts and reports healthy.
+
+## Appendix 1: Each secret file is private on its own
+
+- **Date:** 2026-11-11
+- **Branch:** `fix/secret_file_permissions`
+- **Changes:** FR-6 (where the secrets are stored on the user's own computer), acceptance
+  criterion 4
+
+On the **Docker one-click** on macOS, only the user's account can read each secret file itself.
+Today the files can be read by every account on the Mac and are protected only by the private
+`Monthwise` folder around them; they stay private even if that folder is later opened up, moved
+or copied with its permissions.
+
+- New installations create the secret files private to the user's account.
+- Existing installations are made private the next time Monthwise is started, without changing
+  any secret value and without the user doing anything.
+- Monthwise still starts, stops, updates and keeps its data exactly as before; the database and
+  the application keep reading the secrets.
+- The native background service (secret files already private to the user) and Windows (the
+  `Monthwise` folder and everything in it limited to the user's account) are unchanged.
+
+Acceptance criterion 4 is extended: on a Mac with Docker, after the first start and after
+starting an existing installation, every file in the secrets folder can be read only by the
+user's account, and Monthwise opens and shows the existing data.
