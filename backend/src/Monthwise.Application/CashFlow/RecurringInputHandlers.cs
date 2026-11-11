@@ -134,7 +134,7 @@ public sealed class DeleteOccurrenceHandler(
         {
             inputs.Remove(stored);
         }
-        recurringInputs.AddSkip(new SkippedOccurrence(recurringInputId, occurrenceDate));
+        await recurringInputs.AddSkipAsync(new SkippedOccurrence(recurringInputId, occurrenceDate), cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
         return Result.Success();
     }

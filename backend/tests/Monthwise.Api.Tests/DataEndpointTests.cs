@@ -180,6 +180,28 @@ public sealed class DataEndpointTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task A_file_with_names_differing_only_in_case_is_refused_and_changes_nothing()
+    {
+        await CreateParticipantAsync("Đurđa");
+        var before = await SnapshotAsync();
+        var data = Codec.Read(await ExportAsync(), Password).Value;
+        var copy = data.Tables["participant"]![0]!.DeepClone().AsObject();
+        copy["id"] = Guid.NewGuid().ToString();
+        copy["name"] = "ĐURĐA";
+        data.Tables["participant"]!.AsArray().Add(copy);
+        var file = Codec.Write(data, Password);
+
+        foreach (var candidate in new[] { file, WithMigration(file, PreviousMigration) })
+        {
+            var check = await ErrorsAsync(await PostFormAsync("/api/data/import/check", candidate, Password));
+            Assert.Contains("\"Đurđa\" and \"ĐURĐA\", which differ only in upper/lower case", check, StringComparison.Ordinal);
+            var errors = await ErrorsAsync(await PostFormAsync("/api/data/import", candidate, Password, "REPLACE"));
+            Assert.Contains("participants", errors, StringComparison.Ordinal);
+            Assert.Equal(before, await SnapshotAsync());
+        }
+    }
+
+    [Fact]
     public async Task A_failing_import_changes_nothing_is_recorded_and_the_safety_copy_undoes_an_import()
     {
         await CreateCardAsync("Family Visa", Visa, null);

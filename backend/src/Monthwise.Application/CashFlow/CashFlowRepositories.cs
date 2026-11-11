@@ -43,7 +43,7 @@ public interface IRecurringInputRepository
     Task<RecurringInput?> GetAsync(Guid id, CancellationToken cancellationToken);
     Task<IReadOnlySet<OccurrenceKey>> ListSkippedAsync(CancellationToken cancellationToken);
     void Add(RecurringInput recurringInput);
-    void AddSkip(SkippedOccurrence skipped);
+    Task AddSkipAsync(SkippedOccurrence skipped, CancellationToken cancellationToken);
 }
 
 public interface IPayerRepository

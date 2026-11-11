@@ -47,6 +47,13 @@ public static class DataTransferErrors
     public static readonly DomainError ExportFailed = new(
         "data.export_failed", "The export failed. See the log for details.", Kind: ErrorKind.Conflict);
 
+    /// <summary>Two entries of a name list in the file differ only in upper/lower case (name comparison FR-7).</summary>
+    public static DomainError SameNames(string list, string name, string otherName) => new(
+        "data.same_names",
+        $"The file has {list} named \"{name}\" and \"{otherName}\", which differ only in upper/lower case. "
+            + "Monthwise needs names in a list to be different. No data was changed.",
+        "file");
+
     /// <summary>A file made by a newer release; the message names it, never the data.</summary>
     public static DomainError NewerRelease(string release) => new(
         "data.newer_release",

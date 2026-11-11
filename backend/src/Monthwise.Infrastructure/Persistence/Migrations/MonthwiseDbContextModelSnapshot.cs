@@ -17,6 +17,7 @@ namespace Monthwise.Infrastructure.Persistence.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
+                .HasAnnotation("Npgsql:CollationDefinition:monthwise_name", "und-u-ks-level2,und-u-ks-level2,icu,False")
                 .HasAnnotation("ProductVersion", "10.0.12")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
@@ -200,10 +201,15 @@ namespace Monthwise.Infrastructure.Persistence.Migrations
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)")
-                        .HasColumnName("name");
+                        .HasColumnName("name")
+                        .UseCollation("monthwise_name");
 
                     b.HasKey("Id")
                         .HasName("pk_bank");
+
+                    b.HasIndex("Name")
+                        .IsUnique()
+                        .HasDatabaseName("ux_bank_name");
 
                     b.ToTable("bank", (string)null);
 
@@ -324,7 +330,8 @@ namespace Monthwise.Infrastructure.Persistence.Migrations
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)")
-                        .HasColumnName("name");
+                        .HasColumnName("name")
+                        .UseCollation("monthwise_name");
 
                     b.Property<Guid?>("PayingAccountId")
                         .HasColumnType("uuid")
@@ -364,6 +371,10 @@ namespace Monthwise.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("IssuerId")
                         .HasDatabaseName("ix_card_issuer_id");
+
+                    b.HasIndex("Name")
+                        .IsUnique()
+                        .HasDatabaseName("ux_card_name");
 
                     b.HasIndex("PayingAccountId")
                         .HasDatabaseName("ix_card_paying_account_id");
@@ -446,10 +457,15 @@ namespace Monthwise.Infrastructure.Persistence.Migrations
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)")
-                        .HasColumnName("name");
+                        .HasColumnName("name")
+                        .UseCollation("monthwise_name");
 
                     b.HasKey("Id")
                         .HasName("pk_card_issuer");
+
+                    b.HasIndex("Name")
+                        .IsUnique()
+                        .HasDatabaseName("ux_card_issuer_name");
 
                     b.ToTable("card_issuer", (string)null);
 
@@ -785,10 +801,15 @@ namespace Monthwise.Infrastructure.Persistence.Migrations
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)")
-                        .HasColumnName("name");
+                        .HasColumnName("name")
+                        .UseCollation("monthwise_name");
 
                     b.HasKey("Id")
                         .HasName("pk_input_category");
+
+                    b.HasIndex("Name")
+                        .IsUnique()
+                        .HasDatabaseName("ux_input_category_name");
 
                     b.ToTable("input_category", (string)null);
 
@@ -833,7 +854,8 @@ namespace Monthwise.Infrastructure.Persistence.Migrations
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)")
-                        .HasColumnName("name");
+                        .HasColumnName("name")
+                        .UseCollation("monthwise_name");
 
                     b.Property<DateOnly?>("RemovedOn")
                         .HasColumnType("date")
@@ -841,6 +863,10 @@ namespace Monthwise.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id")
                         .HasName("pk_payer");
+
+                    b.HasIndex("Name")
+                        .IsUnique()
+                        .HasDatabaseName("ux_payer_name");
 
                     b.ToTable("payer", (string)null);
                 });
@@ -1257,10 +1283,15 @@ namespace Monthwise.Infrastructure.Persistence.Migrations
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)")
-                        .HasColumnName("name");
+                        .HasColumnName("name")
+                        .UseCollation("monthwise_name");
 
                     b.HasKey("Id")
                         .HasName("pk_expense_category");
+
+                    b.HasIndex("Name")
+                        .IsUnique()
+                        .HasDatabaseName("ux_expense_category_name");
 
                     b.ToTable("expense_category", (string)null);
                 });
@@ -1304,7 +1335,8 @@ namespace Monthwise.Infrastructure.Persistence.Migrations
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)")
-                        .HasColumnName("name");
+                        .HasColumnName("name")
+                        .UseCollation("monthwise_name");
 
                     b.Property<Guid?>("PaidFromId")
                         .HasColumnType("uuid")
@@ -1343,6 +1375,11 @@ namespace Monthwise.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("ContributionAccountId")
                         .HasDatabaseName("ix_recurring_bill_contribution_account_id");
+
+                    b.HasIndex("Name")
+                        .IsUnique()
+                        .HasDatabaseName("ux_recurring_bill_name")
+                        .HasFilter("stopped_on IS NULL");
 
                     b.HasIndex("PaidFromId")
                         .HasDatabaseName("ix_recurring_bill_paid_from_id");
@@ -1405,7 +1442,8 @@ namespace Monthwise.Infrastructure.Persistence.Migrations
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)")
-                        .HasColumnName("name");
+                        .HasColumnName("name")
+                        .UseCollation("monthwise_name");
 
                     b.Property<int?>("ParticipantShareCount")
                         .HasColumnType("integer")
@@ -1464,6 +1502,11 @@ namespace Monthwise.Infrastructure.Persistence.Migrations
                     b.HasIndex("LenderId")
                         .HasDatabaseName("ix_loan_lender_id");
 
+                    b.HasIndex("Name")
+                        .IsUnique()
+                        .HasDatabaseName("ux_loan_name")
+                        .HasFilter("closed_on IS NULL");
+
                     b.HasIndex("ShareParticipantId")
                         .HasDatabaseName("ix_loan_share_participant_id");
 
@@ -1508,10 +1551,15 @@ namespace Monthwise.Infrastructure.Persistence.Migrations
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)")
-                        .HasColumnName("name");
+                        .HasColumnName("name")
+                        .UseCollation("monthwise_name");
 
                     b.HasKey("Id")
                         .HasName("pk_loan_category");
+
+                    b.HasIndex("Name")
+                        .IsUnique()
+                        .HasDatabaseName("ux_loan_category_name");
 
                     b.ToTable("loan_category", (string)null);
 
@@ -1668,13 +1716,18 @@ namespace Monthwise.Infrastructure.Persistence.Migrations
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)")
-                        .HasColumnName("name");
+                        .HasColumnName("name")
+                        .UseCollation("monthwise_name");
 
                     b.HasKey("Id")
                         .HasName("pk_loan_subcategory");
 
                     b.HasIndex("CategoryId")
                         .HasDatabaseName("ix_loan_subcategory_category_id");
+
+                    b.HasIndex("CategoryId", "Name")
+                        .IsUnique()
+                        .HasDatabaseName("ux_loan_subcategory_category_id_name");
 
                     b.ToTable("loan_subcategory", (string)null);
 
@@ -1983,7 +2036,8 @@ namespace Monthwise.Infrastructure.Persistence.Migrations
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)")
-                        .HasColumnName("name");
+                        .HasColumnName("name")
+                        .UseCollation("monthwise_name");
 
                     b.Property<Guid>("PayerId")
                         .HasColumnType("uuid")
@@ -1995,6 +2049,10 @@ namespace Monthwise.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id")
                         .HasName("pk_participant");
+
+                    b.HasIndex("Name")
+                        .IsUnique()
+                        .HasDatabaseName("ux_participant_name");
 
                     b.HasIndex("PayerId")
                         .IsUnique()

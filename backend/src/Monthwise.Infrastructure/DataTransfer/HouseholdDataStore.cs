@@ -185,7 +185,7 @@ internal sealed partial class HouseholdDataStore(
         return importSchema;
     }
 
-    /// <summary>The file has exactly the household tables of its release, and no unknown columns.</summary>
+    /// <summary>The file has exactly the household tables of its release, no unknown columns and no same names in a list.</summary>
     private async Task<Result> CheckCompleteAsync(HouseholdData data, string importSchema, CancellationToken cancellationToken)
     {
         var tables = await GetHouseholdTablesAsync(importSchema, cancellationToken);
@@ -209,7 +209,7 @@ internal sealed partial class HouseholdDataStore(
                 }
             }
         }
-        return Result.Success();
+        return SameNameCheck.Check(data);
     }
 
     /// <summary>Puts the file's rows into the import schema in place of the rows the migrations added.</summary>

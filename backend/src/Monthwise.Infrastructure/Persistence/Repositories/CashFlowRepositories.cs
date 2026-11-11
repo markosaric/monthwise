@@ -75,13 +75,14 @@ internal sealed class RecurringInputRepository(MonthwiseDbContext db) : IRecurri
 
     public void Add(RecurringInput recurringInput) => db.RecurringInputs.Add(recurringInput);
 
-    public void AddSkip(SkippedOccurrence skipped)
+    public async Task AddSkipAsync(SkippedOccurrence skipped, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(skipped);
         var tracked = db.SkippedOccurrences.Local.Any(
             s => s.RecurringInputId == skipped.RecurringInputId && s.OccurrenceDate == skipped.OccurrenceDate);
-        if (!tracked && !db.SkippedOccurrences.Any(
-                s => s.RecurringInputId == skipped.RecurringInputId && s.OccurrenceDate == skipped.OccurrenceDate))
+        if (!tracked && !await db.SkippedOccurrences.AnyAsync(
+                s => s.RecurringInputId == skipped.RecurringInputId && s.OccurrenceDate == skipped.OccurrenceDate,
+                cancellationToken))
         {
             db.SkippedOccurrences.Add(skipped);
         }
@@ -99,12 +100,10 @@ internal sealed class PayerRepository(MonthwiseDbContext db) : IPayerRepository
     public async Task<Payer?> FindByNameAsync(string name, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(name);
-        var lower = name.ToLowerInvariant();
-        // A payer added in this request is not in the database yet.
-#pragma warning disable CA1304, CA1311, CA1862 // ToLower() is translated to SQL lower(), matching the unique index
-        return db.Payers.Local.FirstOrDefault(p => p.Name.ToLowerInvariant() == lower)
-            ?? await db.Payers.FirstOrDefaultAsync(p => p.Name.ToLower() == lower, cancellationToken);
-#pragma warning restore CA1304, CA1311, CA1862
+        // A payer added in this request is not in the database yet; the database compares with the
+        // name collation, and the in-memory check follows the same rule.
+        return db.Payers.Local.FirstOrDefault(p => NameCollation.AreSame(p.Name, name))
+            ?? await db.Payers.FirstOrDefaultAsync(p => p.Name == name, cancellationToken);
     }
 
     public void Add(Payer payer) => db.Payers.Add(payer);
@@ -121,10 +120,7 @@ internal sealed class InputCategoryRepository(MonthwiseDbContext db) : IInputCat
     public Task<bool> NameInUseAsync(string name, Guid? exceptId, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(name);
-        var lower = name.ToLowerInvariant();
-#pragma warning disable CA1304, CA1311, CA1862 // ToLower() is translated to SQL lower(), matching the unique index
-        return db.InputCategories.AnyAsync(c => c.Name.ToLower() == lower && c.Id != exceptId, cancellationToken);
-#pragma warning restore CA1304, CA1311, CA1862
+        return db.InputCategories.AnyAsync(c => c.Name == name && c.Id != exceptId, cancellationToken);
     }
 
     public async Task<bool> IsUsedAsync(Guid id, CancellationToken cancellationToken) =>

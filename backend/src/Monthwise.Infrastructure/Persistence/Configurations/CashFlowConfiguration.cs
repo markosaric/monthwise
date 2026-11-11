@@ -99,9 +99,9 @@ internal sealed class PayerConfiguration : IEntityTypeConfiguration<Payer>
         builder.ToTable("payer");
         builder.HasKey(p => p.Id);
         builder.Property(p => p.Id).ValueGeneratedNever();
-        builder.Property(p => p.Name).HasMaxLength(Payer.NameMaxLength);
+        builder.Property(p => p.Name).HasMaxLength(Payer.NameMaxLength).UseNameCollation();
         builder.Ignore(p => p.IsRemoved);
-        // Name uniqueness ignoring case is a unique index on lower(name), created in the migration.
+        builder.HasIndex(p => p.Name).IsUnique().HasDatabaseName("ux_payer_name");
     }
 }
 
@@ -112,10 +112,10 @@ internal sealed class InputCategoryConfiguration : IEntityTypeConfiguration<Inpu
         builder.ToTable("input_category");
         builder.HasKey(c => c.Id);
         builder.Property(c => c.Id).ValueGeneratedNever();
-        builder.Property(c => c.Name).HasMaxLength(InputCategory.NameMaxLength);
+        builder.Property(c => c.Name).HasMaxLength(InputCategory.NameMaxLength).UseNameCollation();
         builder.Ignore(c => c.IsHidden);
         builder.HasData(CashFlowSeedData.Categories.Select(c => new { c.Id, c.Name, IsPredefined = true }));
-        // Name uniqueness ignoring case is a unique index on lower(name), created in the migration.
+        builder.HasIndex(c => c.Name).IsUnique().HasDatabaseName("ux_input_category_name");
     }
 }
 

@@ -23,7 +23,7 @@ internal sealed class CardConfiguration : IEntityTypeConfiguration<Card>
 
         builder.HasKey(c => c.Id);
         builder.Property(c => c.Id).ValueGeneratedNever();
-        builder.Property(c => c.Name).HasMaxLength(Card.NameMaxLength);
+        builder.Property(c => c.Name).HasMaxLength(Card.NameMaxLength).UseNameCollation();
         builder.Property(c => c.Type).HasConversion<string>().HasMaxLength(20);
         builder.Property(c => c.DebtLimit).HasColumnName("debt_limit_cents");
         builder.Property(c => c.AllowsInstallmentsFlag).HasColumnName("allows_installments");
@@ -59,7 +59,7 @@ internal sealed class CardConfiguration : IEntityTypeConfiguration<Card>
         builder.HasMany(c => c.RevolvingTermVersions).WithOne().HasForeignKey(t => t.CardId)
             .OnDelete(DeleteBehavior.Cascade).HasConstraintName("fk_revolving_terms_card_card_id");
         builder.Navigation(c => c.RevolvingTermVersions).HasField("_revolvingTerms").UsePropertyAccessMode(PropertyAccessMode.Field).AutoInclude();
-        // Name uniqueness ignoring case is a unique index on lower(name), created in the migration.
+        builder.HasIndex(c => c.Name).IsUnique().HasDatabaseName("ux_card_name");
     }
 }
 
@@ -91,7 +91,8 @@ internal sealed class CardIssuerConfiguration : IEntityTypeConfiguration<CardIss
         builder.ToTable("card_issuer");
         builder.HasKey(i => i.Id);
         builder.Property(i => i.Id).ValueGeneratedNever();
-        builder.Property(i => i.Name).HasMaxLength(CardListEntry.NameMaxLength);
+        builder.Property(i => i.Name).HasMaxLength(CardListEntry.NameMaxLength).UseNameCollation();
+        builder.HasIndex(i => i.Name).IsUnique().HasDatabaseName("ux_card_issuer_name");
         builder.HasData(SeedData.Issuers.Select(e => new { e.Id, e.Name, IsPredefined = true }));
     }
 }
@@ -103,7 +104,8 @@ internal sealed class BankConfiguration : IEntityTypeConfiguration<Bank>
         builder.ToTable("bank");
         builder.HasKey(b => b.Id);
         builder.Property(b => b.Id).ValueGeneratedNever();
-        builder.Property(b => b.Name).HasMaxLength(CardListEntry.NameMaxLength);
+        builder.Property(b => b.Name).HasMaxLength(CardListEntry.NameMaxLength).UseNameCollation();
+        builder.HasIndex(b => b.Name).IsUnique().HasDatabaseName("ux_bank_name");
         builder.HasData(SeedData.Banks.Select(e => new { e.Id, e.Name, IsPredefined = true }));
     }
 }
