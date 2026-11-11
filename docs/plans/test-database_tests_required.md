@@ -1,7 +1,7 @@
 # Plan: Database tests are never skipped silently
 
 - **Branch:** `test/database_tests_required`
-- **Status:** In progress
+- **Status:** Done
 - **Date:** 2026-11-11
 - **Requirements:** [database-tests-required.md](../feature-requirements/database-tests-required.md)
 
@@ -40,15 +40,16 @@ tests ran or the developer was told they did not (code review finding L6).
 - Unreachable database stays a failure: nothing catches connection errors (FR-4).
 
 **One notice per run (FR-1)**
-- An xUnit v3 assembly fixture (`[assembly: AssemblyFixture(typeof(TestDatabaseNotice))]`) is
-  created once per test run. On a local run without the setting it writes the notice to the
-  console error stream:
+- A dedicated test, `TestDatabaseTests.Database_tests_notice`, is skipped with the notice as its
+  reason on a local run without the setting, and passes otherwise. `dotnet test` shows the reason
+  of every skipped test at the default verbosity, so the notice appears once per run:
   `NOTICE: MONTHWISE_TEST_DB is not set, so the database tests were skipped. Set it to a test
   database connection string to run them (see README, "Run the tests").`
-- Step 4 checks that `dotnet test` (Microsoft Testing Platform, .NET 10) shows this line at the
-  default verbosity. If it does not, the notice moves to an MSBuild target in the test project
-  that runs with `dotnet test` and prints a high-importance message under the same condition;
-  the plan is updated to say which one is used.
+- *Changed during implementation:* the first approach, an xUnit v3 assembly fixture writing the
+  notice to the console, works when the test executable runs directly, but `dotnet test`
+  (Microsoft Testing Platform) drops output written outside a test, even with `--output detailed`
+  or `--show-stderr All`. An MSBuild message does not help either, because CI runs
+  `dotnet test --no-build`.
 
 **README** — "Run the tests" describes the notice, the failure with `CI=true` and how to use
 `CI=true` locally (FR-7). The table of test commands is updated to match.
@@ -56,10 +57,9 @@ tests ran or the developer was told they did not (code review finding L6).
 ## Steps
 1. Add `TestDatabase.cs` with `Decide`, `ConnectionString` and the messages.
 2. Replace the skip in the 12 test classes, remove `TestDatabaseConnectionString`, update comments.
-3. Add the assembly fixture for the notice.
+3. Add the notice test.
 4. On the developer Mac (this cloud container cannot install .NET), run `dotnet format
-   --verify-no-changes`, `dotnet build -c Release` and the acceptance runs below; switch the
-   notice to the MSBuild fallback if needed.
+   --verify-no-changes`, `dotnet build -c Release` and the acceptance runs below.
 5. Update the README.
 6. Leave everything staged for review.
 

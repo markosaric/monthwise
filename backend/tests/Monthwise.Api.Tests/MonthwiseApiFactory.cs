@@ -17,13 +17,6 @@ public sealed class MonthwiseApiFactory(string connectionString, bool migrateOnS
     public static readonly string TestEncryptionKey = Convert.ToBase64String(Enumerable.Repeat((byte)7, 32).ToArray());
     public static readonly string TestHashKey = Convert.ToBase64String(Enumerable.Repeat((byte)9, 32).ToArray());
 
-    /// <summary>
-    /// Connection string of a test database, set in CI by the PostgreSQL service container.
-    /// Tests that need a real database are skipped when it is not set.
-    /// </summary>
-    public static string? TestDatabaseConnectionString =>
-        Environment.GetEnvironmentVariable("MONTHWISE_TEST_DB");
-
     /// <summary>Every log message the API wrote, to check that no sensitive value is logged.</summary>
     public ConcurrentQueue<string> LogMessages { get; } = new();
 

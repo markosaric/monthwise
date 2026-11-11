@@ -8,7 +8,7 @@ namespace Monthwise.Api.Tests;
 
 /// <summary>
 /// The overall balance of the primary accounts (overall balance tile FR-2 to FR-5) against a real
-/// PostgreSQL (skipped without MONTHWISE_TEST_DB). Each test starts from empty tables; dates are relative
+/// PostgreSQL (see TestDatabase). Each test starts from empty tables; dates are relative
 /// to today.
 /// </summary>
 [Collection(SharedDatabase.Name)]
@@ -30,8 +30,7 @@ public sealed class OverallBalanceEndpointTests : IAsyncLifetime
 
     public async ValueTask InitializeAsync()
     {
-        _connectionString = MonthwiseApiFactory.TestDatabaseConnectionString ?? string.Empty;
-        Assert.SkipWhen(_connectionString.Length == 0, "MONTHWISE_TEST_DB is not set; no test database available.");
+        _connectionString = TestDatabase.ConnectionString;
 
         _factory = new MonthwiseApiFactory(_connectionString, migrateOnStartup: true);
         _client = _factory.CreateClient();

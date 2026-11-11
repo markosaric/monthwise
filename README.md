@@ -194,8 +194,12 @@ MONTHWISE_TEST_DB="Host=localhost;Port=5432;Database=monthwise;Username=monthwis
 cd frontend && npm test
 ```
 
-Without `MONTHWISE_TEST_DB` the back-end tests that need a real database are skipped. The tests use
-their own made-up encryption keys.
+Without `MONTHWISE_TEST_DB` (or with a blank value) the back-end tests that need a real database
+are skipped, and the test run prints a `NOTICE: MONTHWISE_TEST_DB is not set …` line so this is not
+missed. In CI (`CI=true`, set by GitHub Actions) the same tests fail instead, so CI never passes
+without testing the database. To check before a pull request that the database tests really ran,
+run them the CI way: `CI=true MONTHWISE_TEST_DB="…" dotnet test`. The tests use their own made-up
+encryption keys.
 
 ### Troubleshooting
 
@@ -247,7 +251,7 @@ placeholder values are in [deploy/settings.example.json](deploy/settings.example
 
 | Where | Command | What it does |
 |---|---|---|
-| `backend` | `dotnet test` | domain and API tests (set `MONTHWISE_TEST_DB` to a connection string to include tests against a real database) |
+| `backend` | `dotnet test` | domain and API tests (set `MONTHWISE_TEST_DB` to a connection string to include tests against a real database; with `CI=true` they fail instead of being skipped when it is missing) |
 | `backend` | `dotnet format` | apply code style |
 | `backend` | `dotnet tool restore && dotnet ef migrations add <Name> --project src/Monthwise.Infrastructure --output-dir Persistence/Migrations` | add a migration |
 | `frontend` | `npm test` / `npm run lint` / `npm run typecheck` / `npm run format` | tests, lint, types, formatting |

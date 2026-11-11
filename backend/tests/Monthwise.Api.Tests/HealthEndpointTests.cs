@@ -13,10 +13,9 @@ public class HealthEndpointTests
     [Fact]
     public async Task Reports_healthy_when_database_is_reachable()
     {
-        var connectionString = MonthwiseApiFactory.TestDatabaseConnectionString;
-        Assert.SkipWhen(string.IsNullOrEmpty(connectionString), "MONTHWISE_TEST_DB is not set; no test database available.");
+        var connectionString = TestDatabase.ConnectionString;
 
-        await using var factory = new MonthwiseApiFactory(connectionString!, migrateOnStartup: true);
+        await using var factory = new MonthwiseApiFactory(connectionString, migrateOnStartup: true);
         using var client = factory.CreateClient();
 
         var response = await client.GetAsync(new Uri("/api/health", UriKind.Relative), TestContext.Current.CancellationToken);

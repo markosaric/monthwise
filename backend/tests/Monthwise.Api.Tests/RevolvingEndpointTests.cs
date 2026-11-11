@@ -8,7 +8,7 @@ using Npgsql;
 namespace Monthwise.Api.Tests;
 
 /// <summary>
-/// Revolving card endpoints against a real PostgreSQL (skipped without MONTHWISE_TEST_DB). Each test
+/// Revolving card endpoints against a real PostgreSQL (see TestDatabase). Each test
 /// starts from empty tables with a primary account (made-up balance) and a revolving card paid from it
 /// (8.33 % or 13.27 EUR minimum, no interest, bill on the 5th, due on the 20th), with a debt of
 /// 1,000.00 EUR from the first day of the month before last.
@@ -36,8 +36,7 @@ public sealed class RevolvingEndpointTests : IAsyncLifetime
 
     public async ValueTask InitializeAsync()
     {
-        _connectionString = MonthwiseApiFactory.TestDatabaseConnectionString ?? string.Empty;
-        Assert.SkipWhen(_connectionString.Length == 0, "MONTHWISE_TEST_DB is not set; no test database available.");
+        _connectionString = TestDatabase.ConnectionString;
 
         _factory = new MonthwiseApiFactory(_connectionString, migrateOnStartup: true);
         _client = _factory.CreateClient();

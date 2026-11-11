@@ -9,13 +9,12 @@ public class MigrationTests
     [Fact]
     public async Task A_failing_migration_reverts_the_migrations_applied_before_it()
     {
-        var serverConnectionString = MonthwiseApiFactory.TestDatabaseConnectionString;
-        Assert.SkipWhen(string.IsNullOrEmpty(serverConnectionString), "MONTHWISE_TEST_DB is not set; no test database available.");
+        var serverConnectionString = TestDatabase.ConnectionString;
         var cancellationToken = TestContext.Current.CancellationToken;
 
         var databaseName = $"monthwise_migration_{Guid.NewGuid():N}";
         var connectionString = new NpgsqlConnectionStringBuilder(serverConnectionString) { Database = databaseName, Pooling = false }.ConnectionString;
-        await ExecuteAsync(serverConnectionString!, $"CREATE DATABASE {databaseName}", cancellationToken);
+        await ExecuteAsync(serverConnectionString, $"CREATE DATABASE {databaseName}", cancellationToken);
         try
         {
             // The last migration (AddSharedCosts) creates this table, so it fails after the earlier ones succeeded.
@@ -35,7 +34,7 @@ public class MigrationTests
         finally
         {
             NpgsqlConnection.ClearAllPools();
-            await ExecuteAsync(serverConnectionString!, $"DROP DATABASE IF EXISTS {databaseName} WITH (FORCE)", cancellationToken);
+            await ExecuteAsync(serverConnectionString, $"DROP DATABASE IF EXISTS {databaseName} WITH (FORCE)", cancellationToken);
         }
     }
 
