@@ -265,3 +265,34 @@ balance are **no longer shown on the Dashboard**. They are shown, unchanged, for
 the **Accounts** part of the **Cards** screen (see [design-refresh.md](design-refresh.md) FR-9 and
 FR-12). Where FR-11, Appendix 1 or the acceptance criteria say "the Dashboard" for balances, read
 "the Cards screen". How the balances are calculated does not change.
+
+## Appendix 3: Balance entries of an archived account are read-only
+
+- **Date:** 2026-11-11
+- **Branch:** `fix/archived_balance_entries`
+- **Changes:** FR-9
+
+An archived account is read-only ([credit-card-settings.md](credit-card-settings.md) FR-5), and
+that now covers its balance entries completely, not only adding new ones:
+
+- The starting balance and the balance corrections of an archived account **cannot be added,
+  edited or deleted**. They stay visible on the account with their date, balance, difference and
+  note.
+- The account's screen shows no **Edit** or **Delete** action for them, in the same way it already
+  shows no action to add one.
+- If a change is attempted anyway (for example from a screen opened before the account was
+  archived), it is refused with a message that the account cannot be changed,
+  and nothing is saved.
+- Accounts that are blocked or expired are not affected: their balance entries can still be added,
+  edited and deleted as before.
+
+**Why:** the code review of `main` found that a balance entry of an archived account could still
+be edited (and deleted), although adding one was already refused. Editing it changes the history
+of an account that was closed on purpose.
+
+Acceptance criteria:
+
+1. An archived account's balance entries are listed without **Edit** and **Delete** actions.
+2. Editing or deleting a balance entry of an archived account is refused, and the entry is
+   unchanged afterwards.
+3. Balance entries of active, blocked and expired accounts can still be edited and deleted.
