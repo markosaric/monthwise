@@ -207,6 +207,31 @@ describe('Income section on the Month screen', () => {
   })
 })
 
+describe('Refresh after a saved change (screen refresh FR-1)', () => {
+  it('loads every section of the Month screen again after ticking an input', async () => {
+    const fetchMock = stubApi({
+      'GET /api/inputs': () => json(aMonth([anEntry({ id: 'input-1' })])),
+      'POST /api/inputs/input-1/received': () =>
+        json(anEntry({ id: 'input-1', isReceived: true, receivedDate: todayIso() })),
+    })
+    const calls = (path: string) =>
+      fetchMock.mock.calls.filter(([input]) => {
+        const url = new URL(input instanceof Request ? input.url : String(input))
+        return url.pathname === path
+      }).length
+    renderRoute('/month/2026-10')
+
+    const checkbox = await screen.findByRole('checkbox', { name: /Received: Example Employer/ })
+    await waitFor(() => expect(calls('/api/bills')).toBe(1))
+    const before = { bills: calls('/api/bills'), loans: calls('/api/loan-payments') }
+
+    await userEvent.click(checkbox)
+
+    await waitFor(() => expect(calls('/api/bills')).toBeGreaterThan(before.bills))
+    await waitFor(() => expect(calls('/api/loan-payments')).toBeGreaterThan(before.loans))
+  })
+})
+
 describe('Account balances on the Cards screen', () => {
   it('shows current and expected balance and the starting balance hint', async () => {
     stubApi({

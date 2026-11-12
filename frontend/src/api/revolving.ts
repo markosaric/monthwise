@@ -1,8 +1,6 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { cardsQueryKey } from './cards'
-import { cashFlowQueryKey } from './cashFlow'
 import { api, type Schemas } from './client'
-import { dashboardQueryKey } from './dashboard'
 import { ensureOk, unwrap } from './http'
 
 export type RevolvingCard = Schemas['RevolvingCardResponse']
@@ -21,22 +19,8 @@ export type MonthRevolving = Schemas['MonthRevolvingResponse']
 export type RevolvingBillPaidRequest = Schemas['RevolvingBillPaidRequest']
 export type RevolvingBillCorrectionRequest = Schemas['RevolvingBillCorrectionRequest']
 
-/**
- * Revolving queries live under the card prefix, so every change that refreshes cards (expenses,
- * purchases, card settings) also refreshes the debt.
- */
+/** Revolving queries live under the card prefix. Saved changes refresh them through the shared rule in queryClient.ts. */
 export const revolvingQueryKey = [...cardsQueryKey, 'revolving'] as const
-
-/** Refreshes everything a revolving change can affect: cards, debt, balances, chart, report and the Dashboard. */
-function useInvalidateRevolving() {
-  const queryClient = useQueryClient()
-  return () =>
-    Promise.all([
-      queryClient.invalidateQueries({ queryKey: cardsQueryKey }),
-      queryClient.invalidateQueries({ queryKey: cashFlowQueryKey }),
-      queryClient.invalidateQueries({ queryKey: dashboardQueryKey }),
-    ])
-}
 
 export function useRevolvingCards() {
   return useQuery({
@@ -88,7 +72,6 @@ export type RevolvingBillAction =
   | { action: 'clearCorrection' }
 
 export function useChangeRevolvingBill(cardId: string, month: string) {
-  const invalidate = useInvalidateRevolving()
   return useMutation({
     mutationFn: async (change: RevolvingBillAction) => {
       const params = { path: { id: cardId, month } }
@@ -117,12 +100,10 @@ export function useChangeRevolvingBill(cardId: string, month: string) {
           )
       }
     },
-    onSuccess: invalidate,
   })
 }
 
 export function useCreateExtraPayment() {
-  const invalidate = useInvalidateRevolving()
   return useMutation({
     mutationFn: async ({ cardId, request }: { cardId: string; request: ExtraPaymentRequest }) =>
       unwrap(
@@ -131,27 +112,22 @@ export function useCreateExtraPayment() {
           body: request,
         }),
       ),
-    onSuccess: invalidate,
   })
 }
 
 export function useUpdateExtraPayment(id: string) {
-  const invalidate = useInvalidateRevolving()
   return useMutation({
     mutationFn: async (request: ExtraPaymentRequest) =>
       unwrap(
         await api.PUT('/api/extra-payments/{id}', { params: { path: { id } }, body: request }),
       ),
-    onSuccess: invalidate,
   })
 }
 
 export function useDeleteExtraPayment() {
-  const invalidate = useInvalidateRevolving()
   return useMutation({
     mutationFn: async (id: string) =>
       ensureOk(await api.DELETE('/api/extra-payments/{id}', { params: { path: { id } } })),
-    onSuccess: invalidate,
   })
 }
 
@@ -161,7 +137,6 @@ export type DebtEntryAction =
   | { action: 'delete'; entryId: string }
 
 export function useChangeDebtEntry(cardId: string) {
-  const invalidate = useInvalidateRevolving()
   return useMutation({
     mutationFn: async (change: DebtEntryAction) => {
       switch (change.action) {
@@ -187,6 +162,5 @@ export function useChangeDebtEntry(cardId: string) {
           )
       }
     },
-    onSuccess: invalidate,
   })
 }

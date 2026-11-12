@@ -1,6 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { cardsQueryKey } from './cards'
-import { cashFlowQueryKey } from './cashFlow'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { api, type Schemas } from './client'
 import { ensureOk, unwrap } from './http'
 
@@ -24,20 +22,9 @@ export type LoanListFilter = NonNullable<Schemas['LoanListFilter']>
 
 export const paymentMethods: PaymentMethod[] = ['StandingOrder', 'Bill']
 
-/** Every loan query shares this prefix, so one invalidation refreshes the Loans screen, Month screen and widget. */
+/** Every loan query shares this prefix. Saved changes refresh it through the shared rule in queryClient.ts. */
 export const loansQueryKey = ['loans'] as const
 const categoriesKey = ['loan-categories'] as const
-
-/** Refreshes everything a loan change can affect: loans, payments, balances, chart, report and the Cards widget. */
-function useInvalidateLoans() {
-  const queryClient = useQueryClient()
-  return () =>
-    Promise.all([
-      queryClient.invalidateQueries({ queryKey: loansQueryKey }),
-      queryClient.invalidateQueries({ queryKey: cashFlowQueryKey }),
-      queryClient.invalidateQueries({ queryKey: cardsQueryKey }),
-    ])
-}
 
 export function useLoans(filter: LoanListFilter) {
   return useQuery({
@@ -72,38 +59,30 @@ export function useMonthLoanPayments(month: string) {
 }
 
 export function useCreateLoan() {
-  const invalidate = useInvalidateLoans()
   return useMutation({
     mutationFn: async (request: LoanRequest) =>
       unwrap(await api.POST('/api/loans', { body: request })),
-    onSuccess: invalidate,
   })
 }
 
 export function useUpdateLoan(id: string) {
-  const invalidate = useInvalidateLoans()
   return useMutation({
     mutationFn: async (request: LoanRequest) =>
       unwrap(await api.PUT('/api/loans/{id}', { params: { path: { id } }, body: request })),
-    onSuccess: invalidate,
   })
 }
 
 export function useCloseLoan(id: string) {
-  const invalidate = useInvalidateLoans()
   return useMutation({
     mutationFn: async () =>
       unwrap(await api.POST('/api/loans/{id}/close', { params: { path: { id } } })),
-    onSuccess: invalidate,
   })
 }
 
 export function useDeleteLoan(id: string) {
-  const invalidate = useInvalidateLoans()
   return useMutation({
     mutationFn: async () =>
       ensureOk(await api.DELETE('/api/loans/{id}', { params: { path: { id } } })),
-    onSuccess: invalidate,
   })
 }
 
@@ -113,7 +92,6 @@ export type PaymentChangeAction =
   | { action: 'delete'; changeId: string }
 
 export function useChangePaymentChange(loanId: string) {
-  const invalidate = useInvalidateLoans()
   return useMutation({
     mutationFn: async (change: PaymentChangeAction) => {
       switch (change.action) {
@@ -139,7 +117,6 @@ export function useChangePaymentChange(loanId: string) {
           )
       }
     },
-    onSuccess: invalidate,
   })
 }
 
@@ -161,7 +138,6 @@ export type PaymentAction =
 
 /** Changes one payment, ticks Paid (or corrects the paid date and account) or unticks it (FR-4, FR-5). */
 export function usePaymentAction() {
-  const invalidate = useInvalidateLoans()
   return useMutation({
     mutationFn: async (change: PaymentAction) => {
       const path = { id: change.ref.loanId, month: change.ref.month, kind: change.ref.kind }
@@ -186,7 +162,6 @@ export function usePaymentAction() {
           )
       }
     },
-    onSuccess: invalidate,
   })
 }
 
@@ -207,7 +182,6 @@ export type LoanCategoryChange =
   | { action: 'hideSubcategory' | 'showSubcategory' | 'deleteSubcategory'; id: string }
 
 export function useChangeLoanCategory() {
-  const queryClient = useQueryClient()
   return useMutation({
     mutationFn: async (change: LoanCategoryChange) => {
       switch (change.action) {
@@ -274,11 +248,5 @@ export function useChangeLoanCategory() {
           )
       }
     },
-    onSuccess: () =>
-      Promise.all([
-        queryClient.invalidateQueries({ queryKey: categoriesKey }),
-        queryClient.invalidateQueries({ queryKey: loansQueryKey }),
-        queryClient.invalidateQueries({ queryKey: cashFlowQueryKey }),
-      ]),
   })
 }

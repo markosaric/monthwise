@@ -1,4 +1,4 @@
-import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { keepPreviousData, useMutation, useQuery } from '@tanstack/react-query'
 import { cardsQueryKey } from './cards'
 import { api, type Schemas } from './client'
 import { ensureOk, unwrap } from './http'
@@ -24,21 +24,10 @@ export type OverallBalance = Schemas['OverallBalanceResponse']
 
 export const frequencies: RecurrenceFrequency[] = ['Weekly', 'Monthly', 'Quarterly', 'Yearly']
 
-/** Every query that shows inputs or balances; one invalidation refreshes the Month screen, Dashboard, chart and report. */
+/** Every query that shows inputs or balances. Saved changes refresh it through the shared rule in queryClient.ts. */
 export const cashFlowQueryKey = ['cash-flow'] as const
 const payersKey = ['payers'] as const
 const categoriesKey = ['input-categories'] as const
-
-/** Refreshes everything an input change can affect (acceptance criterion 8). */
-function useInvalidateCashFlow() {
-  const queryClient = useQueryClient()
-  return () =>
-    Promise.all([
-      queryClient.invalidateQueries({ queryKey: cashFlowQueryKey }),
-      queryClient.invalidateQueries({ queryKey: cardsQueryKey }),
-      queryClient.invalidateQueries({ queryKey: payersKey }),
-    ])
-}
 
 export function useMonthInputs(month: string) {
   return useQuery({
@@ -84,17 +73,14 @@ export function entryEditPath(month: string, entry: InputEntry): string {
 }
 
 export function useCreateInput() {
-  const invalidate = useInvalidateCashFlow()
   return useMutation({
     mutationFn: async (request: InputRequest) =>
       unwrap(await api.POST('/api/inputs', { body: request })),
-    onSuccess: invalidate,
   })
 }
 
 /** Saves an edited stored input, or stores a changed calculated occurrence. */
 export function useSaveEntry() {
-  const invalidate = useInvalidateCashFlow()
   return useMutation({
     mutationFn: async ({ ref, request }: { ref: EntryRef; request: InputRequest }) =>
       ref.kind === 'input'
@@ -107,13 +93,11 @@ export function useSaveEntry() {
               body: request,
             }),
           ),
-    onSuccess: invalidate,
   })
 }
 
 /** Ticks or unticks Received (FR-3). A calculated occurrence can only be ticked. */
 export function useSetReceived() {
-  const invalidate = useInvalidateCashFlow()
   return useMutation({
     mutationFn: async ({ ref, received }: { ref: EntryRef; received: boolean }) => {
       if (ref.kind === 'occurrence') {
@@ -128,12 +112,10 @@ export function useSetReceived() {
         ? unwrap(await api.POST('/api/inputs/{id}/received', { params }))
         : unwrap(await api.DELETE('/api/inputs/{id}/received', { params }))
     },
-    onSuccess: invalidate,
   })
 }
 
 export function useDeleteEntry() {
-  const invalidate = useInvalidateCashFlow()
   return useMutation({
     mutationFn: async (ref: EntryRef) =>
       ensureOk(
@@ -143,27 +125,22 @@ export function useDeleteEntry() {
               params: { path: { id: ref.recurringInputId, date: ref.date } },
             }),
       ),
-    onSuccess: invalidate,
   })
 }
 
 export function useUpdateRecurringInput(id: string) {
-  const invalidate = useInvalidateCashFlow()
   return useMutation({
     mutationFn: async (request: RecurringInputRequest) =>
       unwrap(
         await api.PUT('/api/recurring-inputs/{id}', { params: { path: { id } }, body: request }),
       ),
-    onSuccess: invalidate,
   })
 }
 
 export function useStopRecurringInput(id: string) {
-  const invalidate = useInvalidateCashFlow()
   return useMutation({
     mutationFn: async () =>
       unwrap(await api.POST('/api/recurring-inputs/{id}/stop', { params: { path: { id } } })),
-    onSuccess: invalidate,
   })
 }
 
@@ -175,20 +152,16 @@ export function usePayers() {
 }
 
 export function useRenamePayer() {
-  const invalidate = useInvalidateCashFlow()
   return useMutation({
     mutationFn: async ({ id, name }: { id: string; name: string }) =>
       unwrap(await api.PUT('/api/payers/{id}', { params: { path: { id } }, body: { name } })),
-    onSuccess: invalidate,
   })
 }
 
 export function useRemovePayer() {
-  const invalidate = useInvalidateCashFlow()
   return useMutation({
     mutationFn: async (id: string) =>
       ensureOk(await api.DELETE('/api/payers/{id}', { params: { path: { id } } })),
-    onSuccess: invalidate,
   })
 }
 
@@ -206,7 +179,6 @@ export type CategoryChange =
   | { action: 'hide' | 'show' | 'delete'; id: string }
 
 export function useChangeCategory() {
-  const queryClient = useQueryClient()
   return useMutation({
     mutationFn: async (change: CategoryChange) => {
       switch (change.action) {
@@ -237,11 +209,6 @@ export function useChangeCategory() {
           )
       }
     },
-    onSuccess: () =>
-      Promise.all([
-        queryClient.invalidateQueries({ queryKey: categoriesKey }),
-        queryClient.invalidateQueries({ queryKey: cashFlowQueryKey }),
-      ]),
   })
 }
 
@@ -259,7 +226,6 @@ export type BalanceChange =
   | { action: 'delete'; id: string }
 
 export function useChangeBalanceEntry(accountId: string) {
-  const invalidate = useInvalidateCashFlow()
   return useMutation({
     mutationFn: async (change: BalanceChange) => {
       switch (change.action) {
@@ -283,7 +249,6 @@ export function useChangeBalanceEntry(accountId: string) {
           )
       }
     },
-    onSuccess: invalidate,
   })
 }
 
@@ -347,7 +312,7 @@ export function useMonthlyReport(month: string) {
 
 /**
  * The overall balance of the primary accounts at the end of a month (overall balance tile FR-2 to FR-5).
- * It lives under the cards key, so every change that refreshes account balances refreshes it too (FR-7).
+ * Every saved change refreshes it through the shared rule in queryClient.ts (FR-7).
  */
 export function useOverallBalance(month: string) {
   return useQuery({

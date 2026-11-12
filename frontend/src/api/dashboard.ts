@@ -9,7 +9,7 @@ export const dashboardQueryKey = ['dashboard'] as const
 
 /**
  * The Dashboard of the current month (design refresh FR-10). It is fetched again every time the
- * Dashboard opens, so it always shows what was recorded on other screens.
+ * Dashboard opens, and every saved change refreshes it while it is open (shared rule in queryClient.ts).
  */
 export function useDashboard() {
   return useQuery({

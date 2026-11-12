@@ -1,7 +1,8 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import type { ReactNode } from 'react'
+import { createQueryClient } from '@/api/queryClient'
 import { PurchaseForm } from '@/components/cardPurchases/PurchaseForm'
 import { emptyPurchaseFormValues } from '@/components/cardPurchases/purchaseFormModel'
 import { cardPurchaseTexts } from '@/components/cardPurchases/texts'
@@ -18,7 +19,7 @@ import { revolvingTexts } from './texts'
 const t = revolvingTexts
 
 function withClient(children: ReactNode) {
-  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  const queryClient = createQueryClient({ defaultOptions: { queries: { retry: false } } })
   return render(<QueryClientProvider client={queryClient}>{children}</QueryClientProvider>)
 }
 

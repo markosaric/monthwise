@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { api, type Schemas } from './client'
 import { unwrap } from './http'
 
@@ -16,7 +16,7 @@ export type ListKind = 'issuers' | 'banks'
 
 export const cardTypes: CardType[] = ['Debit', 'Charge', 'Credit', 'Prepaid', 'Revolving']
 
-/** All card queries share this prefix, so one invalidation refreshes Settings and the Dashboard. */
+/** All card queries share this prefix. Saved changes refresh it through the shared rule in queryClient.ts. */
 export const cardsQueryKey = ['cards'] as const
 
 export function useCards(filter: CardListFilter) {
@@ -55,13 +55,7 @@ export async function revealCardNumber(id: string, kind: SensitiveNumberKind): P
   return unwrap(result).value
 }
 
-function useInvalidateCards() {
-  const queryClient = useQueryClient()
-  return () => queryClient.invalidateQueries({ queryKey: cardsQueryKey })
-}
-
 export function useCreateCard() {
-  const invalidate = useInvalidateCards()
   return useMutation({
     mutationFn: async ({ request, replaces }: { request: CardRequest; replaces?: string }) =>
       unwrap(
@@ -70,16 +64,13 @@ export function useCreateCard() {
           params: { query: replaces ? { replaces } : {} },
         }),
       ),
-    onSuccess: invalidate,
   })
 }
 
 export function useUpdateCard(id: string) {
-  const invalidate = useInvalidateCards()
   return useMutation({
     mutationFn: async (request: CardRequest) =>
       unwrap(await api.PUT('/api/cards/{id}', { params: { path: { id } }, body: request })),
-    onSuccess: invalidate,
   })
 }
 
@@ -90,7 +81,6 @@ export type CardAction =
   | { action: 'archive' }
 
 export function useCardAction(id: string) {
-  const invalidate = useInvalidateCards()
   return useMutation({
     mutationFn: async (change: CardAction) => {
       const params = { path: { id } }
@@ -115,7 +105,6 @@ export function useCardAction(id: string) {
           return unwrap(await api.POST('/api/cards/{id}/archive', { params }))
       }
     },
-    onSuccess: invalidate,
   })
 }
 
@@ -130,9 +119,7 @@ export function useCardList(kind: ListKind) {
 }
 
 export function useAddCardListEntry(kind: ListKind) {
-  const queryClient = useQueryClient()
   return useMutation({
     mutationFn: async (name: string) => unwrap(await api.POST(listPaths[kind], { body: { name } })),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['card-lists', kind] }),
   })
 }

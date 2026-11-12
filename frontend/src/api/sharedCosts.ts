@@ -1,10 +1,7 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { cardsQueryKey } from './cards'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { cashFlowQueryKey } from './cashFlow'
 import { api, type Schemas } from './client'
-import { expensesQueryKey } from './expenses'
 import { ensureOk, unwrap } from './http'
-import { loansQueryKey } from './loans'
 
 export type Participant = Schemas['ParticipantResponse']
 export type ParticipantRequest = Schemas['ParticipantRequest']
@@ -19,23 +16,8 @@ export type ReportSharedCosts = Schemas['ReportSharedCostsResponse']
 
 const participantsKey = ['participants'] as const
 
-/**
- * The Shared costs screen sits under the cash flow prefix, so every bill, loan and input change (which
- * all refresh the cash flow) refreshes it too.
- */
+/** The Shared costs screen sits under the cash flow prefix. Saved changes refresh it through the shared rule in queryClient.ts. */
 export const sharedCostsQueryKey = [...cashFlowQueryKey, 'shared-costs'] as const
-
-/** Refreshes everything a contribution change can affect: inputs, bills, loan payments, balances, chart and report. */
-function useInvalidateContributions() {
-  const queryClient = useQueryClient()
-  return () =>
-    Promise.all([
-      queryClient.invalidateQueries({ queryKey: cashFlowQueryKey }),
-      queryClient.invalidateQueries({ queryKey: expensesQueryKey }),
-      queryClient.invalidateQueries({ queryKey: loansQueryKey }),
-      queryClient.invalidateQueries({ queryKey: cardsQueryKey }),
-    ])
-}
 
 // Participants (shared bills FR-1).
 
@@ -63,7 +45,6 @@ export type ParticipantChange =
   | { action: 'delete'; id: string }
 
 export function useChangeParticipant() {
-  const queryClient = useQueryClient()
   return useMutation({
     mutationFn: async (change: ParticipantChange): Promise<Participant | void> => {
       switch (change.action) {
@@ -94,15 +75,6 @@ export function useChangeParticipant() {
           )
       }
     },
-    onSuccess: () =>
-      Promise.all([
-        queryClient.invalidateQueries({ queryKey: participantsKey }),
-        // Participants are payers: renaming one renames the payer of their contributions.
-        queryClient.invalidateQueries({ queryKey: cashFlowQueryKey }),
-        queryClient.invalidateQueries({ queryKey: ['payers'] }),
-        queryClient.invalidateQueries({ queryKey: expensesQueryKey }),
-        queryClient.invalidateQueries({ queryKey: loansQueryKey }),
-      ]),
   })
 }
 
@@ -119,7 +91,6 @@ export function useSharedCosts(month: string) {
 // Sharing one loan payment (FR-3).
 
 export function useChangeLoanPaymentShare() {
-  const invalidate = useInvalidateContributions()
   return useMutation({
     mutationFn: async ({
       loanId,
@@ -145,7 +116,6 @@ export function useChangeLoanPaymentShare() {
             }),
           )
     },
-    onSuccess: invalidate,
   })
 }
 
@@ -181,7 +151,6 @@ export type ContributionChange =
   | { action: 'expected' | 'reset'; ref: ContributionRef }
 
 export function useChangeContribution() {
-  const invalidate = useInvalidateContributions()
   return useMutation({
     mutationFn: async (change: ContributionChange) => {
       const { ref } = change
@@ -236,6 +205,5 @@ export function useChangeContribution() {
           )
       }
     },
-    onSuccess: invalidate,
   })
 }

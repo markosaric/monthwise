@@ -1,7 +1,7 @@
 # Plan: Screens show every saved change at once
 
 - **Branch:** `fix/screen-refresh`
-- **Status:** In progress
+- **Status:** Done
 - **Date:** 2026-11-12
 - **Requirements:** [screen-refresh.md](../feature-requirements/screen-refresh.md)
 
@@ -64,9 +64,10 @@ the main branch code review.
   (for example `dashboard`, `expenses`, `loans`, `card-lists`) are invalidated; `health` and
   `data-transfer` are not; a failed mutation invalidates nothing (FR-3); a mutation with
   `refreshAll: false` invalidates nothing.
-- Route tests: on the Month screen, adding a card purchase loads the bills and loan payments
-  again (acceptance criterion 1); on the Dashboard, a quick action reloads the Dashboard
-  (criterion 2). Existing tests keep passing.
+- Route tests: on the Month screen, ticking an input as received loads the bills and loan
+  payments again (acceptance criterion 1; this test fails on `main`). A Dashboard quick action
+  opens its form on its own screen, and the Dashboard loads again when the user comes back
+  (criterion 2), which the existing Dashboard tests already cover. Existing tests keep passing.
 - Manual checks: Month screen add / edit / delete in each section updates the key figures and the
   other sections; rename an account and check open forms and Card purchases; add a bank in a card
   form; check that a form being typed in keeps its values while data refreshes; import still

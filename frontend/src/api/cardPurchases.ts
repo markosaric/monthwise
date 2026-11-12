@@ -1,6 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { cardsQueryKey } from './cards'
-import { cashFlowQueryKey } from './cashFlow'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { api, type Schemas } from './client'
 import { ensureOk, unwrap } from './http'
 
@@ -19,19 +17,8 @@ export type CardPaymentPaidRequest = Schemas['CardPaymentPaidRequest']
 /** The numbers of installments a card can allow at most (installments B5). */
 export const maxInstallmentsChoices = [12, 24, 36] as const
 
-/** Every card purchase query shares this prefix, so one invalidation refreshes the Cards and Month screens. */
+/** Every card purchase query shares this prefix. Saved changes refresh it through the shared rule in queryClient.ts. */
 export const cardPurchasesQueryKey = ['card-purchases'] as const
-
-/** Refreshes everything a purchase or card payment change can affect: card payments, balances, chart and report. */
-function useInvalidateCardPurchases() {
-  const queryClient = useQueryClient()
-  return () =>
-    Promise.all([
-      queryClient.invalidateQueries({ queryKey: cardPurchasesQueryKey }),
-      queryClient.invalidateQueries({ queryKey: cashFlowQueryKey }),
-      queryClient.invalidateQueries({ queryKey: cardsQueryKey }),
-    ])
-}
 
 export function useInstallmentCards() {
   return useQuery({
@@ -98,31 +85,25 @@ export function useCardPurchase(id: string | undefined) {
 }
 
 export function useCreateCardPurchase() {
-  const invalidate = useInvalidateCardPurchases()
   return useMutation({
     mutationFn: async (request: CardPurchaseRequest) =>
       unwrap(await api.POST('/api/card-purchases', { body: request })),
-    onSuccess: invalidate,
   })
 }
 
 export function useUpdateCardPurchase(id: string) {
-  const invalidate = useInvalidateCardPurchases()
   return useMutation({
     mutationFn: async (request: CardPurchaseRequest) =>
       unwrap(
         await api.PUT('/api/card-purchases/{id}', { params: { path: { id } }, body: request }),
       ),
-    onSuccess: invalidate,
   })
 }
 
 export function useDeleteCardPurchase(id: string) {
-  const invalidate = useInvalidateCardPurchases()
   return useMutation({
     mutationFn: async () =>
       ensureOk(await api.DELETE('/api/card-purchases/{id}', { params: { path: { id } } })),
-    onSuccess: invalidate,
   })
 }
 
@@ -132,7 +113,6 @@ export type ReversalAction =
 
 /** Reverses the whole purchase or one installment (FR-5). */
 export function useReverseCardPurchase(id: string) {
-  const invalidate = useInvalidateCardPurchases()
   return useMutation({
     mutationFn: async (change: ReversalAction) =>
       change.action === 'purchase'
@@ -148,7 +128,6 @@ export function useReverseCardPurchase(id: string) {
               body: { reason: change.reason },
             }),
           ),
-    onSuccess: invalidate,
   })
 }
 
@@ -158,7 +137,6 @@ export type CardPaymentAction =
 
 /** Ticks Paid (or corrects the paid date and account) or unticks a card payment (FR-8). */
 export function useCardPaymentAction() {
-  const invalidate = useInvalidateCardPurchases()
   return useMutation({
     mutationFn: async (change: CardPaymentAction) => {
       const path = { id: change.cardId, month: change.month }
@@ -173,6 +151,5 @@ export function useCardPaymentAction() {
             await api.DELETE('/api/cards/{id}/card-payments/{month}/paid', { params: { path } }),
           )
     },
-    onSuccess: invalidate,
   })
 }
