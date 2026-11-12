@@ -93,7 +93,7 @@ internal static class CardEndpoints
             .WithName($"Get{name}s");
 
         group.MapPost("/", async (CardListEntryRequest request, CardListHandler<TEntry> handler, CancellationToken ct) =>
-                (await handler.CreateAsync(request, create, ct)).ToOk())
+                (await handler.CreateAsync(request, create, ct)).ToCreatedWithoutLocation())
             .WithName($"Create{name}");
     }
 }

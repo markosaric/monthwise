@@ -321,7 +321,7 @@ public sealed class RevolvingEndpointTests : IAsyncLifetime
             request.Content = JsonContent.Create(body);
         }
         var response = await Client.SendAsync(request, Ct);
-        Assert.True(response.StatusCode is HttpStatusCode.OK or HttpStatusCode.Created, await response.Content.ReadAsStringAsync(Ct));
+        await ExpectedStatus.AssertAsync(response, method, path, Ct);
         return await response.Content.ReadFromJsonAsync<JsonElement>(Ct);
     }
 

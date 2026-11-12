@@ -32,6 +32,7 @@ public static class DependencyInjection
         services.AddScoped<ExpireCardHandler>();
         services.AddScoped<ArchiveCardHandler>();
         services.AddScoped(typeof(CardListHandler<>));
+        services.AddScoped<ICardActivityQuery, CardActivityQuery>();
 
         services.AddScoped<InputLedger>();
         services.AddScoped<InputDetailsResolver>();

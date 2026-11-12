@@ -63,6 +63,9 @@ public sealed record LoanResponse(
     bool NeedsAccount,
     ShareResponse? Share = null);
 
+/// <summary>A new payment change: its id for the address of the answer, and the loan details sent back.</summary>
+public sealed record CreatedPaymentChange(Guid ChangeId, LoanDetailsResponse Details);
+
 /// <summary>One payment change; <see cref="CanChange"/> is false once a payment it applies to is paid (FR-7).</summary>
 public sealed record PaymentChangeResponse(
     Guid Id,

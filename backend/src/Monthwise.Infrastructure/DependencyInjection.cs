@@ -45,7 +45,6 @@ public static class DependencyInjection
         services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<MonthwiseDbContext>());
         services.AddScoped<ICardRepository, CardRepository>();
         services.AddScoped(typeof(ICardListRepository<>), typeof(CardListRepository<>));
-        services.AddScoped<ICardActivityQuery, CardActivityQuery>();
         services.AddScoped<ICashFlowInputRepository, CashFlowInputRepository>();
         services.AddScoped<IRecurringInputRepository, RecurringInputRepository>();
         services.AddScoped<IPayerRepository, PayerRepository>();

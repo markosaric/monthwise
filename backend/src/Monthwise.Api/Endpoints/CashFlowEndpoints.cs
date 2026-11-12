@@ -36,7 +36,9 @@ internal static class CashFlowEndpoints
             .ProducesProblem(StatusCodes.Status404NotFound);
 
         inputs.MapPost("/", async (InputRequest request, CreateInputHandler handler, CancellationToken ct) =>
-                (await handler.HandleAsync(request, ct)).ToOk())
+                (await handler.HandleAsync(request, ct)).ToCreated(input => input.Id is { } id
+                    ? $"/api/inputs/{id}"
+                    : $"/api/recurring-inputs/{input.RecurringInputId}"))
             .WithName("CreateInput")
             .WithSummary("Adds an input. With a recurrence, adds a recurring input whose first occurrence has these dates.");
 
@@ -131,7 +133,7 @@ internal static class CashFlowEndpoints
             .WithName("GetInputCategories");
 
         categories.MapPost("/", async (NameRequest request, InputCategoryHandler handler, CancellationToken ct) =>
-                (await handler.CreateAsync(request, ct)).ToOk())
+                (await handler.CreateAsync(request, ct)).ToCreated(c => $"/api/input-categories/{c.Id}"))
             .WithName("CreateInputCategory");
 
         categories.MapPut("/{id:guid}", async (Guid id, NameRequest request, InputCategoryHandler handler, CancellationToken ct) =>
@@ -167,7 +169,7 @@ internal static class CashFlowEndpoints
             .ProducesProblem(StatusCodes.Status404NotFound);
 
         routes.MapPost("/cards/{id:guid}/balance-entries", async (Guid id, BalanceEntryRequest request, BalanceEntryHandler handler, CancellationToken ct) =>
-                (await handler.CreateAsync(id, request, ct)).ToOk())
+                (await handler.CreateAsync(id, request, ct)).ToCreated(e => $"/api/balance-entries/{e.Id}"))
             .WithTags("Balances")
             .WithName("CreateBalanceEntry")
             .ProducesProblem(StatusCodes.Status404NotFound)

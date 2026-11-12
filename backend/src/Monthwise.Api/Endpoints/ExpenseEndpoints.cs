@@ -30,7 +30,7 @@ internal static class ExpenseEndpoints
             .WithSummary("The shared categories of card purchases, bills and expenses.");
 
         categories.MapPost("/", async (NameRequest request, ExpenseCategoryHandler handler, CancellationToken ct) =>
-                (await handler.CreateAsync(request, ct)).ToOk())
+                (await handler.CreateAsync(request, ct)).ToCreated(c => $"/api/expense-categories/{c.Id}"))
             .WithName("CreateExpenseCategory");
 
         categories.MapPut("/{id:guid}", async (Guid id, NameRequest request, ExpenseCategoryHandler handler, CancellationToken ct) =>
@@ -75,7 +75,7 @@ internal static class ExpenseEndpoints
             .ProducesProblem(StatusCodes.Status404NotFound);
 
         recurring.MapPost("/", async (RecurringBillRequest request, RecurringBillHandler handler, CancellationToken ct) =>
-                (await handler.CreateAsync(request, ct)).ToOk())
+                (await handler.CreateAsync(request, ct)).ToCreated(b => $"/api/recurring-bills/{b.Id}"))
             .WithName("CreateRecurringBill");
 
         recurring.MapPut("/{id:guid}", async (Guid id, RecurringBillRequest request, RecurringBillHandler handler, CancellationToken ct) =>
@@ -130,7 +130,7 @@ internal static class ExpenseEndpoints
 
         bills.MapPost("/", async (string month, BillRequest request, BillHandler handler, CancellationToken ct) =>
                 YearMonth.TryParse(month, out var parsed)
-                    ? (await handler.CreateAsync(parsed, request, ct)).ToOk()
+                    ? (await handler.CreateAsync(parsed, request, ct)).ToCreated(b => $"/api/bills/{b.Id}")
                     : InvalidMonth())
             .WithName("CreateBill")
             .WithSummary("Adds a one-off bill to a month (yyyy-MM), expected or paid.");
@@ -181,7 +181,7 @@ internal static class ExpenseEndpoints
             .ProducesProblem(StatusCodes.Status404NotFound);
 
         expenses.MapPost("/", async (ExpenseRequest request, ExpenseHandler handler, CancellationToken ct) =>
-                (await handler.CreateAsync(request, ct)).ToOk())
+                (await handler.CreateAsync(request, ct)).ToCreated(e => $"/api/expenses/{e.Id}"))
             .WithName("CreateExpense")
             .WithSummary("Records an expense, paid from an account or with a credit card.");
 
@@ -191,7 +191,7 @@ internal static class ExpenseEndpoints
             .ProducesProblem(StatusCodes.Status404NotFound);
 
         expenses.MapPost("/cash-withdrawals", async (CashWithdrawalRequest request, ExpenseHandler handler, CancellationToken ct) =>
-                (await handler.CreateCashWithdrawalAsync(request, ct)).ToOk())
+                (await handler.CreateCashWithdrawalAsync(request, ct)).ToCreated(e => $"/api/expenses/cash-withdrawals/{e.Id}"))
             .WithName("CreateCashWithdrawal")
             .WithSummary("Records a cash withdrawal from a primary account.");
 
