@@ -1,7 +1,7 @@
 # Plan: Consistent create endpoint responses and card activity query in Application
 
 - **Branch:** `fix/api_inconsistencies`
-- **Status:** In progress
+- **Status:** Done
 - **Date:** 2026-11-12
 - **Requirements:** [api-create-responses.md](../feature-requirements/api-create-responses.md)
 
@@ -33,7 +33,7 @@ code review.
 
     | Endpoint | Location |
     |---|---|
-    | `POST /api/inputs` | `/api/inputs/{id}` |
+    | `POST /api/inputs` | `/api/inputs/{id}`; for a recurring input `/api/recurring-inputs/{recurringInputId}` |
     | `POST /api/input-categories` | `/api/input-categories/{id}` |
     | `POST /api/cards/{id}/balance-entries` | `/api/balance-entries/{entryId}` |
     | `POST /api/loans` | `/api/loans/{loan.id}` |

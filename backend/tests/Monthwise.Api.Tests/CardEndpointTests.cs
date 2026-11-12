@@ -309,7 +309,8 @@ public sealed class CardEndpointTests : IAsyncLifetime
 
         var name = $"Test bank {Guid.NewGuid():N}"[..30];
         var added = await Client.PostAsJsonAsync("/api/banks", new { name }, Ct);
-        Assert.Equal(HttpStatusCode.OK, added.StatusCode);
+        Assert.Equal(HttpStatusCode.Created, added.StatusCode);
+        Assert.Null(added.Headers.Location);
         Assert.False((await added.Content.ReadFromJsonAsync<JsonElement>(Ct)).GetProperty("isPredefined").GetBoolean());
 
         var duplicate = await Client.PostAsJsonAsync("/api/banks", new { name = name.ToUpperInvariant() }, Ct);
@@ -376,7 +377,7 @@ public sealed class CardEndpointTests : IAsyncLifetime
         var response = body is null
             ? await Client.PostAsync(new Uri(path, UriKind.Relative), null, Ct)
             : await Client.PostAsJsonAsync(path, body, Ct);
-        Assert.True(response.StatusCode == HttpStatusCode.OK, await response.Content.ReadAsStringAsync(Ct));
+        await ExpectedStatus.AssertAsync(response, HttpMethod.Post, path, Ct);
         return await response.Content.ReadFromJsonAsync<JsonElement>(Ct);
     }
 

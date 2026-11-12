@@ -180,6 +180,33 @@ public sealed class LoanEndpointTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task A_new_loan_and_payment_change_answer_201_with_an_address_that_works()
+    {
+        var created = await Client.PostAsJsonAsync("/api/loans", Loan("Car", 30_000, start: MonthStart.AddMonths(1), count: 6), Ct);
+        Assert.Equal(HttpStatusCode.Created, created.StatusCode);
+        var loanAddress = created.Headers.Location!.OriginalString;
+        var loan = await GetAsync(loanAddress);
+        var id = loan.GetProperty("loan").GetProperty("id").GetGuid();
+        Assert.Equal($"/api/loans/{id}", loanAddress);
+
+        var change = await Client.PostAsJsonAsync($"/api/loans/{id}/payment-changes", new
+        {
+            fromMonth = Month(MonthStart.AddMonths(2)),
+            monthlyPaymentCents = 35_000,
+            paymentDay = (int?)null,
+            note = (string?)null,
+            keepChangedPayments = false,
+        }, Ct);
+        Assert.Equal(HttpStatusCode.Created, change.StatusCode);
+        var changeId = Assert.Single((await change.Content.ReadFromJsonAsync<JsonElement>(Ct)).GetProperty("changes").EnumerateArray())
+            .GetProperty("id").GetGuid();
+        Assert.Equal($"/api/loans/{id}/payment-changes/{changeId}", change.Headers.Location!.OriginalString);
+
+        var removed = await SendAsync(HttpMethod.Delete, change.Headers.Location.OriginalString);
+        Assert.Empty(removed.GetProperty("changes").EnumerateArray());
+    }
+
+    [Fact]
     public async Task Payment_changes_and_changed_payments_follow_the_month()
     {
         var created = await SendAsync(HttpMethod.Post, "/api/loans", Loan("Flat", 50_000, start: MonthStart.AddMonths(1), count: 6));
@@ -298,7 +325,7 @@ public sealed class LoanEndpointTests : IAsyncLifetime
             request.Content = JsonContent.Create(body);
         }
         var response = await Client.SendAsync(request, Ct);
-        Assert.True(response.StatusCode == HttpStatusCode.OK, await response.Content.ReadAsStringAsync(Ct));
+        await ExpectedStatus.AssertAsync(response, method, path, Ct);
         return await response.Content.ReadFromJsonAsync<JsonElement>(Ct);
     }
 

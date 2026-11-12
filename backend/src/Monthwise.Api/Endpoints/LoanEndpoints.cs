@@ -38,7 +38,7 @@ internal static class LoanEndpoints
             .ProducesProblem(StatusCodes.Status404NotFound);
 
         loans.MapPost("/", async (LoanRequest request, CreateLoanHandler handler, CancellationToken ct) =>
-                (await handler.HandleAsync(request, ct)).ToOk())
+                (await handler.HandleAsync(request, ct)).ToCreated(l => $"/api/loans/{l.Loan.Id}"))
             .WithName("CreateLoan")
             .WithSummary("Adds a loan. Give the number of payments or the end month (or both, when they agree).");
 
@@ -69,7 +69,8 @@ internal static class LoanEndpoints
         var changes = routes.MapGroup("/loans/{id:guid}/payment-changes").WithTags("Loans");
 
         changes.MapPost("/", async (Guid id, PaymentChangeRequest request, PaymentChangeHandler handler, CancellationToken ct) =>
-                (await handler.CreateAsync(id, request, ct)).ToOk())
+                (await handler.CreateAsync(id, request, ct)).ToCreated(
+                    c => $"/api/loans/{id}/payment-changes/{c.ChangeId}", c => c.Details))
             .WithName("CreatePaymentChange")
             .WithSummary("Changes the monthly payment or the payment day from a month on.")
             .ProducesProblem(StatusCodes.Status404NotFound)
@@ -145,7 +146,7 @@ internal static class LoanEndpoints
             .WithSummary("Loan categories with their subcategories.");
 
         categories.MapPost("/", async (LoanCategoryRequest request, LoanCategoryHandler handler, CancellationToken ct) =>
-                (await handler.CreateAsync(request, ct)).ToOk())
+                (await handler.CreateAsync(request, ct)).ToCreated(c => $"/api/loan-categories/{c.Id}"))
             .WithName("CreateLoanCategory");
 
         categories.MapPut("/{id:guid}", async (Guid id, LoanCategoryRequest request, LoanCategoryHandler handler, CancellationToken ct) =>
@@ -172,7 +173,7 @@ internal static class LoanEndpoints
             .ProducesProblem(StatusCodes.Status409Conflict);
 
         categories.MapPost("/{id:guid}/subcategories", async (Guid id, NameRequest request, LoanCategoryHandler handler, CancellationToken ct) =>
-                (await handler.CreateSubcategoryAsync(id, request, ct)).ToOk())
+                (await handler.CreateSubcategoryAsync(id, request, ct)).ToCreated(s => $"/api/loan-subcategories/{s.Id}"))
             .WithName("CreateLoanSubcategory")
             .ProducesProblem(StatusCodes.Status404NotFound);
 

@@ -79,7 +79,7 @@ internal static class CardPurchaseEndpoints
             .ProducesProblem(StatusCodes.Status404NotFound);
 
         purchases.MapPost("/", async (CardPurchaseRequest request, CreateCardPurchaseHandler handler, CancellationToken ct) =>
-                (await handler.HandleAsync(request, ct)).ToOk())
+                (await handler.HandleAsync(request, ct)).ToCreated(p => $"/api/card-purchases/{p.Purchase.Id}"))
             .WithName("CreateCardPurchase")
             .WithSummary("Records a purchase, paid in full or in monthly installments.");
 

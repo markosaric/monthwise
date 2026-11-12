@@ -27,6 +27,29 @@ internal static class ResultHttpExtensions
         return validation is not null ? validation : problem!;
     }
 
+    /// <summary>201 Created whose body is a part of the result, e.g. the loan details of a new payment change.</summary>
+    public static Results<Created<TBody>, ValidationProblem, ProblemHttpResult> ToCreated<T, TBody>(
+        this Result<T> result, Func<T, string> location, Func<T, TBody> body)
+    {
+        if (result.IsSuccess)
+        {
+            return TypedResults.Created(location(result.Value), body(result.Value));
+        }
+        var (validation, problem) = ToProblem(result);
+        return validation is not null ? validation : problem!;
+    }
+
+    /// <summary>201 Created without a Location header, for items that have no address of their own.</summary>
+    public static Results<Created<T>, ValidationProblem, ProblemHttpResult> ToCreatedWithoutLocation<T>(this Result<T> result)
+    {
+        if (result.IsSuccess)
+        {
+            return TypedResults.Created((string?)null, result.Value);
+        }
+        var (validation, problem) = ToProblem(result);
+        return validation is not null ? validation : problem!;
+    }
+
     public static Results<FileContentHttpResult, ValidationProblem, ProblemHttpResult> ToFile<T>(
         this Result<T> result, Func<T, FileContentHttpResult> file)
     {

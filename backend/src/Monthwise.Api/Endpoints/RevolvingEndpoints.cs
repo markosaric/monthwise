@@ -91,7 +91,7 @@ internal static class RevolvingEndpoints
     {
         routes.MapPost("/revolving-cards/{id:guid}/extra-payments", async (
                 Guid id, ExtraPaymentRequest request, ExtraPaymentHandler handler, CancellationToken ct) =>
-                (await handler.CreateAsync(id, request, ct)).ToOk())
+                (await handler.CreateAsync(id, request, ct)).ToCreated(p => $"/api/extra-payments/{p.Id}"))
             .WithTags("Revolving cards")
             .WithName("CreateExtraPayment")
             .WithSummary("Records an extra payment from an account, paid on its date, of at most the debt on that date.")
@@ -113,7 +113,7 @@ internal static class RevolvingEndpoints
 
         routes.MapPost("/revolving-cards/{id:guid}/debt-entries", async (
                 Guid id, DebtEntryRequest request, DebtEntryHandler handler, CancellationToken ct) =>
-                (await handler.CreateAsync(id, request, ct)).ToOk())
+                (await handler.CreateAsync(id, request, ct)).ToCreated(e => $"/api/debt-entries/{e.Id}"))
             .WithTags("Revolving cards")
             .WithName("CreateDebtEntry")
             .WithSummary("Records a starting debt or a correction: the debt at the end of a date.")

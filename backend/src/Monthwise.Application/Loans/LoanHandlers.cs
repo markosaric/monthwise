@@ -311,12 +311,23 @@ public sealed class PaymentChangeHandler(
     IUnitOfWork unitOfWork,
     TimeProvider timeProvider)
 {
-    public Task<Result<LoanDetailsResponse>> CreateAsync(Guid loanId, PaymentChangeRequest request, CancellationToken cancellationToken) =>
-        ChangeAsync(loanId, request, (loan, details, latestPaid, now) =>
+    public async Task<Result<CreatedPaymentChange>> CreateAsync(Guid loanId, PaymentChangeRequest request, CancellationToken cancellationToken)
+    {
+        Guid? changeId = null;
+        var result = await ChangeAsync(loanId, request, (loan, details, latestPaid, now) =>
         {
             var added = loan.AddChange(details, latestPaid, now);
-            return added.IsSuccess ? Result.Success() : Result.Failure(added.Errors);
+            if (added.IsFailure)
+            {
+                return Result.Failure(added.Errors);
+            }
+            changeId = added.Value.Id;
+            return Result.Success();
         }, earliestOld: null, cancellationToken);
+        return result.IsSuccess
+            ? Result.Success(new CreatedPaymentChange(changeId!.Value, result.Value))
+            : Result.Failure<CreatedPaymentChange>(result.Errors);
+    }
 
     public async Task<Result<LoanDetailsResponse>> UpdateAsync(
         Guid loanId, Guid changeId, PaymentChangeRequest request, CancellationToken cancellationToken)
