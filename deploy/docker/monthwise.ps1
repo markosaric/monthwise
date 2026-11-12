@@ -11,6 +11,10 @@ $ErrorActionPreference = 'Stop'
 
 $ComposeFile = Join-Path $PSScriptRoot 'compose.yml'
 $ImageRepo = 'ghcr.io/markosaric/monthwise'
+$GitHubRepo = 'markosaric/monthwise'
+# The release this package belongs to. The release workflow replaces "dev" with its version, so a
+# new installation runs that exact release instead of whatever is newest (FR-8, Appendix 2).
+$ReleaseVersion = 'dev'
 $Volume = 'monthwise-pgdata'
 $BaseDir = Join-Path $env:LOCALAPPDATA 'Monthwise'
 $ConfigDir = if ($env:MONTHWISE_CONFIG_DIR) { $env:MONTHWISE_CONFIG_DIR } else { Join-Path $BaseDir 'docker' }
@@ -43,6 +47,14 @@ function Get-EnvValue([string] $Key, [string] $Default) {
 function Set-EnvValue([string] $Key, [string] $Value) {
     $lines = @(Get-Content $EnvFile | Where-Object { $_ -notlike "$Key=*" }) + "$Key=$Value"
     Write-PlainFile $EnvFile (($lines -join "`n") + "`n")
+}
+
+function Get-DefaultImage {
+    if ($ReleaseVersion -eq 'dev') {
+        Fail ('This copy is not from a release package, so it has no version. Use a release package, ' +
+            'or choose one: monthwise.ps1 update <version>')
+    }
+    "${ImageRepo}:$ReleaseVersion"
 }
 
 function Get-Address { "http://localhost:$(Get-EnvValue 'MONTHWISE_PORT' '8080')" }
@@ -86,7 +98,7 @@ function Initialize-Config {
     # Only this user account (and the system) can open the Monthwise folder.
     & icacls $BaseDir /inheritance:r /grant:r "${env:USERNAME}:(OI)(CI)F" /grant:r 'SYSTEM:(OI)(CI)F' | Out-Null
     if (-not (Test-Path $EnvFile)) {
-        Write-PlainFile $EnvFile ("MONTHWISE_CONFIG_DIR=$ConfigDir`nMONTHWISE_IMAGE=${ImageRepo}:latest`n" +
+        Write-PlainFile $EnvFile ("MONTHWISE_CONFIG_DIR=$ConfigDir`nMONTHWISE_IMAGE=$(Get-DefaultImage)`n" +
             "MONTHWISE_BIND=127.0.0.1`nMONTHWISE_PORT=8080`n")
     }
     Initialize-SecretFile
@@ -127,7 +139,8 @@ function Connect-Registry {
 }
 
 function Initialize-Image {
-    $image = Get-EnvValue 'MONTHWISE_IMAGE' "${ImageRepo}:latest"
+    $image = Get-EnvValue 'MONTHWISE_IMAGE' ''
+    if (-not $image) { $image = Get-DefaultImage }
     & docker image inspect $image *> $null
     if ($LASTEXITCODE -eq 0) { return }
     Connect-Registry
@@ -166,8 +179,18 @@ switch ($Command) {
     'update' {
         Initialize-Docker
         Initialize-Config
-        if ($Argument) { Set-EnvValue 'MONTHWISE_IMAGE' "${ImageRepo}:$($Argument.TrimStart('v'))" }
         Connect-Registry
+        $version = $Argument
+        if (-not $version) {
+            $version = & gh release view --repo $GitHubRepo --json tagName --jq .tagName
+            if ($LASTEXITCODE -ne 0 -or -not $version) {
+                Fail 'Finding the newest release failed. Name the version instead: monthwise.ps1 update <version>'
+            }
+        }
+        # Always an exact version, also for installations that followed :latest before.
+        $version = $version.TrimStart('v')
+        Set-EnvValue 'MONTHWISE_IMAGE' "${ImageRepo}:$version"
+        Write-Host "Updating to $version..."
         Invoke-Compose pull app
         Invoke-Compose up --detach
         Wait-Ready
