@@ -106,12 +106,19 @@ public sealed class MonthwiseDbContext(DbContextOptions<MonthwiseDbContext> opti
         {
             await SaveChangesAsync(cancellationToken);
         }
-        catch (DbUpdateException ex) when (ex.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation })
+        catch (DbUpdateException ex) when (ex.InnerException is PostgresException error
+            && DatabaseRuleTranslator.Translate(error, WritesTo) is { } rule)
         {
-            // The constraint name is safe to report; the row values are not.
-            throw new UniqueConstraintException("A value that must be unique is already in use.", ex);
+            // Only the kind of rule is reported; the row values and the server's text are not.
+            throw new DatabaseRuleException(rule, ex);
         }
     }
+
+    /// <summary>Whether this unit of work adds or modifies rows of the given table.</summary>
+    private bool WritesTo(string table) =>
+        ChangeTracker.Entries().Any(e =>
+            e.State is EntityState.Added or EntityState.Modified
+            && string.Equals(e.Metadata.GetTableName(), table, StringComparison.Ordinal));
 
     /// <summary>Hashes of the normalized numbers back the "same number only once" unique indexes.</summary>
     private void UpdateSensitiveDataHashes()

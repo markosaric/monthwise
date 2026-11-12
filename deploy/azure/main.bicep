@@ -190,6 +190,8 @@ resource app 'Microsoft.App/containerApps@2024-03-01' = {
           image: image
           resources: { cpu: json('0.25'), memory: '0.5Gi' }
           env: [
+            // Forwarded headers are trusted only from private address ranges by default; to name
+            // the ingress networks instead, add Hosting__TrustedProxyNetworks__0, __1, ... (CIDR).
             { name: 'Hosting__BehindProxy', value: 'true' }
             { name: 'SensitiveData__ActiveKeyId', value: 'k1' }
           ]
