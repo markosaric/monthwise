@@ -1,7 +1,7 @@
 # Plan: Load each part of the data once per request
 
 - **Branch:** `fix/repeated-loading`
-- **Status:** In progress
+- **Status:** Done
 - **Date:** 2026-11-12
 - **Requirements:** [repeated-loading.md](../feature-requirements/repeated-loading.md)
 
@@ -67,9 +67,10 @@ The Dashboard reads 21 different tables, so a request that reads each table once
   - `MonthwiseDbContext.SaveChangesAsync` (and `SaveChanges`) clears `LoadedRows` after a
     successful save, so everything calculated after a save is read fresh (FR-3). If the save
     fails, the store is cleared too.
-  - `HouseholdDataStore.ReplaceAllAsync` (restore) and any other raw-SQL write clear the store and
-    the change tracker after they write (FR-4). Contexts are scoped to the request, so nothing ever
-    carries over into the next request (FR-4, NFR-4).
+  - `HouseholdDataStore.ReplaceAllAsync` (restore), the only raw-SQL write, clears the store after
+    it commits (FR-4). The change tracker is kept, because the import handler saves its log record
+    through it right after. Contexts are scoped to the request, so nothing ever carries over into
+    the next request (FR-4, NFR-4).
   - The lists handed out are read-only copies, so a caller can't change what another caller sees.
 - API changes (endpoints, DTOs): none. The OpenAPI document stays the same (NFR-1).
 - Front-end changes (pages, components): none (NFR-2).
@@ -84,8 +85,7 @@ The Dashboard reads 21 different tables, so a request that reads each table once
    and card lists, cash flow, expenses, loans, card purchases, revolving, shared costs.
 4. Clear the store after a restore in `HouseholdDataStore`.
 5. Run all back-end tests, then repeat the measurements and write the after numbers into this plan.
-6. Update `docs/INIT.md` if it describes how data is loaded (one sentence on the per-request
-   store).
+6. `docs/INIT.md` does not describe how data is loaded, so it stays as it is.
 
 ## Tests
 - Unit tests: none new in the domain; nothing changes there.
@@ -101,6 +101,25 @@ The Dashboard reads 21 different tables, so a request that reads each table once
   - All existing endpoint tests pass unchanged (FR-1, acceptance criterion 1).
 - Manual checks: open the Dashboard, Month, Loans, Cards and Shared costs screens on the
   development database and compare them with `main`.
+
+## Measurements after the change
+
+The same `RequestLoadingTests`, on the same container:
+
+| Request | Empty: statements | Seeded: statements | Seeded: time (before) | Tables read more than once |
+|---|---|---|---|---|
+| `GET /api/dashboard` | 21 (330) | 23 (332) | 62 ms (141 ms) | none |
+| `GET /api/cash-flow/report` (one month) | 20 (120) | 20 (120) | 32 ms (44 ms) | none |
+| `GET /api/cash-flow/chart` (12 months) | 17 (57) | 17 (57) | 22 ms (30 ms) | none |
+
+The two extra Dashboard statements on the seeded history are the "is this participant used?"
+checks (`SELECT EXISTS`), which FR-2 allows. Times on this small history are close to the noise of
+the container; the statement counts no longer grow with the data or with the number of
+calculations. The remaining time is mostly calculation, so reusing the calculated books is not
+needed now.
+
+To verify that the tests guard the change, the store was briefly left uncleared after saves: 26
+tests failed, including the new `A_change_is_in_its_own_answer_and_in_the_next_request`.
 
 ## Open questions
 - None.

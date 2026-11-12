@@ -15,32 +15,27 @@ internal sealed class CashFlowInputRepository(MonthwiseDbContext db) : ICashFlow
             i => i.RecurringInputId == key.RecurringInputId && i.OccurrenceDate == key.OccurrenceDate, cancellationToken);
 
     public async Task<IReadOnlyList<CashFlowInput>> ListByMonthDateAsync(DateOnly first, DateOnly last, CancellationToken cancellationToken) =>
-        await db.CashFlowInputs
-            .Where(i => (i.ReceivedDate ?? i.ExpectedDate) >= first && (i.ReceivedDate ?? i.ExpectedDate) <= last)
-            .ToListAsync(cancellationToken);
+        await db.Loaded.WhereAsync<CashFlowInput>(
+            i => (i.ReceivedDate ?? i.ExpectedDate) >= first && (i.ReceivedDate ?? i.ExpectedDate) <= last, cancellationToken);
 
     public async Task<IReadOnlyList<CashFlowInput>> ListReceivedUpToAsync(DateOnly last, CancellationToken cancellationToken) =>
-        await db.CashFlowInputs.Where(i => i.ReceivedDate != null && i.ReceivedDate <= last).ToListAsync(cancellationToken);
+        await db.Loaded.WhereAsync<CashFlowInput>(i => i.ReceivedDate != null && i.ReceivedDate <= last, cancellationToken);
 
     public async Task<IReadOnlyList<CashFlowInput>> ListExpectedUpToAsync(DateOnly last, CancellationToken cancellationToken) =>
-        await db.CashFlowInputs.Where(i => i.ReceivedDate == null && i.ExpectedDate <= last).ToListAsync(cancellationToken);
+        await db.Loaded.WhereAsync<CashFlowInput>(i => i.ReceivedDate == null && i.ExpectedDate <= last, cancellationToken);
 
     public async Task<IReadOnlyList<CashFlowInput>> ListOccurrencesAsync(Guid recurringInputId, CancellationToken cancellationToken) =>
-        await db.CashFlowInputs.Where(i => i.RecurringInputId == recurringInputId).ToListAsync(cancellationToken);
+        await db.Loaded.WhereAsync<CashFlowInput>(i => i.RecurringInputId == recurringInputId, cancellationToken);
 
     public async Task<IReadOnlySet<OccurrenceKey>> ListOccurrenceKeysAsync(CancellationToken cancellationToken)
     {
-        var keys = await db.CashFlowInputs
-            .Where(i => i.RecurringInputId != null)
-            .Select(i => new { RecurringInputId = i.RecurringInputId!.Value, OccurrenceDate = i.OccurrenceDate!.Value })
-            .ToListAsync(cancellationToken);
-        return keys.Select(k => new OccurrenceKey(k.RecurringInputId, k.OccurrenceDate)).ToHashSet();
+        var occurrences = await db.Loaded.WhereAsync<CashFlowInput>(i => i.RecurringInputId != null, cancellationToken);
+        return occurrences.Select(i => new OccurrenceKey(i.RecurringInputId!.Value, i.OccurrenceDate!.Value)).ToHashSet();
     }
 
     public async Task<IReadOnlyList<CashFlowInput>> ListContributionsAsync(CancellationToken cancellationToken) =>
-        await db.CashFlowInputs
-            .Where(i => i.ContributionBillId != null || i.ContributionLoanId != null)
-            .ToListAsync(cancellationToken);
+        await db.Loaded.WhereAsync<CashFlowInput>(
+            i => i.ContributionBillId != null || i.ContributionLoanId != null, cancellationToken);
 
     public Task<CashFlowInput?> GetContributionAsync(ContributionSource source, CancellationToken cancellationToken)
     {
@@ -62,14 +57,14 @@ internal sealed class CashFlowInputRepository(MonthwiseDbContext db) : ICashFlow
 internal sealed class RecurringInputRepository(MonthwiseDbContext db) : IRecurringInputRepository
 {
     public async Task<IReadOnlyList<RecurringInput>> ListAsync(CancellationToken cancellationToken) =>
-        await db.RecurringInputs.ToListAsync(cancellationToken);
+        await db.Loaded.AllAsync<RecurringInput>(cancellationToken);
 
     public Task<RecurringInput?> GetAsync(Guid id, CancellationToken cancellationToken) =>
         db.RecurringInputs.FirstOrDefaultAsync(r => r.Id == id, cancellationToken);
 
     public async Task<IReadOnlySet<OccurrenceKey>> ListSkippedAsync(CancellationToken cancellationToken)
     {
-        var skipped = await db.SkippedOccurrences.ToListAsync(cancellationToken);
+        var skipped = await db.Loaded.AllAsync<SkippedOccurrence>(cancellationToken);
         return skipped.Select(s => new OccurrenceKey(s.RecurringInputId, s.OccurrenceDate)).ToHashSet();
     }
 
@@ -92,7 +87,7 @@ internal sealed class RecurringInputRepository(MonthwiseDbContext db) : IRecurri
 internal sealed class PayerRepository(MonthwiseDbContext db) : IPayerRepository
 {
     public async Task<IReadOnlyList<Payer>> ListAsync(CancellationToken cancellationToken) =>
-        await db.Payers.ToListAsync(cancellationToken);
+        await db.Loaded.AllAsync<Payer>(cancellationToken);
 
     public Task<Payer?> GetAsync(Guid id, CancellationToken cancellationToken) =>
         db.Payers.FirstOrDefaultAsync(p => p.Id == id, cancellationToken);
@@ -112,7 +107,7 @@ internal sealed class PayerRepository(MonthwiseDbContext db) : IPayerRepository
 internal sealed class InputCategoryRepository(MonthwiseDbContext db) : IInputCategoryRepository
 {
     public async Task<IReadOnlyList<InputCategory>> ListAsync(CancellationToken cancellationToken) =>
-        await db.InputCategories.ToListAsync(cancellationToken);
+        await db.Loaded.AllAsync<InputCategory>(cancellationToken);
 
     public Task<InputCategory?> GetAsync(Guid id, CancellationToken cancellationToken) =>
         db.InputCategories.FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
@@ -135,7 +130,9 @@ internal sealed class InputCategoryRepository(MonthwiseDbContext db) : IInputCat
 internal sealed class BalanceEntryRepository(MonthwiseDbContext db) : IBalanceEntryRepository
 {
     public async Task<IReadOnlyList<BalanceEntry>> ListAsync(Guid? accountId, CancellationToken cancellationToken) =>
-        await db.BalanceEntries.Where(e => accountId == null || e.AccountId == accountId).ToListAsync(cancellationToken);
+        accountId is null
+            ? await db.Loaded.AllAsync<BalanceEntry>(cancellationToken)
+            : await db.Loaded.WhereAsync<BalanceEntry>(e => e.AccountId == accountId, cancellationToken);
 
     public Task<BalanceEntry?> GetAsync(Guid id, CancellationToken cancellationToken) =>
         db.BalanceEntries.FirstOrDefaultAsync(e => e.Id == id, cancellationToken);

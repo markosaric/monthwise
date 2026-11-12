@@ -8,7 +8,7 @@ namespace Monthwise.Infrastructure.Persistence.Repositories;
 internal sealed class ExpenseCategoryRepository(MonthwiseDbContext db) : IExpenseCategoryRepository
 {
     public async Task<IReadOnlyList<ExpenseCategory>> ListAsync(CancellationToken cancellationToken) =>
-        await db.ExpenseCategories.ToListAsync(cancellationToken);
+        await db.Loaded.AllAsync<ExpenseCategory>(cancellationToken);
 
     public Task<ExpenseCategory?> GetAsync(Guid id, CancellationToken cancellationToken) =>
         db.ExpenseCategories.FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
@@ -33,7 +33,7 @@ internal sealed class ExpenseCategoryRepository(MonthwiseDbContext db) : IExpens
 internal sealed class RecurringBillRepository(MonthwiseDbContext db) : IRecurringBillRepository
 {
     public async Task<IReadOnlyList<RecurringBill>> ListAsync(CancellationToken cancellationToken) =>
-        await db.RecurringBills.ToListAsync(cancellationToken);
+        await db.Loaded.AllAsync<RecurringBill>(cancellationToken);
 
     public Task<RecurringBill?> GetAsync(Guid id, CancellationToken cancellationToken) =>
         db.RecurringBills.FirstOrDefaultAsync(r => r.Id == id, cancellationToken);
@@ -53,10 +53,10 @@ internal sealed class RecurringBillRepository(MonthwiseDbContext db) : IRecurrin
 internal sealed class BillRepository(MonthwiseDbContext db) : IBillRepository
 {
     public async Task<IReadOnlyList<Bill>> ListAsync(CancellationToken cancellationToken) =>
-        await db.Bills.ToListAsync(cancellationToken);
+        await db.Loaded.AllAsync<Bill>(cancellationToken);
 
     public async Task<IReadOnlyList<Bill>> ListByMonthAsync(YearMonth month, CancellationToken cancellationToken) =>
-        await db.Bills.Where(b => b.Month == month).ToListAsync(cancellationToken);
+        await db.Loaded.WhereAsync<Bill>(b => b.Month == month, cancellationToken);
 
     public Task<Bill?> GetAsync(Guid id, CancellationToken cancellationToken) =>
         db.Bills.FirstOrDefaultAsync(b => b.Id == id, cancellationToken);
@@ -72,10 +72,10 @@ internal sealed class BillRepository(MonthwiseDbContext db) : IBillRepository
 internal sealed class ExpenseRepository(MonthwiseDbContext db) : IExpenseRepository
 {
     public async Task<IReadOnlyList<Expense>> ListAsync(CancellationToken cancellationToken) =>
-        await db.Expenses.ToListAsync(cancellationToken);
+        await db.Loaded.AllAsync<Expense>(cancellationToken);
 
     public async Task<IReadOnlyList<Expense>> ListBetweenAsync(DateOnly first, DateOnly last, CancellationToken cancellationToken) =>
-        await db.Expenses.Where(e => e.Date >= first && e.Date <= last).ToListAsync(cancellationToken);
+        await db.Loaded.WhereAsync<Expense>(e => e.Date >= first && e.Date <= last, cancellationToken);
 
     public Task<Expense?> GetAsync(Guid id, CancellationToken cancellationToken) =>
         db.Expenses.FirstOrDefaultAsync(e => e.Id == id, cancellationToken);

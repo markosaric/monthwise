@@ -8,7 +8,9 @@ namespace Monthwise.Infrastructure.Persistence.Repositories;
 internal sealed class DebtEntryRepository(MonthwiseDbContext db) : IDebtEntryRepository
 {
     public async Task<IReadOnlyList<DebtEntry>> ListAsync(Guid? cardId, CancellationToken cancellationToken) =>
-        await db.DebtEntries.Where(e => cardId == null || e.CardId == cardId).ToListAsync(cancellationToken);
+        cardId is null
+            ? await db.Loaded.AllAsync<DebtEntry>(cancellationToken)
+            : await db.Loaded.WhereAsync<DebtEntry>(e => e.CardId == cardId, cancellationToken);
 
     public Task<DebtEntry?> GetAsync(Guid id, CancellationToken cancellationToken) =>
         db.DebtEntries.FirstOrDefaultAsync(e => e.Id == id, cancellationToken);
@@ -21,7 +23,9 @@ internal sealed class DebtEntryRepository(MonthwiseDbContext db) : IDebtEntryRep
 internal sealed class ExtraPaymentRepository(MonthwiseDbContext db) : IExtraPaymentRepository
 {
     public async Task<IReadOnlyList<ExtraPayment>> ListAsync(Guid? cardId, CancellationToken cancellationToken) =>
-        await db.ExtraPayments.Where(p => cardId == null || p.CardId == cardId).ToListAsync(cancellationToken);
+        cardId is null
+            ? await db.Loaded.AllAsync<ExtraPayment>(cancellationToken)
+            : await db.Loaded.WhereAsync<ExtraPayment>(p => p.CardId == cardId, cancellationToken);
 
     public Task<ExtraPayment?> GetAsync(Guid id, CancellationToken cancellationToken) =>
         db.ExtraPayments.FirstOrDefaultAsync(p => p.Id == id, cancellationToken);
@@ -34,7 +38,9 @@ internal sealed class ExtraPaymentRepository(MonthwiseDbContext db) : IExtraPaym
 internal sealed class RevolvingBillRepository(MonthwiseDbContext db) : IRevolvingBillRepository
 {
     public async Task<IReadOnlyList<RevolvingBill>> ListAsync(Guid? cardId, CancellationToken cancellationToken) =>
-        await db.RevolvingBills.Where(b => cardId == null || b.CardId == cardId).ToListAsync(cancellationToken);
+        cardId is null
+            ? await db.Loaded.AllAsync<RevolvingBill>(cancellationToken)
+            : await db.Loaded.WhereAsync<RevolvingBill>(b => b.CardId == cardId, cancellationToken);
 
     public async Task<RevolvingBill?> GetAsync(Guid cardId, YearMonth month, CancellationToken cancellationToken) =>
         // A bill stored in this request is not in the database yet.
