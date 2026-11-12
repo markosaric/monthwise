@@ -1,7 +1,7 @@
 # Plan: Mark planned features
 
 - **Branch:** `docs/mark-planned-features`
-- **Status:** In progress
+- **Status:** Done
 - **Date:** 2026-11-12
 - **Requirements:** [planned-features.md](../feature-requirements/planned-features.md)
 
