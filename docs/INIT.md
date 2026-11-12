@@ -10,10 +10,10 @@ Replace the manual monthly budget kept in Numbers with an app that:
 
 - records **incoming** and **outgoing** cash flows per month,
 - automatically calculates **installments** for card purchases and loans (how much is paid, how much remains),
-- **reconciles** the calculated card statement amount with the actual bank statement,
-- shows the **available budget** (calculated and actual) and the **carryover** into the next month,
+- **reconciles** the calculated card statement amount with the actual bank statement (planned),
+- shows the **available budget** (calculated and actual) and the **carryover** into the next month (carryover planned),
 - gives an overview of **debt** (short-term: cards; long-term: loans, leasing),
-- tracks **savings** (account balances over time),
+- tracks **savings** (account balances over time) (planned),
 - works on both phone and desktop.
 
 Non-goals for the MVP: automatic bank statement import, multiple households, investments.
@@ -43,18 +43,21 @@ Each item has a **"received"** checkbox (Check).
 
 ### Monthly summary
 - Total income, total expenses
-- Carryover from the previous month (ADDITIONAL FUND)
+- Carryover from the previous month (ADDITIONAL FUND) (planned)
 - Available budget: **calculated** and **actual** (Left Over)
-- Break-even income (minimum income needed to cover obligations)
+- Break-even income (minimum income needed to cover obligations) (planned)
 - Debt: remaining amount per card and loan
 
 ## 3. Data model (first draft)
 
 Amounts are stored as **integer cents** (`amount_cents`), currency EUR.
 
+> **(planned)** marks a table, rule or screen that is described in this document but not built yet.
+> The feature requirements in [feature-requirements/](feature-requirements/) describe what is built.
+
 ```
-household            id, name, currency
-account              id, household_id, name, type (current|fx|savings|loan), issuer
+household            id, name, currency   (planned)
+account              id, household_id, name, type (current|fx|savings|loan), issuer   (planned)
 card                 id, name, issuer_id, bank_id, card_number (encrypted)?, iban (encrypted)?,
                      card_number_last4, iban_country, iban_last4, valid_from?, valid_through,
                      type (Debit|Charge|Credit|Prepaid|Revolving), is_primary, allows_installments (Debit only),
@@ -96,7 +99,7 @@ skipped_occurrence   recurring_input_id, occurrence_date   (a deleted occurrence
 balance_entry        id, account_id → card, kind (Starting|Correction), date, balance_cents, note?
                      (balance at the end of that date; account balance = latest entry + inputs received
                      − loan and card payments, bills and expenses paid from it after it)
-period               id, household_id, year, month, opening_carryover_cents, closed_at
+period               id, household_id, year, month, opening_carryover_cents, closed_at   (planned)
 expense_category     id, name, is_predefined, is_fixed, hidden_on?
                      (one list for card purchases, bills and expenses: Electricity, Groceries, … extendable;
                      Cash withdrawal is fixed; see docs/feature-requirements/monthly-bills-and-expenses.md)
@@ -136,9 +139,9 @@ participant          id, name, payer_id → payer, description?, archived_on?
                      docs/feature-requirements/shared-bills.md)
 share columns        share_participant_id → participant?, share_count? (2–4), participant_share_count?
                      (1 … share_count − 1), contribution_account_id → card?   (all set for a shared cost)
-balance_snapshot     id, account_id, date, balance_cents   (savings balances; card and current account
-                     balances are balance_entry)
-user                 id, email, household_id, role
+balance_snapshot     id, account_id, date, balance_cents   (planned; savings balances; card and current
+                     account balances are balance_entry)
+user                 id, email, household_id, role   (planned)
 data_transfer_log    id, occurred_at, kind (Export|Import|SafetyCopy|SafetyCopyRestore), user_name?, succeeded,
                      file_name?, release, file_created_at?, message?
                      (installation tables, not household data: never exported, never replaced by an import;
@@ -148,7 +151,8 @@ data_safety_copy     id (always 1), created_at, release, content (the data befor
 ```
 
 Key rules:
-- **A month is generated** from `recurring_item`, `card_purchase` and `loan` records; the user only confirms or corrects.
+- **A month is generated** from `recurring_input`, `recurring_bill`, `card_purchase` and `loan` records; the user only
+  confirms or corrects.
 - A card payment is the sum of the installments and purchases paid in full in the card's billing period (from the day
   after the previous statement date up to and including the statement date), minus credits from reversed installments
   that were already charged.
@@ -156,8 +160,8 @@ Key rules:
   + charges + interest − bill and extra payments after it. Interest is daily: the debt at the end of each day since
   the previous bill day × yearly rate / 365, summed and added on the bill day. Each bill asks for
   max(debt × minimum %, minimum amount), never more than the debt.
-- Available (calculated) = carryover + Σ income − Σ expenses; actual = entered account balance.
-- Closing a month carries the actual balance over as the next month's `opening_carryover`.
+- Available (calculated) = carryover (planned) + Σ income − Σ expenses; actual = entered account balance.
+- Closing a month carries the actual balance over as the next month's `opening_carryover` (planned).
 
 ## 4. Architecture
 
@@ -167,7 +171,7 @@ Key rules:
 | Back-end | **.NET 10 (LTS) – ASP.NET Core Web API**, minimal APIs or controllers, FluentValidation, OpenAPI | strongly typed, mature, good performance; OpenAPI spec is used to generate the TypeScript client for the front-end |
 | Data access | **Entity Framework Core** + Npgsql, code-first migrations | schema versioned in code; `decimal`/cents mapping kept exact |
 | Database | **PostgreSQL** | relational data (months, installments, accounts) and exact calculations |
-| Authentication | ASP.NET Core Identity (cookie auth) | one household, 1–2 users, no external provider needed |
+| Authentication (planned) | ASP.NET Core Identity (cookie auth) | one household, 1–2 users, no external provider needed |
 | Tests | xUnit (domain + API), Vitest (front-end) | calculation logic (installments, monthly summary, card reconciliation) is covered by unit tests |
 | Charts | Recharts | income vs. expense trend, debt over time |
 | Local dev | Docker Compose for PostgreSQL | one command to start the database |
@@ -206,14 +210,18 @@ The look of all screens (colours, fonts, key figures, charts, the collapsible me
 1. **Dashboard** – how the current month is going: quick actions, key figures (inputs, outputs,
    month result, still to pay), what is coming up, outputs by kind and section summaries
    (`GET /api/dashboard`). Account balances are on the Cards screen.
-2. **Month** – Income and Expenses tables by category, paid/received checkboxes, carryover, month closing.
+2. **Month** – Income and Expenses tables by category, paid/received checkboxes, carryover and month
+   closing (planned).
 3. **Cards** – account balances (current and expected at the end of the month), installments per
-   card (X/N, remaining), one-off charges, statement reconciliation.
+   card (X/N, remaining), one-off charges, statement reconciliation (planned).
 4. **Loans and leasing** – monthly payment, due date, share.
-5. **Savings** – account balances over time.
+5. **Savings** (planned) – account balances over time.
 6. **Settings** – categories, recurring items, accounts/cards, shares.
 
 ## 6. Plan
+
+The original plan of the first steps. What is built is described by the feature requirements in
+[feature-requirements/](feature-requirements/).
 
 1. Initial setup: name, private repo, this document, solution skeleton (React + .NET + PostgreSQL in Docker) + CI (build, lint, test).
 2. Database schema (EF Core) + domain logic (installments, summary) with tests.
