@@ -8,7 +8,7 @@ namespace Monthwise.Infrastructure.Persistence.Repositories;
 internal sealed class LoanRepository(MonthwiseDbContext db) : ILoanRepository
 {
     public async Task<IReadOnlyList<Loan>> ListAsync(CancellationToken cancellationToken) =>
-        await db.Loans.ToListAsync(cancellationToken);
+        await db.Loaded.AllAsync<Loan>(cancellationToken);
 
     public Task<Loan?> GetAsync(Guid id, CancellationToken cancellationToken) =>
         db.Loans.FirstOrDefaultAsync(l => l.Id == id, cancellationToken);
@@ -28,7 +28,9 @@ internal sealed class LoanRepository(MonthwiseDbContext db) : ILoanRepository
 internal sealed class LoanPaymentRepository(MonthwiseDbContext db) : ILoanPaymentRepository
 {
     public async Task<IReadOnlyList<LoanPayment>> ListAsync(Guid? loanId, CancellationToken cancellationToken) =>
-        await db.LoanPayments.Where(p => loanId == null || p.LoanId == loanId).ToListAsync(cancellationToken);
+        loanId is null
+            ? await db.Loaded.AllAsync<LoanPayment>(cancellationToken)
+            : await db.Loaded.WhereAsync<LoanPayment>(p => p.LoanId == loanId, cancellationToken);
 
     public async Task<LoanPayment?> GetAsync(Guid loanId, YearMonth month, LoanPaymentKind kind, CancellationToken cancellationToken) =>
         // A payment stored in this request is not in the database yet.
@@ -43,7 +45,7 @@ internal sealed class LoanPaymentRepository(MonthwiseDbContext db) : ILoanPaymen
 internal sealed class LoanCategoryRepository(MonthwiseDbContext db) : ILoanCategoryRepository
 {
     public async Task<IReadOnlyList<LoanCategory>> ListAsync(CancellationToken cancellationToken) =>
-        await db.LoanCategories.ToListAsync(cancellationToken);
+        await db.Loaded.AllAsync<LoanCategory>(cancellationToken);
 
     public Task<LoanCategory?> GetAsync(Guid id, CancellationToken cancellationToken) =>
         db.LoanCategories.FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
@@ -65,7 +67,7 @@ internal sealed class LoanCategoryRepository(MonthwiseDbContext db) : ILoanCateg
 internal sealed class LoanSubcategoryRepository(MonthwiseDbContext db) : ILoanSubcategoryRepository
 {
     public async Task<IReadOnlyList<LoanSubcategory>> ListAsync(CancellationToken cancellationToken) =>
-        await db.LoanSubcategories.ToListAsync(cancellationToken);
+        await db.Loaded.AllAsync<LoanSubcategory>(cancellationToken);
 
     public Task<LoanSubcategory?> GetAsync(Guid id, CancellationToken cancellationToken) =>
         db.LoanSubcategories.FirstOrDefaultAsync(s => s.Id == id, cancellationToken);

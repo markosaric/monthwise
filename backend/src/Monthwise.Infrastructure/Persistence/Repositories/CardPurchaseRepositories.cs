@@ -8,7 +8,9 @@ namespace Monthwise.Infrastructure.Persistence.Repositories;
 internal sealed class CardPurchaseRepository(MonthwiseDbContext db) : ICardPurchaseRepository
 {
     public async Task<IReadOnlyList<CardPurchase>> ListAsync(Guid? cardId, CancellationToken cancellationToken) =>
-        await db.CardPurchases.Where(p => cardId == null || p.CardId == cardId).ToListAsync(cancellationToken);
+        cardId is null
+            ? await db.Loaded.AllAsync<CardPurchase>(cancellationToken)
+            : await db.Loaded.WhereAsync<CardPurchase>(p => p.CardId == cardId, cancellationToken);
 
     public Task<CardPurchase?> GetAsync(Guid id, CancellationToken cancellationToken) =>
         db.CardPurchases.FirstOrDefaultAsync(p => p.Id == id, cancellationToken);
@@ -24,7 +26,9 @@ internal sealed class CardPurchaseRepository(MonthwiseDbContext db) : ICardPurch
 internal sealed class CardPaymentRepository(MonthwiseDbContext db) : ICardPaymentRepository
 {
     public async Task<IReadOnlyList<CardPayment>> ListAsync(Guid? cardId, CancellationToken cancellationToken) =>
-        await db.CardPayments.Where(p => cardId == null || p.CardId == cardId).ToListAsync(cancellationToken);
+        cardId is null
+            ? await db.Loaded.AllAsync<CardPayment>(cancellationToken)
+            : await db.Loaded.WhereAsync<CardPayment>(p => p.CardId == cardId, cancellationToken);
 
     public async Task<CardPayment?> GetAsync(Guid cardId, YearMonth month, CancellationToken cancellationToken) =>
         // A card payment stored in this request is not in the database yet.

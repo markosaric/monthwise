@@ -7,7 +7,7 @@ namespace Monthwise.Infrastructure.Persistence.Repositories;
 internal sealed class ParticipantRepository(MonthwiseDbContext db) : IParticipantRepository
 {
     public async Task<IReadOnlyList<Participant>> ListAsync(CancellationToken cancellationToken) =>
-        await db.Participants.ToListAsync(cancellationToken);
+        await db.Loaded.AllAsync<Participant>(cancellationToken);
 
     public Task<Participant?> GetAsync(Guid id, CancellationToken cancellationToken) =>
         db.Participants.FirstOrDefaultAsync(p => p.Id == id, cancellationToken);

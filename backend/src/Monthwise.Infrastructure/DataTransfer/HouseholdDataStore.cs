@@ -149,6 +149,8 @@ internal sealed partial class HouseholdDataStore(
             await CopyAsync(importSchema, schema, targetTables, cancellationToken);
             await ExecuteAsync($"DROP SCHEMA {Quote(importSchema)} CASCADE", cancellationToken);
             await transaction.CommitAsync(cancellationToken);
+            // The rest of the request reads the restored data (repeated loading FR-4).
+            dbContext.Loaded.Clear();
             return Result.Success();
         }
         catch (Exception ex) when (ex is not OperationCanceledException)

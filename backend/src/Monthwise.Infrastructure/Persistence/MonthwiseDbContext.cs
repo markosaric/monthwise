@@ -19,6 +19,11 @@ namespace Monthwise.Infrastructure.Persistence;
 public sealed class MonthwiseDbContext(DbContextOptions<MonthwiseDbContext> options, ISensitiveDataCipher cipher)
     : DbContext(options), IUnitOfWork
 {
+    private LoadedRows? _loaded;
+
+    /// <summary>The whole tables this request has read (repeated loading FR-2).</summary>
+    internal LoadedRows Loaded => _loaded ??= new LoadedRows(this);
+
     public DbSet<Card> Cards => Set<Card>();
     public DbSet<CardIssuer> CardIssuers => Set<CardIssuer>();
     public DbSet<Bank> Banks => Set<Bank>();
@@ -94,10 +99,18 @@ public sealed class MonthwiseDbContext(DbContextOptions<MonthwiseDbContext> opti
         configurationBuilder.Properties<YearMonth>().HaveConversion<YearMonthConverter>();
     }
 
-    public override Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
+    public override async Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
     {
         UpdateSensitiveDataHashes();
-        return base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+        try
+        {
+            return await base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+        }
+        finally
+        {
+            // Everything calculated after a save reads what was saved (repeated loading FR-3).
+            _loaded?.Clear();
+        }
     }
 
     async Task IUnitOfWork.SaveChangesAsync(CancellationToken cancellationToken)

@@ -9,7 +9,7 @@ namespace Monthwise.Infrastructure.Persistence.Repositories;
 internal sealed class CardRepository(MonthwiseDbContext db, ISensitiveDataCipher cipher) : ICardRepository
 {
     public async Task<IReadOnlyList<Card>> ListAsync(CancellationToken cancellationToken) =>
-        await db.Cards.ToListAsync(cancellationToken);
+        await db.Loaded.AllAsync<Card>(cancellationToken);
 
     public Task<Card?> GetAsync(Guid id, bool includeSensitiveData, CancellationToken cancellationToken)
     {
@@ -49,7 +49,7 @@ internal sealed class CardListRepository<TEntry>(MonthwiseDbContext db) : ICardL
     where TEntry : CardListEntry
 {
     public async Task<IReadOnlyList<TEntry>> ListAsync(CancellationToken cancellationToken) =>
-        await db.Set<TEntry>().ToListAsync(cancellationToken);
+        await db.Loaded.AllAsync<TEntry>(cancellationToken);
 
     public Task<bool> ExistsAsync(Guid id, CancellationToken cancellationToken) =>
         db.Set<TEntry>().AnyAsync(e => e.Id == id, cancellationToken);
