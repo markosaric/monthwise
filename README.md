@@ -227,6 +227,16 @@ git switch main && git pull --rebase
 git tag v1.0.0 && git push origin v1.0.0
 ```
 
+The Docker package runs the release it was built with: the workflow writes the version into
+`monthwise.sh` and `monthwise.ps1` (they say `dev` in the repository and refuse to pick a release
+on their own).
+
+**Pinned build inputs:** every GitHub Action in the workflows is pinned to a commit SHA with its
+version as a comment (`uses: actions/checkout@<sha> # v5.1.0`), and CI fails on an action that is
+not. The PostgreSQL zip for Windows is checked against `POSTGRES_WINDOWS_SHA256` in the release
+workflow; when changing `POSTGRES_WINDOWS`, record the SHA-256 of the new official zip in the same
+commit (`curl -fsSL <zip url> | shasum -a 256`).
+
 **Building locally:**
 
 ```bash

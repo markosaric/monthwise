@@ -230,3 +230,55 @@ or copied with its permissions.
 Acceptance criterion 4 is extended: on a Mac with Docker, after the first start and after
 starting an existing installation, every file in the secrets folder can be read only by the
 user's account, and Monthwise opens and shows the existing data.
+
+## Appendix 2: Pinned build inputs and a fixed Docker release
+
+- **Date:** 2026-11-11
+- **Branch:** `fix/pin-build-inputs`
+- **Changes:** FR-8 (which release the Docker one-click runs and what an update moves to), new
+  NFR-8, new acceptance criteria 11 and 12
+
+**Why:** the code review of `main` (finding L5) found that the inputs a release is built from are
+not fixed. The automation steps CI and the release use are taken by a name their publisher can
+move to other code at any time, the PostgreSQL package for the Windows native service is downloaded
+without checking that it is the expected file, and the Docker one-click always runs whatever
+release is newest. A changed or tampered input would then end up in a release, or on the user's
+computer, without anyone noticing.
+
+**NFR-8 Pinned build inputs** (new)
+- Every automation step from a third party that CI or the release uses is taken at one exact
+  version that its publisher cannot change after it was chosen. The version stays readable next to
+  it, so a reviewer can see which release of the step is used.
+- Every file from a third party that the release downloads and packages (today the PostgreSQL
+  package for the Windows native service) is checked against a fingerprint recorded in the
+  repository before it is packaged. When the file does not match, the release stops and nothing is
+  published.
+- Moving any of these inputs to another version is a change in the repository, reviewed like any
+  other change. Pinning does not move to newer versions: the versions in use today are kept.
+
+**FR-8 Docker one-click** (changed: the release it runs)
+- A new Docker one-click installation runs the release whose package the user downloaded, not
+  whatever release is newest at that moment.
+- The running release only changes when the user updates. An update to a given version moves to
+  that version; an update without a version moves to the newest published release. In both cases
+  the installation then stays on that exact version, and the update tells the user which version
+  is now running.
+- An installation set up before this change, which follows the newest release, keeps working. Its
+  next update fixes it to the version that update moved to.
+- The other rules of FR-8 are unchanged.
+
+**Acceptance criteria** (new)
+
+11. CI and the release take every third-party automation step at an exact version that cannot be
+    changed by its publisher; the release stops without publishing anything when the downloaded
+    PostgreSQL package for Windows does not match its recorded fingerprint.
+12. A new Docker one-click installation runs the release of its package; it stays on that version
+    until the user updates; an update with or without a version leaves it on one exact version and
+    reports it; an older installation that followed the newest release is fixed to a version on
+    its next update.
+
+**Out of scope**
+- Keeping the pinned versions current (finding M4, automated dependency updates).
+- The base images the release image is built from, and the database image used by CI and the
+  Docker one-click.
+- npm and NuGet packages, which lock files already fix.

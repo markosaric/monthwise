@@ -6,6 +6,10 @@ set -euo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 COMPOSE_FILE="$HERE/compose.yml"
 IMAGE_REPO="ghcr.io/markosaric/monthwise"
+GITHUB_REPO="markosaric/monthwise"
+# The release this package belongs to. The release workflow replaces "dev" with its version, so a
+# new installation runs that exact release instead of whatever is newest (FR-8, Appendix 2).
+RELEASE_VERSION="dev"
 VOLUME="monthwise-pgdata"
 
 if [[ "$(uname -s)" == "Darwin" ]]; then
@@ -36,6 +40,12 @@ set_env_value() { # set_env_value KEY VALUE
   mv "$tmp" "$ENV_FILE"
 }
 
+default_image() {
+  [[ "$RELEASE_VERSION" != "dev" ]] \
+    || fail "This copy is not from a release package, so it has no version. Use a release package, or choose one: monthwise.sh update <version>"
+  printf '%s:%s' "$IMAGE_REPO" "$RELEASE_VERSION"
+}
+
 address() { printf 'http://localhost:%s' "$(env_value MONTHWISE_PORT 8080)"; }
 
 ensure_docker() {
@@ -58,9 +68,11 @@ ensure_config() {
   chmod 700 "$BASE_DIR"
   chmod 755 "$CONFIG_DIR"
   if [[ ! -f "$ENV_FILE" ]]; then
+    local image
+    image="$(default_image)"
     {
       printf 'MONTHWISE_CONFIG_DIR=%s\n' "$CONFIG_DIR"
-      printf 'MONTHWISE_IMAGE=%s:latest\n' "$IMAGE_REPO"
+      printf 'MONTHWISE_IMAGE=%s\n' "$image"
       printf 'MONTHWISE_BIND=127.0.0.1\n'
       printf 'MONTHWISE_PORT=8080\n'
     } > "$ENV_FILE"
@@ -114,7 +126,8 @@ protect_secrets() {
 
 ensure_image() {
   local image
-  image="$(env_value MONTHWISE_IMAGE "$IMAGE_REPO:latest")"
+  image="$(env_value MONTHWISE_IMAGE "")"
+  [[ -n "$image" ]] || image="$(default_image)"
   docker image inspect "$image" > /dev/null 2>&1 && return
   login_registry
   docker pull "$image" || fail "Downloading $image failed. Allow GitHub packages once: gh auth refresh --scopes read:packages"
@@ -160,12 +173,17 @@ cmd_stop() {
 }
 
 cmd_update() {
+  local version="${1:-}"
   ensure_docker
   ensure_config
-  if [[ -n "${1:-}" ]]; then
-    set_env_value MONTHWISE_IMAGE "$IMAGE_REPO:${1#v}"
-  fi
   login_registry
+  if [[ -z "$version" ]]; then
+    version="$(gh release view --repo "$GITHUB_REPO" --json tagName --jq .tagName)" \
+      || fail "Finding the newest release failed. Name the version instead: monthwise.sh update <version>"
+  fi
+  # Always an exact version, also for installations that followed :latest before.
+  set_env_value MONTHWISE_IMAGE "$IMAGE_REPO:${version#v}"
+  say "Updating to ${version#v}..."
   compose pull app
   compose up --detach
   wait_until_ready

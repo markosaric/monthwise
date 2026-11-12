@@ -34,8 +34,8 @@ jobs:
       DOTNET_NOLOGO: true
       MONTHWISE_TEST_DB: Host=localhost;Port=5432;Database=monthwise_test;Username=monthwise;Password=monthwise
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-dotnet@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 # v5.4.0
         with:
           global-json-file: backend/global.json
       - name: Restore
@@ -56,8 +56,8 @@ jobs:
       run:
         working-directory: frontend
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-node@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version-file: .nvmrc
           cache: npm
@@ -83,7 +83,18 @@ jobs:
     name: Release package
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - name: Check that every action is pinned to a commit
+        run: |
+          # A tag can be moved to other code by its publisher; a commit SHA cannot (NFR-8).
+          # Expected form: uses: owner/action@<40 hex characters> # vX.Y.Z
+          unpinned=$(grep -nE '^\s*-?\s*uses:' .github/workflows/*.yml \
+            | grep -vE 'uses: [^@ ]+@[0-9a-f]{40} # v[0-9]+\.[0-9]+\.[0-9]+$' || true)
+          if [ -n "$unpinned" ]; then
+            echo "Pin these actions to a commit SHA with the version as a comment:"
+            echo "$unpinned"
+            exit 1
+          fi
       - name: Check deployment scripts
         run: |
           shellcheck deploy/docker/monthwise.sh deploy/docker/Monthwise.command deploy/native/monthwise.sh \

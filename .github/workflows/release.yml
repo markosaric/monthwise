@@ -12,17 +12,20 @@ permissions:
 
 env:
   # Official EDB PostgreSQL binaries for the Windows native service, repacked with a checksum.
+  # The download is checked against this SHA-256 before it is packaged (NFR-8): when the version
+  # changes, record the checksum of the new zip in the same commit.
   POSTGRES_WINDOWS: 17.6-1
+  POSTGRES_WINDOWS_SHA256: TODO-checksum-from-the-official-download
 
 jobs:
   image:
     name: Image
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
-      - uses: docker/setup-qemu-action@v3
-      - uses: docker/setup-buildx-action@v3
-      - uses: docker/login-action@v3
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130 # v3.7.0
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
+      - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -31,7 +34,7 @@ jobs:
         run: |
           echo "VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
           echo "COMMIT=${GITHUB_SHA::7}" >> "$GITHUB_ENV"
-      - uses: docker/build-push-action@v6
+      - uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6.19.2
         with:
           context: .
           platforms: linux/amd64,linux/arm64
@@ -56,13 +59,13 @@ jobs:
           - { runtime: linux-arm64, os: ubuntu-latest }
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-node@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version-file: .nvmrc
           cache: npm
           cache-dependency-path: frontend/package-lock.json
-      - uses: actions/setup-dotnet@v5
+      - uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 # v5.4.0
         with:
           global-json-file: backend/global.json
       - name: Build the front-end
@@ -75,7 +78,7 @@ jobs:
             --self-contained -o "out/app" -p:Version="$version" -p:SourceRevisionId="${GITHUB_SHA::7}" \
             -p:FrontendDist="$PWD/frontend/dist" -p:OpenApiGenerateDocuments=false
           (cd out/app && zip -qr "../monthwise-$version-${{ matrix.runtime }}.zip" .)
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: native-${{ matrix.runtime }}
           path: out/monthwise-*.zip
@@ -85,14 +88,20 @@ jobs:
     needs: [image, native]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/download-artifact@v4
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           path: dist
           merge-multiple: true
       - name: Docker and native scripts
         run: |
           version="${GITHUB_REF_NAME#v}"
+          # The Docker one-click runs the release of its package, not :latest (FR-8, Appendix 2).
+          sed -i "s/^RELEASE_VERSION=\"dev\"\$/RELEASE_VERSION=\"$version\"/" deploy/docker/monthwise.sh
+          sed -i "s/^\\\$ReleaseVersion = 'dev'\$/\\\$ReleaseVersion = '$version'/" deploy/docker/monthwise.ps1
+          grep -qx "RELEASE_VERSION=\"$version\"" deploy/docker/monthwise.sh \
+            && grep -qxF "\$ReleaseVersion = '$version'" deploy/docker/monthwise.ps1 \
+            || { echo "The release version was not written into the Docker scripts"; exit 1; }
           (cd deploy/docker && zip -q "../../dist/monthwise-docker-$version.zip" compose.yml monthwise.sh monthwise.ps1 Monthwise.command Monthwise.cmd)
           cp deploy/native/monthwise.sh dist/monthwise-native-macos.sh
           cp deploy/native/monthwise.ps1 dist/monthwise-native-windows.ps1
@@ -100,6 +109,8 @@ jobs:
         run: |
           curl --fail --location --silent --show-error -o pg.zip \
             "https://get.enterprisedb.com/postgresql/postgresql-$POSTGRES_WINDOWS-windows-x64-binaries.zip"
+          echo "$POSTGRES_WINDOWS_SHA256  pg.zip" | sha256sum --check --strict \
+            || { echo "pg.zip is not the expected PostgreSQL $POSTGRES_WINDOWS download"; exit 1; }
           # Only the server and command line tools: leave out pgAdmin, StackBuilder and the docs.
           zip -q -d pg.zip 'pgsql/pgAdmin 4/*' 'pgsql/StackBuilder/*' 'pgsql/doc/*' || true
           mv pg.zip "dist/postgresql-$POSTGRES_WINDOWS-win-x64.zip"
