@@ -1,7 +1,7 @@
 # Plan: Keep the minus sign of small negative amounts when editing
 
 - **Branch:** `fix/negative_amount_edit`
-- **Status:** Draft
+- **Status:** Done
 - **Date:** 2026-11-12
 - **Requirements:** none (bug fix without behaviour change; the requirements already say a balance
   can be negative)
