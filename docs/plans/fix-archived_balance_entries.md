@@ -1,7 +1,7 @@
 # Plan: Balance entries of an archived account are read-only
 
 - **Branch:** `fix/archived_balance_entries`
-- **Status:** In progress
+- **Status:** Done
 - **Date:** 2026-11-12
 - **Requirements:** [input-cash-flow.md, Appendix 3](../feature-requirements/input-cash-flow.md#appendix-3-balance-entries-of-an-archived-account-are-read-only)
 

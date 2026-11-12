@@ -265,6 +265,74 @@ describe('Account balances on the Cards screen', () => {
   })
 })
 
+describe('Balance entries on the account details screen', () => {
+  const balanceOf = () =>
+    json({
+      balance: {
+        accountId: 'tekuci',
+        currentBalanceCents: 10000,
+        expectedBalanceCents: 10000,
+        hasStartingBalance: true,
+      },
+      entries: [
+        {
+          id: 'entry-1',
+          accountId: 'tekuci',
+          kind: 'Starting',
+          date: '2026-10-01',
+          balanceCents: 10000,
+          differenceCents: 0,
+          note: null,
+        },
+      ],
+    })
+
+  it('lists the entries of an archived account without add, edit or delete', async () => {
+    stubApi({
+      ...healthy,
+      'GET /api/cards/tekuci': () =>
+        json(
+          aCard({
+            id: 'tekuci',
+            name: 'Tekući',
+            type: 'Debit',
+            status: 'Archived',
+            canBeUsed: false,
+            archivedOn: '2026-11-01',
+          }),
+        ),
+      'GET /api/cards/tekuci/balance': balanceOf,
+    })
+    renderRoute('/settings/cards/tekuci')
+
+    const balance = await screen.findByRole('region', { name: t.balance.title })
+    expect(await within(balance).findByText(t.balance.kinds.Starting)).toBeInTheDocument()
+    expect(within(balance).queryByRole('button', { name: t.actions.edit })).not.toBeInTheDocument()
+    expect(
+      within(balance).queryByRole('button', { name: t.actions.delete }),
+    ).not.toBeInTheDocument()
+    expect(
+      within(balance).queryByRole('button', { name: t.balance.addCorrection }),
+    ).not.toBeInTheDocument()
+  })
+
+  it('keeps add, edit and delete on an active account', async () => {
+    stubApi({
+      ...healthy,
+      'GET /api/cards/tekuci': () => json(aCard({ id: 'tekuci', name: 'Tekući', type: 'Debit' })),
+      'GET /api/cards/tekuci/balance': balanceOf,
+    })
+    renderRoute('/settings/cards/tekuci')
+
+    const balance = await screen.findByRole('region', { name: t.balance.title })
+    expect(await within(balance).findByRole('button', { name: t.actions.edit })).toBeInTheDocument()
+    expect(within(balance).getByRole('button', { name: t.actions.delete })).toBeInTheDocument()
+    expect(
+      within(balance).getByRole('button', { name: t.balance.addCorrection }),
+    ).toBeInTheDocument()
+  })
+})
+
 describe('Cash flow dashboard and report', () => {
   it('shows key figures, keeps filters behind one button and lists the months', async () => {
     const month = todayIso().slice(0, 7)

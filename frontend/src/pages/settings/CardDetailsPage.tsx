@@ -251,7 +251,7 @@ function CardDetails({ card }: { card: Card }) {
             </Button>
           </div>
         )}
-        {!isRevolving && <BalanceEntries accountId={card.id} canAdd={!archived} />}
+        {!isRevolving && <BalanceEntries accountId={card.id} readOnly={archived} />}
         <Link to="/settings/cards" className="text-sm text-muted-foreground underline">
           Back to {t.section.toLowerCase()}
         </Link>

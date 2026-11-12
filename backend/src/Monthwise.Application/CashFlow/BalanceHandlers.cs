@@ -148,7 +148,7 @@ public sealed class BalanceEntryHandler(
         {
             return Result.Failure<BalanceEntryResponse>(CardErrors.NotFound);
         }
-        if (account.ArchivedOn is not null)
+        if (IsArchived(account))
         {
             return Result.Failure<BalanceEntryResponse>(CardErrors.ReadOnly);
         }
@@ -168,7 +168,7 @@ public sealed class BalanceEntryHandler(
         return Result.Success(await RespondAsync(created.Value, cancellationToken));
     }
 
-    /// <summary>Changes date, balance and note; the kind stays.</summary>
+    /// <summary>Changes date, balance and note; the kind stays. Refused on an archived account.</summary>
     public async Task<Result<BalanceEntryResponse>> UpdateAsync(
         Guid entryId, BalanceEntryRequest request, CancellationToken cancellationToken)
     {
@@ -177,6 +177,10 @@ public sealed class BalanceEntryHandler(
         if (entry is null)
         {
             return Result.Failure<BalanceEntryResponse>(CashFlowErrors.BalanceEntryNotFound);
+        }
+        if (await IsOnArchivedAccountAsync(entry, cancellationToken))
+        {
+            return Result.Failure<BalanceEntryResponse>(CardErrors.ReadOnly);
         }
         var updated = entry.Update(request.Date, Money.FromCents(request.BalanceCents), request.Note, timeProvider.GetUtcNow());
         if (updated.IsFailure)
@@ -194,9 +198,25 @@ public sealed class BalanceEntryHandler(
         {
             return Result.Failure(CashFlowErrors.BalanceEntryNotFound);
         }
+        if (await IsOnArchivedAccountAsync(entry, cancellationToken))
+        {
+            return Result.Failure(CardErrors.ReadOnly);
+        }
         balanceEntries.Remove(entry);
         await unitOfWork.SaveChangesAsync(cancellationToken);
         return Result.Success();
+    }
+
+    /// <summary>
+    /// Balance entries of an archived account cannot be added, edited or deleted (Appendix 3).
+    /// Blocked and expired accounts keep their balance entries editable.
+    /// </summary>
+    private static bool IsArchived(Card account) => account.ArchivedOn is not null;
+
+    private async Task<bool> IsOnArchivedAccountAsync(BalanceEntry entry, CancellationToken cancellationToken)
+    {
+        var account = await cards.GetAsync(entry.AccountId, includeSensitiveData: false, cancellationToken);
+        return account is not null && IsArchived(account);
     }
 
     private async Task<BalanceEntryResponse> RespondAsync(BalanceEntry entry, CancellationToken cancellationToken)
