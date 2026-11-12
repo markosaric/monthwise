@@ -15,7 +15,7 @@ builder.Services
     .AddInfrastructure(builder.Configuration);
 
 builder.Services.AddProblemDetails();
-builder.Services.AddExceptionHandler<UniqueConstraintExceptionHandler>();
+builder.Services.AddExceptionHandler<DatabaseRuleExceptionHandler>();
 builder.Services.ConfigureHttpJsonOptions(options =>
 {
     options.SerializerOptions.Converters.Add(new JsonStringEnumConverter());
