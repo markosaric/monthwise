@@ -15,7 +15,7 @@ env:
   # The download is checked against this SHA-256 before it is packaged (NFR-8): when the version
   # changes, record the checksum of the new zip in the same commit.
   POSTGRES_WINDOWS: 17.6-1
-  POSTGRES_WINDOWS_SHA256: TODO-checksum-from-the-official-download
+  POSTGRES_WINDOWS_SHA256: d378882abd001a186735acd6f6ba716bca6ccd192e800412d4fd15ed25376b3e
 
 jobs:
   image:

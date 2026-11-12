@@ -1,7 +1,7 @@
 # Plan: Pinned build inputs and a fixed Docker release
 
 - **Branch:** `fix/pin-build-inputs`
-- **Status:** In progress
+- **Status:** Done
 - **Date:** 2026-11-12
 - **Requirements:** [production-packaging.md, Appendix 2](../feature-requirements/production-packaging.md#appendix-2-pinned-build-inputs-and-a-fixed-docker-release)
 
