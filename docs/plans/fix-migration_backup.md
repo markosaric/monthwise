@@ -1,7 +1,7 @@
 # Plan: Backup before an update, no automatic undo of migrations
 
 - **Branch:** `fix/migration_backup`
-- **Status:** In progress
+- **Status:** Done
 - **Date:** 2026-11-12
 - **Requirements:** [production-packaging.md](../feature-requirements/production-packaging.md),
   [Appendix 3](../feature-requirements/production-packaging.md#appendix-3-backup-before-an-update-no-automatic-undo-of-migrations)
@@ -58,30 +58,37 @@ command restores that copy and starts the previous release again.
     the last migration that succeeded. The migration gate keeps every call except `/api/health` on
     `503`, as today.
 - Update backup, the same behaviour in all four update commands:
-  1. Make sure the database is running (Docker: `compose up --detach db` and wait for
-     `pg_isready`; native: the PostgreSQL agent or task is already running).
-  2. Take the version the backup is from: Docker uses the tag in `MONTHWISE_IMAGE` (`latest` for
+  1. Download the new release first (Docker: `compose pull app`; native: into `app.new`). When the
+     download fails, nothing is changed.
+  2. Stop the app, so nothing changes in the database after its backup, and make sure the database
+     is running (Docker: `compose up --detach db` and wait for `pg_isready`; native: start the
+     PostgreSQL agent or task if needed).
+  3. Take the version the backup is from: Docker uses the tag in `MONTHWISE_IMAGE` (`latest` for
      older installations); native uses the version in the health response, or `unknown` when
      Monthwise does not answer.
-  3. Run `pg_dump --format=custom` into
+  4. Run `pg_dump --format=custom` into
      `<backup folder>/monthwise-<yyyyMMdd-HHmmss>-<version>.dump`, writing to a `.partial` file
      first and renaming it once `pg_dump` succeeds, so a half-written file never looks like a
-     backup. When `pg_dump` fails, the update stops with "The update backup failed, nothing was
-     updated" and the reason, and the running release is not touched.
-  4. Delete all but the newest three `monthwise-*.dump` files. The names start with the time, so
+     backup. When `pg_dump` fails, the update stops with "The update backup failed, so nothing was
+     updated", and the release that ran before is started again.
+  5. Delete all but the newest three `monthwise-*.dump` files. The names start with the time, so
      sorting by name gives the order.
-  5. Update as today.
-  6. When the new release does not become ready (the existing `wait_until_ready` / `Wait-Ready`,
+  6. Start the new release.
+  7. When the new release does not become ready (the existing `wait_until_ready` / `Wait-Ready`,
      which already fails on the `503` of a failed migration), restore:
      - stop the app (Docker: `compose stop app`; native: the existing agent or task stop);
-     - drop and recreate the `monthwise` database (`dropdb --force`, `createdb`), then
-       `pg_restore --no-owner --exit-on-error` from the update backup;
+     - restore the update backup into a separate database, `monthwise_restore`
+       (`pg_restore --no-owner --exit-on-error`). Only once that is complete, swap it in: rename
+       `monthwise` to `monthwise_before_restore` and `monthwise_restore` to `monthwise`, then drop
+       `monthwise_before_restore`. A restore that fails halfway leaves the database as it is;
      - start the previous release: Docker sets `MONTHWISE_IMAGE` back to its earlier value and runs
        `compose up --detach`; native moves `app.previous` back, as today;
-     - when it is ready, say: "The update failed. Your data is as it was before the update. Update
-       backup: <file>. Log: monthwise.sh logs".
-  7. When any restore step fails, stop the app, keep it stopped, and say where the update backup is
-     and that the manual's "Restoring an update backup by hand" section explains the rest.
+     - when it is ready, say: "The update failed. Your data is as it was before the update, and
+       <version> is running again", with the update backup and the log.
+  8. When any restore step fails, stop the app, keep it stopped, and say where the update backup is
+     and that the manual's "Restoring an update backup by hand" section explains the rest. The new
+     release stays chosen. If it starts again, for example at the next login, the migration gate
+     keeps it off the database.
 - Where the update backups are:
   - Docker on Mac and Linux: `<Monthwise folder>/docker-update-backups`, next to the `docker`
     configuration folder and not inside it, because the app container mounts that folder. On
@@ -95,9 +102,11 @@ command restores that copy and starts the previous release again.
   - On Windows, the folders sit under `%LOCALAPPDATA%\Monthwise`, which Appendix 1 already limits
     to the user's account, and they inherit that access.
 - How the commands reach the database:
-  - Docker runs `pg_dump`, `pg_restore`, `dropdb` and `createdb` inside the `db` container
-    (`compose exec -T db … -U monthwise`). The file is streamed over stdin and stdout, so the
-    database stays unpublished on the host.
+  - Docker runs `pg_dump`, `pg_restore`, `dropdb`, `createdb` and `psql` inside the `db`
+    container (`compose exec -T db … -U monthwise`), so the database stays unpublished on the
+    host. `monthwise.sh` streams the file over stdin and stdout. `monthwise.ps1` writes it to a file
+    in the container and copies it with `compose cp`, because PowerShell pipelines and redirections
+    would damage the binary file.
   - Native uses the PostgreSQL tools of the installation (Homebrew `postgresql@17`, or
     `pgsql\bin` on Windows) on `127.0.0.1:5442`, with the password from
     `secrets/postgres_password` in `PGPASSWORD` for that one command only.
@@ -135,18 +144,26 @@ command restores that copy and starts the previous release again.
     migration before the failing one.
   - The case-collation test is unchanged. Its explicit `MigrateAsync(beforeNameCollation)` checks
     the Down migration itself, not the startup path.
-- Manual checks (in a container with Docker, using locally built images):
-  - Docker update to a good image: a backup file exists, mode `600`, folder `700`, and the update
-    goes through.
-  - Four updates in a row: three backups are left.
-  - Update to an image whose migration fails (made by adding a table the next migration creates,
-    as the test does): the data afterwards matches the backup, the previous image runs, the health
-    response is `200`, and the message names the backup.
-  - Database not reachable for `pg_dump`: the update stops and the running release is unchanged.
-  - shellcheck and PSScriptAnalyzer pass, as in CI.
-  - Native scripts on macOS and Windows can't be run here. Their backup and restore commands are
-    the same PostgreSQL commands as for Docker, run with the local tools. They are checked by
-    review and, if you can, by one update on your Mac.
+- Manual checks, done in a Linux container with Docker. Stand-in release images write a row on
+  start; the "failing" one drops a column and deletes rows, then answers `503`, like a destructive
+  half-done migration:
+  - Docker `monthwise.sh` and `monthwise.ps1` (under PowerShell 7 on Linux):
+    - an update to a good image makes a backup file (`600` in a `700` folder on Linux and macOS)
+      and goes through;
+    - four updates in a row leave three backups;
+    - an update to the failing image puts back exactly the rows and columns from before, the
+      previous image runs, and health answers `200`;
+    - a failing `pg_dump` stops the update, and the previous version keeps running;
+    - a failing `pg_restore` leaves Monthwise stopped, with the database untouched and the backup
+      named.
+  - Native `monthwise.sh`, with stand-ins for `launchctl`, `brew`, `gh` and `uname` and
+    PostgreSQL 16 tools: install, updates, keep three, restore on failure, `pg_dump` failure and
+    `pg_restore` failure behave as above.
+  - The manual's Docker restore-by-hand steps restore a backup.
+  - The native Windows script can't be run here. It uses the same PostgreSQL commands as the
+    others, through the tools in `pgsql\bin`, and is checked by review.
+  - shellcheck passes. PSScriptAnalyzer can't be installed here (the PowerShell Gallery is not
+    reachable), so CI runs it. Both PowerShell scripts parse without errors.
 
 ## Open questions
 - none

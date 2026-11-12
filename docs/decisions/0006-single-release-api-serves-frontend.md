@@ -1,6 +1,6 @@
 # 0006: One release in which the API serves the front-end
 
-- **Status:** Accepted
+- **Status:** Accepted (amended 2026-11-12)
 - **Date:** 2026-10-28
 
 ## Context
@@ -27,8 +27,10 @@ and secrets, which must never be part of the release.
   place. Values in the folder win over appsettings and environment variables.
 - **Migrations on startup, safely.** A release waits for its database (`Database:StartupWaitSeconds`)
   and stops when it never answers, so the service manager starts it again. When a migration fails,
-  the migrations applied in that run are reverted and every API call except `/api/health` answers
-  `503` until the problem is fixed.
+  every API call except `/api/health` answers `503` until the problem is fixed. (Amended
+  2026-11-12: the migrations applied in that run are no longer reverted, because Down migrations
+  can drop data. The update commands save an update backup first and restore it instead; see
+  production packaging Appendix 3.)
 
 ## Consequences
 - The front-end and the API are always deployed together, in the same version.

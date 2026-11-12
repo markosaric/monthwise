@@ -30,6 +30,8 @@
   table { width:100%; border-collapse:collapse; margin:12px 0; font-size:.94rem; }
   th, td { text-align:left; vertical-align:top; padding:6px 8px; border-bottom:1px solid var(--line); }
   .table-wrap { overflow-x:auto; }
+  pre { margin:8px 0 14px; overflow-x:auto; }
+  pre code { display:block; padding:10px 12px; overflow-wrap:normal; white-space:pre; }
   @media (max-width:600px) { nav.toc ol { columns:1; } h1 { font-size:1.8rem; } }
 </style>
 </head>
@@ -147,7 +149,7 @@
 <div class="table-wrap"><table>
 <tr><th>Command</th><th>What it does</th></tr>
 <tr><td><code>stop</code></td><td>Stops Monthwise. The data is kept.</td></tr>
-<tr><td><code>update</code> (or <code>update 1.2.0</code>)</td><td>Downloads the newest (or the given) version and restarts with all data kept. Monthwise then stays on that version until the next update; a new installation runs the version of the package you downloaded.</td></tr>
+<tr><td><code>update</code> (or <code>update 1.2.0</code>)</td><td>Downloads the newest (or the given) version and restarts with all data kept. It saves an <a href="#install-update-backups">update backup</a> first, and goes back to the version before if the new one does not start. Monthwise then stays on that version until the next update; a new installation runs the version of the package you downloaded.</td></tr>
 <tr><td><code>status</code> / <code>logs</code></td><td>Shows whether it runs and its version, or the last log lines.</td></tr>
 <tr><td><code>network on</code> / <code>network off</code></td><td>Allows or stops connections from other devices, for example your phone through Tailscale. Off by default.</td></tr>
 <tr><td><code>remove</code> (<code>remove --data</code> on a Mac, <code>remove -Data</code> on Windows)</td><td>Removes Monthwise from Docker and keeps the data, unless you ask for the data to go too and type <code>DELETE</code>.</td></tr>
@@ -161,8 +163,46 @@
   <li><strong>Windows:</strong> <code>gh release download --repo markosaric/monthwise --pattern monthwise-native-windows.ps1</code>, then in PowerShell run <code>powershell -ExecutionPolicy Bypass -File .\monthwise-native-windows.ps1 install</code>. PostgreSQL comes with the release; no administrator rights are needed.</li>
   <li>Open <code>http://localhost:8080</code> and add it to the Dock or the taskbar as above.</li>
 </ol>
-<p>The installer copies its script into the Monthwise folder: <em>~/Library/Application Support/Monthwise/native/monthwise.sh</em> on a Mac, <em>%LOCALAPPDATA%\Monthwise\native\monthwise.ps1</em> on Windows. It takes <code>start</code>, <code>stop</code>, <code>update</code>, <code>status</code>, <code>logs</code> and <code>network on|off</code> like the Docker commands, and <code>uninstall</code>. If a new version does not start, <code>update</code> goes back to the previous one by itself. <code>uninstall</code> keeps the data, secrets and logs unless you add <code>--data</code> (Mac) or <code>-Data</code> (Windows) and type <code>DELETE</code>.</p>
+<p>The installer copies its script into the Monthwise folder: <em>~/Library/Application Support/Monthwise/native/monthwise.sh</em> on a Mac, <em>%LOCALAPPDATA%\Monthwise\native\monthwise.ps1</em> on Windows. It takes <code>start</code>, <code>stop</code>, <code>update</code>, <code>status</code>, <code>logs</code> and <code>network on|off</code> like the Docker commands, and <code>uninstall</code>. Like the Docker command, <code>update</code> saves an <a href="#install-update-backups">update backup</a> first, and if the new version does not start, it puts the data back and goes back to the previous version by itself. <code>uninstall</code> keeps the data, secrets and logs unless you add <code>--data</code> (Mac) or <code>-Data</code> (Windows) and type <code>DELETE</code>.</p>
 <p><strong>Where things are</strong>, in that same <em>native</em> folder: <em>pgdata</em> (the database), <em>config/secrets</em> (the secrets), <em>config/settings.json</em> (the settings) and <em>logs</em> (one log file per day, the last 14 days kept).</p>
+
+<h3 id="install-update-backups">Update backups</h3>
+<p>Before every Docker or native update, <code>update</code> saves a complete copy of the database, an <strong>update backup</strong>. If that copy cannot be made, nothing is updated. The file is named with the date, the time and the version it was taken from, for example <code>monthwise-20261112-101530-1.2.0.dump</code>. The last three are kept, and only your user account can open them:</p>
+<div class="table-wrap"><table>
+<tr><th>Installation</th><th>Folder</th></tr>
+<tr><td>Docker on a Mac</td><td><em>~/Library/Application Support/Monthwise/docker-update-backups</em></td></tr>
+<tr><td>Docker on Windows</td><td><em>%LOCALAPPDATA%\Monthwise\docker-update-backups</em></td></tr>
+<tr><td>Native service</td><td><em>update-backups</em> in the <em>native</em> folder</td></tr>
+</table></div>
+<p>They stay when you remove or uninstall Monthwise, and go only with its data (<code>--data</code> / <code>-Data</code>).</p>
+<p>If the new version cannot bring the database up to date, or does not start, <code>update</code> puts the data back from the update backup and starts the version that ran before. Your data is then exactly as it was before the update; the message names the update backup and the log. Monthwise itself never undoes a half-done update step by step, because that could remove data.</p>
+
+<h3 id="install-restore-backup">Restoring an update backup by hand</h3>
+<p>Only needed when <code>update</code> says that putting the data back failed too. Monthwise is then stopped and its database is left as the failed update left it. Restore the update backup the message names, then update to the version in its file name (the one that ran before):</p>
+<p><strong>Docker</strong>, in the package folder (<code>./monthwise.sh</code> on a Mac, <code>.\monthwise.ps1</code> on Windows):</p>
+<pre><code>docker stop monthwise-app-1
+docker cp "&lt;update backup&gt;" monthwise-db-1:/tmp/restore.dump
+docker exec monthwise-db-1 dropdb -U monthwise --force monthwise
+docker exec monthwise-db-1 createdb -U monthwise monthwise
+docker exec monthwise-db-1 pg_restore -U monthwise -d monthwise --no-owner /tmp/restore.dump
+./monthwise.sh update &lt;version from the file name&gt;</code></pre>
+<p><strong>Native service on a Mac</strong>, in Terminal:</p>
+<pre><code>cd ~/Library/Application\ Support/Monthwise/native
+export PGPASSWORD="$(cat config/secrets/postgres_password)" PG="$(brew --prefix postgresql@17)/bin"
+"$PG/dropdb" -h 127.0.0.1 -p 5442 -U monthwise --force monthwise
+"$PG/createdb" -h 127.0.0.1 -p 5442 -U monthwise monthwise
+"$PG/pg_restore" -h 127.0.0.1 -p 5442 -U monthwise -d monthwise --no-owner "&lt;update backup&gt;"
+unset PGPASSWORD
+./monthwise.sh update &lt;version from the file name&gt;</code></pre>
+<p><strong>Native service on Windows</strong>, in PowerShell:</p>
+<pre><code>cd $env:LOCALAPPDATA\Monthwise\native
+$env:PGPASSWORD = Get-Content config\secrets\postgres_password -Raw
+.\pgsql\bin\dropdb.exe -h 127.0.0.1 -p 5442 -U monthwise --force monthwise
+.\pgsql\bin\createdb.exe -h 127.0.0.1 -p 5442 -U monthwise monthwise
+.\pgsql\bin\pg_restore.exe -h 127.0.0.1 -p 5442 -U monthwise -d monthwise --no-owner "&lt;update backup&gt;"
+Remove-Item Env:PGPASSWORD
+.\monthwise.ps1 update &lt;version from the file name&gt;</code></pre>
+<p>If the file name says <code>unknown</code>, use the version you ran before the failed update. The <code>update</code> at the end saves a new update backup of the restored data and starts that version.</p>
 
 <h3 id="install-azure">Azure</h3>
 <div class="tip">Azure gives Monthwise a public HTTPS address. Use it only once login exists.</div>
@@ -183,6 +223,7 @@
   <li>The script prints the address of Monthwise and, the first time, how to copy the encryption keys from Key Vault into your password manager.</li>
 </ol>
 <p>To update, run the same command with the new version. The data and the secrets are kept. To see the log: <code>az containerapp logs show -g rg-monthwise -n ca-monthwise</code>.</p>
+<p>On Azure the database's own automatic backups take the place of update backups. If a new version cannot bring the database up to date, it stops working on the database, and <code>deploy.sh</code> prints the time just before the deployment and the command to restore the database to it (see <a href="#data-azure">Azure's own backups</a>).</p>
 
 <h2 id="data">11. Data and backups</h2>
 <p><span class="ui">Settings → Data and backups</span> saves all your data to one file on your device and brings it back from such a file. The top of the section shows when you last exported and imported.</p>

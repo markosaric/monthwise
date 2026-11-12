@@ -11,6 +11,7 @@ GITHUB_REPO="markosaric/monthwise"
 # new installation runs that exact release instead of whatever is newest (FR-8, Appendix 2).
 RELEASE_VERSION="dev"
 VOLUME="monthwise-pgdata"
+KEEP_UPDATE_BACKUPS=3
 
 if [[ "$(uname -s)" == "Darwin" ]]; then
   BASE_DIR="$HOME/Library/Application Support/Monthwise"
@@ -20,6 +21,8 @@ fi
 CONFIG_DIR="${MONTHWISE_CONFIG_DIR:-$BASE_DIR/docker}"
 SECRETS_DIR="$CONFIG_DIR/secrets"
 ENV_FILE="$CONFIG_DIR/compose.env"
+# Next to the configuration folder, not inside it: the app container mounts that folder.
+BACKUP_DIR="$BASE_DIR/docker-update-backups"
 
 say() { printf '%s\n' "$*"; }
 fail() { printf 'Monthwise: %s\n' "$*" >&2; exit 1; }
@@ -172,8 +175,63 @@ cmd_stop() {
   say "Monthwise is stopped. The data is kept."
 }
 
+db_exec() { compose exec -T db "$@"; }
+
+start_database() {
+  compose up --detach db > /dev/null 2>&1 || return 1
+  for _ in $(seq 1 30); do
+    db_exec pg_isready -U monthwise -d monthwise -q > /dev/null 2>&1 && return 0
+    sleep 2
+  done
+  return 1
+}
+
+# Saves a complete copy of the database before an update (FR-3a, Appendix 3) and sets
+# UPDATE_BACKUP to its file. Only this user account can read it.
+make_update_backup() { # make_update_backup FROM_VERSION
+  local file
+  mkdir -p "$BACKUP_DIR" && chmod 700 "$BACKUP_DIR" || return 1
+  file="$BACKUP_DIR/monthwise-$(date +%Y%m%d-%H%M%S)-$(tr -c 'A-Za-z0-9._-' '_' <<< "$1" | sed 's/_$//').dump"
+  start_database || return 1
+  # Written to .partial first, so a half-written file never looks like a backup.
+  if ! (umask 077 && db_exec pg_dump -U monthwise -d monthwise --format=custom > "$file.partial"); then
+    rm -f "$file.partial"
+    return 1
+  fi
+  mv "$file.partial" "$file"
+  UPDATE_BACKUP="$file"
+  prune_update_backups
+}
+
+prune_update_backups() {
+  # The names start with the date and time, so the glob lists them oldest first.
+  local backups=() i
+  shopt -s nullglob
+  backups=("$BACKUP_DIR"/monthwise-*.dump)
+  shopt -u nullglob
+  for ((i = 0; i < ${#backups[@]} - KEEP_UPDATE_BACKUPS; i++)); do
+    rm -f "${backups[i]}"
+  done
+}
+
+# Puts the database back exactly as it was in the update backup, with the app stopped. The copy is
+# restored into a database of its own and swapped in only once it is complete, so a failed restore
+# leaves the database as it is.
+restore_update_backup() { # restore_update_backup FILE
+  compose stop app > /dev/null 2>&1 || return 1
+  start_database || return 1
+  db_exec dropdb -U monthwise --if-exists monthwise_restore 2> /dev/null || return 1
+  db_exec createdb -U monthwise monthwise_restore || return 1
+  db_exec pg_restore -U monthwise -d monthwise_restore --no-owner --exit-on-error < "$1" || return 1
+  db_exec psql -U monthwise -d postgres -v ON_ERROR_STOP=1 -q \
+    -c "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = 'monthwise'" \
+    -c 'ALTER DATABASE monthwise RENAME TO monthwise_before_restore' \
+    -c 'ALTER DATABASE monthwise_restore RENAME TO monthwise' > /dev/null || return 1
+  db_exec dropdb -U monthwise --force monthwise_before_restore
+}
+
 cmd_update() {
-  local version="${1:-}"
+  local version="${1:-}" previous_image
   ensure_docker
   ensure_config
   login_registry
@@ -181,13 +239,49 @@ cmd_update() {
     version="$(gh release view --repo "$GITHUB_REPO" --json tagName --jq .tagName)" \
       || fail "Finding the newest release failed. Name the version instead: monthwise.sh update <version>"
   fi
+  previous_image="$(env_value MONTHWISE_IMAGE "$IMAGE_REPO:latest")"
+
   # Always an exact version, also for installations that followed :latest before.
   set_env_value MONTHWISE_IMAGE "$IMAGE_REPO:${version#v}"
+  say "Downloading ${version#v}..."
+  if ! compose pull app; then
+    set_env_value MONTHWISE_IMAGE "$previous_image"
+    fail "Downloading ${version#v} failed, so nothing was updated."
+  fi
+
+  # The app is stopped first, so nothing changes in the database after its backup.
+  say "Saving an update backup of the database..."
+  compose stop app > /dev/null 2>&1 || true
+  if ! make_update_backup "${previous_image##*:}"; then
+    set_env_value MONTHWISE_IMAGE "$previous_image"
+    compose up --detach > /dev/null 2>&1 || true
+    fail "The update backup failed, so nothing was updated. Its log: monthwise.sh logs db"
+  fi
+  say "Update backup: $UPDATE_BACKUP"
+
   say "Updating to ${version#v}..."
-  compose pull app
-  compose up --detach
-  wait_until_ready
-  say "Monthwise is updated: $(curl --silent "$(address)/api/health" | sed -E 's/.*"version":"([^"]*)".*/\1/')"
+  if compose up --detach && wait_until_ready; then
+    say "Monthwise is updated: $(curl --silent "$(address)/api/health" | sed -E 's/.*"version":"([^"]*)".*/\1/')"
+    return
+  fi
+
+  say "The new version did not start. Putting the data back from the update backup and going back to ${previous_image##*:}..."
+  if restore_update_backup "$UPDATE_BACKUP"; then
+    set_env_value MONTHWISE_IMAGE "$previous_image"
+    if compose up --detach && wait_until_ready; then
+      fail "The update failed. Your data is as it was before the update, and ${previous_image##*:} is running again.
+Update backup: $UPDATE_BACKUP
+Log: monthwise.sh logs"
+    fi
+    fail "The update failed. Your data is as it was before the update, but ${previous_image##*:} did not start either.
+Update backup: $UPDATE_BACKUP
+Log: monthwise.sh logs"
+  fi
+  # The new version stays chosen: it refuses to work on a database it could not bring up to date.
+  compose stop app > /dev/null 2>&1 || true
+  fail "The update failed, and putting the data back failed too, so Monthwise is stopped.
+Your data is in the update backup: $UPDATE_BACKUP
+The user manual explains how to restore it by hand (\"Restoring an update backup by hand\")."
 }
 
 cmd_network() {
@@ -211,15 +305,16 @@ cmd_remove() {
   ensure_docker
   compose down
   if [[ "${1:-}" == "--data" ]]; then
-    read -r -p "Delete all Monthwise data in Docker volume $VOLUME? This cannot be undone. Type DELETE: " answer
+    read -r -p "Delete all Monthwise data in Docker volume $VOLUME and its update backups? This cannot be undone. Type DELETE: " answer
     if [[ "$answer" == "DELETE" ]]; then
       docker volume rm "$VOLUME"
-      say "The data is deleted. The secrets in $SECRETS_DIR are kept; delete them yourself if you no longer need them."
+      rm -rf "$BACKUP_DIR"
+      say "The data and its update backups are deleted. The secrets in $SECRETS_DIR are kept; delete them yourself if you no longer need them."
     else
       say "The data is kept."
     fi
   else
-    say "Monthwise is removed from Docker. The data is kept in Docker volume $VOLUME."
+    say "Monthwise is removed from Docker. The data is kept in Docker volume $VOLUME, the update backups in $BACKUP_DIR."
   fi
 }
 

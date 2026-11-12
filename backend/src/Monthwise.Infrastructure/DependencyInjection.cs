@@ -1,9 +1,6 @@
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using Monthwise.Application.CardPurchases;
 using Monthwise.Application.Cards;
 using Monthwise.Application.CashFlow;
@@ -109,46 +106,24 @@ public static class DependencyInjection
 
     /// <summary>
     /// Applies pending migrations and records the outcome in <see cref="DatabaseMigrationState"/>.
-    /// EF Core runs each migration in its own transaction; when one fails, the migrations applied
-    /// in this run are reverted, so the database is left as it was before the update.
+    /// EF Core runs each migration in its own transaction; when one fails, the database stays at the
+    /// last migration that succeeded. Nothing is undone here, because Down migrations can drop data:
+    /// the update commands restore their update backup instead (production packaging Appendix 3).
     /// </summary>
     public static async Task MigrateDatabaseAsync(this IServiceProvider services, CancellationToken cancellationToken = default)
     {
         var state = services.GetRequiredService<DatabaseMigrationState>();
         await using var scope = services.CreateAsyncScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<MonthwiseDbContext>();
-        string? lastAppliedBefore = null;
         try
         {
-            lastAppliedBefore = (await dbContext.Database.GetAppliedMigrationsAsync(cancellationToken)).LastOrDefault();
             await dbContext.Database.MigrateAsync(cancellationToken);
             state.Status = MigrationStatus.Applied;
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
             state.Status = MigrationStatus.Failed;
-            await RevertMigrationsAsync(dbContext, lastAppliedBefore, services, cancellationToken);
             throw;
-        }
-    }
-
-    private static async Task RevertMigrationsAsync(
-        MonthwiseDbContext dbContext, string? lastAppliedBefore, IServiceProvider services, CancellationToken cancellationToken)
-    {
-        try
-        {
-            var applied = await dbContext.Database.GetAppliedMigrationsAsync(cancellationToken);
-            if (applied.LastOrDefault() == lastAppliedBefore)
-            {
-                return;
-            }
-
-            await dbContext.GetService<IMigrator>().MigrateAsync(lastAppliedBefore ?? Migration.InitialDatabase, cancellationToken: cancellationToken);
-        }
-        catch (Exception ex) when (ex is not OperationCanceledException)
-        {
-            services.GetRequiredService<ILoggerFactory>().CreateLogger(typeof(DependencyInjection))
-                .LogError(ex, "Reverting the migrations applied before the failure failed");
         }
     }
 

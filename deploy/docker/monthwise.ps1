@@ -20,6 +20,9 @@ $BaseDir = Join-Path $env:LOCALAPPDATA 'Monthwise'
 $ConfigDir = if ($env:MONTHWISE_CONFIG_DIR) { $env:MONTHWISE_CONFIG_DIR } else { Join-Path $BaseDir 'docker' }
 $SecretsDir = Join-Path $ConfigDir 'secrets'
 $EnvFile = Join-Path $ConfigDir 'compose.env'
+# Next to the configuration folder, not inside it: the app container mounts that folder.
+$BackupDir = Join-Path $BaseDir 'docker-update-backups'
+$KeepUpdateBackups = 3
 
 function Fail([string] $Message) {
     Write-Host "Monthwise: $Message" -ForegroundColor Red
@@ -34,6 +37,17 @@ function Write-PlainFile([string] $Path, [string] $Text) {
 function Invoke-Compose {
     & docker compose --project-name monthwise --file $ComposeFile --env-file $EnvFile @args
     if ($LASTEXITCODE -ne 0) { Fail "docker compose $($args -join ' ') failed." }
+}
+
+# Runs docker compose and returns whether it succeeded, instead of stopping the script.
+function Test-Compose {
+    & docker compose --project-name monthwise --file $ComposeFile --env-file $EnvFile @args | Out-Host
+    return $LASTEXITCODE -eq 0
+}
+
+function Test-ComposeQuiet {
+    & docker compose --project-name monthwise --file $ComposeFile --env-file $EnvFile @args *> $null
+    return $LASTEXITCODE -eq 0
 }
 
 function Get-EnvValue([string] $Key, [string] $Default) {
@@ -148,16 +162,74 @@ function Initialize-Image {
     if ($LASTEXITCODE -ne 0) { Fail "Downloading $image failed. Allow GitHub packages once: gh auth refresh --scopes read:packages" }
 }
 
-function Wait-Ready {
+function Test-Ready {
     $url = "$(Get-Address)/api/health"
     for ($i = 0; $i -lt 45; $i++) {
         try {
             Invoke-RestMethod -Uri $url -TimeoutSec 2 | Out-Null
-            return
+            return $true
         }
         catch { Start-Sleep -Seconds 2 }
     }
-    Fail 'Monthwise did not become ready. Its log: monthwise.ps1 logs'
+    return $false
+}
+
+function Wait-Ready {
+    if (-not (Test-Ready)) { Fail 'Monthwise did not become ready. Its log: monthwise.ps1 logs' }
+}
+
+function Start-Database {
+    if (-not (Test-ComposeQuiet up --detach db)) { return $false }
+    for ($i = 0; $i -lt 30; $i++) {
+        if (Test-ComposeQuiet exec -T db pg_isready -U monthwise -d monthwise -q) { return $true }
+        Start-Sleep -Seconds 2
+    }
+    return $false
+}
+
+# The dump is copied out of and into the database container as a file: PowerShell pipelines and
+# redirections are text and would damage it.
+$ContainerBackup = '/tmp/monthwise-update-backup.dump'
+
+# Saves a complete copy of the database before an update (FR-3a, Appendix 3) and returns its file,
+# or nothing when it failed. The Monthwise folder, and so this file, is private to this user account.
+function New-UpdateBackup([string] $FromVersion) {
+    New-Item -ItemType Directory -Force -Path $BackupDir | Out-Null
+    $safeVersion = $FromVersion -replace '[^A-Za-z0-9._-]', '_'
+    $file = Join-Path $BackupDir "monthwise-$(Get-Date -Format 'yyyyMMdd-HHmmss')-$safeVersion.dump"
+    if (-not (Start-Database)) { return $null }
+    # Copied to .partial first, so a half-written file never looks like a backup.
+    $saved = (Test-ComposeQuiet exec -T db pg_dump -U monthwise -d monthwise --format=custom --file $ContainerBackup) -and
+        (Test-ComposeQuiet cp "db:$ContainerBackup" "$file.partial")
+    Test-ComposeQuiet exec -T db rm -f $ContainerBackup | Out-Null
+    if (-not $saved) {
+        Remove-Item -Force -ErrorAction SilentlyContinue "$file.partial"
+        return $null
+    }
+    Move-Item "$file.partial" $file
+    # The names start with the date and time, so sorting by name keeps the newest.
+    Get-ChildItem -Path $BackupDir -Filter 'monthwise-*.dump' | Sort-Object Name |
+        Select-Object -SkipLast $KeepUpdateBackups | Remove-Item -Force
+    return $file
+}
+
+# Puts the database back exactly as it was in the update backup, with the app stopped. The copy is
+# restored into a database of its own and swapped in only once it is complete, so a failed restore
+# leaves the database as it is.
+function Restore-UpdateBackup([string] $File) {
+    if (-not (Test-ComposeQuiet stop app)) { return $false }
+    if (-not (Start-Database)) { return $false }
+    $restored = (Test-ComposeQuiet cp $File "db:$ContainerBackup") -and
+        (Test-ComposeQuiet exec -T db dropdb -U monthwise --if-exists monthwise_restore) -and
+        (Test-Compose exec -T db createdb -U monthwise monthwise_restore) -and
+        (Test-Compose exec -T db pg_restore -U monthwise -d monthwise_restore --no-owner --exit-on-error $ContainerBackup) -and
+        (Test-ComposeQuiet exec -T db psql -U monthwise -d postgres -v ON_ERROR_STOP=1 -q `
+            -c "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = 'monthwise'" `
+            -c 'ALTER DATABASE monthwise RENAME TO monthwise_before_restore' `
+            -c 'ALTER DATABASE monthwise_restore RENAME TO monthwise') -and
+        (Test-Compose exec -T db dropdb -U monthwise --force monthwise_before_restore)
+    Test-ComposeQuiet exec -T db rm -f $ContainerBackup | Out-Null
+    return $restored
 }
 
 switch ($Command) {
@@ -187,14 +259,50 @@ switch ($Command) {
                 Fail 'Finding the newest release failed. Name the version instead: monthwise.ps1 update <version>'
             }
         }
+        $previousImage = Get-EnvValue 'MONTHWISE_IMAGE' "${ImageRepo}:latest"
+        $previousVersion = ($previousImage -split ':')[-1]
+
         # Always an exact version, also for installations that followed :latest before.
         $version = $version.TrimStart('v')
         Set-EnvValue 'MONTHWISE_IMAGE' "${ImageRepo}:$version"
+        Write-Host "Downloading $version..."
+        if (-not (Test-Compose pull app)) {
+            Set-EnvValue 'MONTHWISE_IMAGE' $previousImage
+            Fail "Downloading $version failed, so nothing was updated."
+        }
+
+        # The app is stopped first, so nothing changes in the database after its backup.
+        Write-Host 'Saving an update backup of the database...'
+        Test-ComposeQuiet stop app | Out-Null
+        $backup = New-UpdateBackup $previousVersion
+        if (-not $backup) {
+            Set-EnvValue 'MONTHWISE_IMAGE' $previousImage
+            Test-ComposeQuiet up --detach | Out-Null
+            Fail 'The update backup failed, so nothing was updated. Its log: monthwise.ps1 logs'
+        }
+        Write-Host "Update backup: $backup"
+
         Write-Host "Updating to $version..."
-        Invoke-Compose pull app
-        Invoke-Compose up --detach
-        Wait-Ready
-        Write-Host "Monthwise is updated: $((Invoke-RestMethod "$(Get-Address)/api/health").version)"
+        if ((Test-Compose up --detach) -and (Test-Ready)) {
+            Write-Host "Monthwise is updated: $((Invoke-RestMethod "$(Get-Address)/api/health").version)"
+        }
+        else {
+            Write-Host "The new version did not start. Putting the data back from the update backup and going back to $previousVersion..."
+            if (Restore-UpdateBackup $backup) {
+                Set-EnvValue 'MONTHWISE_IMAGE' $previousImage
+                if ((Test-Compose up --detach) -and (Test-Ready)) {
+                    Fail ("The update failed. Your data is as it was before the update, and $previousVersion is running again.`n" +
+                        "Update backup: $backup`nLog: monthwise.ps1 logs")
+                }
+                Fail ("The update failed. Your data is as it was before the update, but $previousVersion did not start either.`n" +
+                    "Update backup: $backup`nLog: monthwise.ps1 logs")
+            }
+            # The new version stays chosen: it refuses to work on a database it could not bring up to date.
+            Test-ComposeQuiet stop app | Out-Null
+            Fail ("The update failed, and putting the data back failed too, so Monthwise is stopped.`n" +
+                "Your data is in the update backup: $backup`n" +
+                'The user manual explains how to restore it by hand ("Restoring an update backup by hand").')
+        }
     }
     'status' {
         Initialize-Docker
@@ -226,15 +334,16 @@ switch ($Command) {
         Initialize-Docker
         Invoke-Compose down
         if ($Data) {
-            $answer = Read-Host "Delete all Monthwise data in Docker volume $Volume? This cannot be undone. Type DELETE"
+            $answer = Read-Host "Delete all Monthwise data in Docker volume $Volume and its update backups? This cannot be undone. Type DELETE"
             if ($answer -ceq 'DELETE') {
                 & docker volume rm $Volume | Out-Null
-                Write-Host "The data is deleted. The secrets in $SecretsDir are kept; delete them yourself if you no longer need them."
+                if (Test-Path $BackupDir) { Remove-Item -Recurse -Force $BackupDir }
+                Write-Host "The data and its update backups are deleted. The secrets in $SecretsDir are kept; delete them yourself if you no longer need them."
             }
             else { Write-Host 'The data is kept.' }
         }
         else {
-            Write-Host "Monthwise is removed from Docker. The data is kept in Docker volume $Volume."
+            Write-Host "Monthwise is removed from Docker. The data is kept in Docker volume $Volume, the update backups in $BackupDir."
         }
     }
     default {

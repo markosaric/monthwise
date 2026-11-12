@@ -17,6 +17,8 @@ SECRETS_DIR="$CONFIG_DIR/secrets"
 SETTINGS_FILE="$CONFIG_DIR/settings.json"
 PG_DATA="$NATIVE_DIR/pgdata"
 LOG_DIR="$NATIVE_DIR/logs"
+BACKUP_DIR="$NATIVE_DIR/update-backups"
+KEEP_UPDATE_BACKUPS=3
 AGENTS_DIR="$HOME/Library/LaunchAgents"
 PG_AGENT="com.monthwise.postgres"
 APP_AGENT="com.monthwise.app"
@@ -191,27 +193,116 @@ and IBANs unreadable, so none are created."
   say "Manage it with: \"$NATIVE_DIR/monthwise.sh\" start|stop|update|status|logs|network|uninstall"
 }
 
+# pg_tool TOOL ARG... : a PostgreSQL tool of this installation, signed in to its database server.
+pg_tool() {
+  local tool="$1"
+  shift
+  PGPASSWORD="$(cat "$SECRETS_DIR/postgres_password")" "$(pg_bin)/$tool" -h 127.0.0.1 -p "$PG_PORT" -U monthwise "$@"
+}
+
+start_database() {
+  start_agent "$PG_AGENT"
+  for _ in $(seq 1 30); do
+    "$(pg_bin)/pg_isready" -h 127.0.0.1 -p "$PG_PORT" -q && return 0
+    sleep 1
+  done
+  return 1
+}
+
+running_version() {
+  curl --silent --max-time 2 "$(address)/api/health" 2> /dev/null | sed -nE 's/.*"version":"([^"]*)".*/\1/p'
+}
+
+# Saves a complete copy of the database before an update (FR-3a, Appendix 3) and sets
+# UPDATE_BACKUP to its file. Only this user account can read it.
+make_update_backup() { # make_update_backup FROM_VERSION
+  local file
+  mkdir -p "$BACKUP_DIR" && chmod 700 "$BACKUP_DIR" || return 1
+  file="$BACKUP_DIR/monthwise-$(date +%Y%m%d-%H%M%S)-$(tr -c 'A-Za-z0-9._-' '_' <<< "$1" | sed 's/_$//').dump"
+  start_database || return 1
+  # Written to .partial first, so a half-written file never looks like a backup.
+  if ! (umask 077 && pg_tool pg_dump -d monthwise --format=custom --file "$file.partial"); then
+    rm -f "$file.partial"
+    return 1
+  fi
+  mv "$file.partial" "$file"
+  UPDATE_BACKUP="$file"
+  prune_update_backups
+}
+
+prune_update_backups() {
+  # The names start with the date and time, so the glob lists them oldest first.
+  local backups=() i
+  shopt -s nullglob
+  backups=("$BACKUP_DIR"/monthwise-*.dump)
+  shopt -u nullglob
+  for ((i = 0; i < ${#backups[@]} - KEEP_UPDATE_BACKUPS; i++)); do
+    rm -f "${backups[i]}"
+  done
+}
+
+# Puts the database back exactly as it was in the update backup, with the app stopped. The copy is
+# restored into a database of its own and swapped in only once it is complete, so a failed restore
+# leaves the database as it is.
+restore_update_backup() { # restore_update_backup FILE
+  stop_agent "$APP_AGENT"
+  start_database || return 1
+  pg_tool dropdb --if-exists monthwise_restore 2> /dev/null || return 1
+  pg_tool createdb monthwise_restore || return 1
+  pg_tool pg_restore -d monthwise_restore --no-owner --exit-on-error "$1" || return 1
+  pg_tool psql -d postgres -v ON_ERROR_STOP=1 -q \
+    -c "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = 'monthwise'" \
+    -c 'ALTER DATABASE monthwise RENAME TO monthwise_before_restore' \
+    -c 'ALTER DATABASE monthwise_restore RENAME TO monthwise' > /dev/null || return 1
+  pg_tool dropdb --force monthwise_before_restore
+}
+
 cmd_update() {
-  local version="${1:-latest}"
+  local version="${1:-latest}" from_version
   require_tools
   [[ -x "$APP_DIR/Monthwise.Api" ]] || fail "Monthwise is not installed. Use: monthwise.sh install"
+  from_version="$(running_version)"
   say "Downloading Monthwise ($version)..."
   download_release "$version" "$NATIVE_DIR/app.new"
+
+  # The app is stopped first, so nothing changes in the database after its backup.
+  say "Saving an update backup of the database..."
   stop_agent "$APP_AGENT"
+  if ! make_update_backup "${from_version:-unknown}"; then
+    rm -rf "$NATIVE_DIR/app.new"
+    start_agent "$APP_AGENT"
+    fail "The update backup failed, so nothing was updated. Its log: monthwise.sh logs"
+  fi
+  say "Update backup: $UPDATE_BACKUP"
+
   rm -rf "$NATIVE_DIR/app.previous"
   mv "$APP_DIR" "$NATIVE_DIR/app.previous"
   mv "$NATIVE_DIR/app.new" "$APP_DIR"
   start_agent "$APP_AGENT"
   if wait_until_ready; then
-    say "Monthwise is updated: $(curl --silent "$(address)/api/health" | sed -E 's/.*"version":"([^"]*)".*/\1/')"
-  else
-    say "The new version did not start; going back to the previous one."
-    stop_agent "$APP_AGENT"
+    say "Monthwise is updated: $(running_version)"
+    return
+  fi
+
+  say "The new version did not start. Putting the data back from the update backup and going back to the previous version..."
+  if restore_update_backup "$UPDATE_BACKUP"; then
     rm -rf "$APP_DIR"
     mv "$NATIVE_DIR/app.previous" "$APP_DIR"
     start_agent "$APP_AGENT"
-    fail "Update failed. The previous version is running again; its log: monthwise.sh logs"
+    if wait_until_ready; then
+      fail "The update failed. Your data is as it was before the update, and the previous version is running again.
+Update backup: $UPDATE_BACKUP
+Log: monthwise.sh logs"
+    fi
+    fail "The update failed. Your data is as it was before the update, but the previous version did not start either.
+Update backup: $UPDATE_BACKUP
+Log: monthwise.sh logs"
   fi
+  # The new version stays installed: it refuses to work on a database it could not bring up to date.
+  stop_agent "$APP_AGENT"
+  fail "The update failed, and putting the data back failed too, so Monthwise is stopped.
+Your data is in the update backup: $UPDATE_BACKUP
+The user manual explains how to restore it by hand (\"Restoring an update backup by hand\")."
 }
 
 cmd_network() {
@@ -237,14 +328,14 @@ cmd_uninstall() {
   rm -f "$AGENTS_DIR/$APP_AGENT.plist" "$AGENTS_DIR/$PG_AGENT.plist"
   rm -rf "$APP_DIR" "$NATIVE_DIR/app.previous" "$NATIVE_DIR/app.new"
   if [[ "${1:-}" == "--data" ]]; then
-    read -r -p "Delete all Monthwise data and its secrets in $NATIVE_DIR? This cannot be undone. Type DELETE: " answer
+    read -r -p "Delete all Monthwise data, its update backups and its secrets in $NATIVE_DIR? This cannot be undone. Type DELETE: " answer
     if [[ "$answer" == "DELETE" ]]; then
       rm -rf "$NATIVE_DIR"
       say "Monthwise and its data are removed."
       return
     fi
   fi
-  say "Monthwise is uninstalled. The data, secrets and logs are kept in $NATIVE_DIR."
+  say "Monthwise is uninstalled. The data, update backups, secrets and logs are kept in $NATIVE_DIR."
 }
 
 case "${1:-}" in

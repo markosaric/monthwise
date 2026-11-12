@@ -8,11 +8,11 @@ using Npgsql;
 
 namespace Monthwise.Api.Tests;
 
-/// <summary>A failed update leaves the database as it was (production packaging FR-3, name comparison FR-6).</summary>
+/// <summary>A failed update stops and removes nothing (production packaging FR-3 and Appendix 3, name comparison FR-6).</summary>
 public class MigrationTests
 {
     [Fact]
-    public async Task A_failing_migration_reverts_the_migrations_applied_before_it()
+    public async Task A_failing_migration_keeps_the_migrations_applied_before_it_and_reports_the_failure()
     {
         var serverConnectionString = TestDatabase.ConnectionString;
         var cancellationToken = TestContext.Current.CancellationToken;
@@ -22,7 +22,7 @@ public class MigrationTests
         await ExecuteAsync(serverConnectionString, $"CREATE DATABASE {databaseName}", cancellationToken);
         try
         {
-            // The last migration (AddSharedCosts) creates this table, so it fails after the earlier ones succeeded.
+            // AddSharedCosts creates this table, so it fails after the earlier migrations succeeded.
             await ExecuteAsync(connectionString, "CREATE TABLE participant (id integer)", cancellationToken);
 
             await using (var factory = new MonthwiseApiFactory(connectionString, migrateOnStartup: true))
@@ -32,9 +32,13 @@ public class MigrationTests
                 Assert.Equal(HttpStatusCode.ServiceUnavailable, health.StatusCode);
             }
 
+            // Nothing is undone: the earlier migrations and their tables stay, the failing one is not recorded.
             var cardTableExists = await ScalarAsync(
                 connectionString, "SELECT to_regclass('public.card') IS NOT NULL", cancellationToken);
-            Assert.False((bool)cardTableExists!);
+            Assert.True((bool)cardTableExists!);
+            Assert.Equal(
+                "20261009130440_AddBillsAndExpenses",
+                await ScalarAsync(connectionString, "SELECT max(migration_id) FROM __ef_migrations_history", cancellationToken));
         }
         finally
         {
