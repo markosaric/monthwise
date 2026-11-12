@@ -1,4 +1,4 @@
-import { centsToEuroInput, formatCents, parseEuroInput } from './money'
+import { centsToEuroInput, formatCents, parseEuroInput, parseSignedEuroInput } from './money'
 
 // Intl uses a non-breaking space before the currency sign.
 const normalize = (value: string) => value.replace(/\s/g, ' ')
@@ -42,4 +42,22 @@ describe('centsToEuroInput', () => {
     expect(centsToEuroInput(150000)).toBe('1500')
     expect(centsToEuroInput(5)).toBe('0,05')
   })
+
+  it.each([
+    [-1, '-0,01'],
+    [-50, '-0,50'],
+    [-99, '-0,99'],
+    [-100, '-1'],
+    [-150, '-1,50'],
+    [0, '0'],
+  ])('keeps the sign of %i cents', (cents, text) => {
+    expect(centsToEuroInput(cents)).toBe(text)
+  })
+
+  it.each([-150, -99, -50, -1, 0, 5, 150, 123456])(
+    'gives %i cents back after parsing a signed amount',
+    (cents) => {
+      expect(parseSignedEuroInput(centsToEuroInput(cents))).toBe(cents)
+    },
+  )
 })

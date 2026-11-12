@@ -331,6 +331,45 @@ describe('Balance entries on the account details screen', () => {
       within(balance).getByRole('button', { name: t.balance.addCorrection }),
     ).toBeInTheDocument()
   })
+
+  it('keeps the minus sign of a balance under one euro when it is edited', async () => {
+    const entry = {
+      id: 'entry-1',
+      accountId: 'tekuci',
+      kind: 'Starting',
+      date: '2026-10-01',
+      balanceCents: -50,
+      differenceCents: 0,
+      note: null,
+    }
+    let saved: unknown
+    stubApi({
+      ...healthy,
+      'GET /api/cards/tekuci': () => json(aCard({ id: 'tekuci', name: 'Tekući', type: 'Debit' })),
+      'GET /api/cards/tekuci/balance': () =>
+        json({
+          balance: {
+            accountId: 'tekuci',
+            currentBalanceCents: -50,
+            expectedBalanceCents: -50,
+            hasStartingBalance: true,
+          },
+          entries: [entry],
+        }),
+      'PUT /api/balance-entries/entry-1': async (request) => {
+        saved = await request.json()
+        return json(entry)
+      },
+    })
+    renderRoute('/settings/cards/tekuci')
+
+    const balance = await screen.findByRole('region', { name: t.balance.title })
+    await userEvent.click(await within(balance).findByRole('button', { name: t.actions.edit }))
+    expect(within(balance).getByLabelText(t.balance.amount)).toHaveValue('-0,50')
+
+    await userEvent.click(within(balance).getByRole('button', { name: t.actions.save }))
+    await waitFor(() => expect(saved).toMatchObject({ balanceCents: -50 }))
+  })
 })
 
 describe('Cash flow dashboard and report', () => {

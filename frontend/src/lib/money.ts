@@ -37,11 +37,13 @@ export function parseEuroInput(input: string): number | null {
   return Number.isSafeInteger(cents) ? cents : null
 }
 
-/** Cents as an editable euro value, e.g. 123456 → "1234,56". */
+/** Cents as an editable euro value, e.g. 123456 → "1234,56", -50 → "-0,50". */
 export function centsToEuroInput(cents: number): string {
-  const euros = Math.trunc(cents / 100)
-  const rest = Math.abs(cents % 100)
-  return rest === 0 ? String(euros) : `${euros},${String(rest).padStart(2, '0')}`
+  const sign = cents < 0 ? '-' : ''
+  const absolute = Math.abs(cents)
+  const euros = Math.trunc(absolute / 100)
+  const rest = absolute % 100
+  return rest === 0 ? `${sign}${euros}` : `${sign}${euros},${String(rest).padStart(2, '0')}`
 }
 
 /** Parses a balance that may be negative, e.g. "-250,00" → -25000. */
