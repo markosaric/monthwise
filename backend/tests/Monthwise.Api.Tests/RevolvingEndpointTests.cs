@@ -60,6 +60,19 @@ public sealed class RevolvingEndpointTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task One_card_shows_the_same_as_in_the_card_list()
+    {
+        var list = (await GetAsync("/api/cards")).EnumerateArray().ToList();
+        foreach (var id in new[] { _account, _revolving })
+        {
+            var listed = list.Single(c => c.GetProperty("id").GetGuid() == id);
+            var details = await GetAsync($"/api/cards/{id}");
+            Assert.Equal(listed.GetRawText(), details.GetRawText());
+        }
+        Assert.Equal(JsonValueKind.Null, list.Single(c => c.GetProperty("id").GetGuid() == _account).GetProperty("revolvingDebtCents").ValueKind);
+    }
+
+    [Fact]
     public async Task A_revolving_card_has_its_terms_and_starting_debt_and_is_not_an_account()
     {
         var card = await GetAsync($"/api/cards/{_revolving}");

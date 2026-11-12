@@ -50,11 +50,18 @@ public sealed class GetCardHandler(
     public async Task<Result<CardResponse>> HandleAsync(Guid id, CancellationToken cancellationToken)
     {
         var mapping = await CardMapping.LoadAsync(issuers, banks, cards, timeProvider.Today(), cancellationToken);
-        mapping.Debts = await GetCardsHandler.DebtsAsync(revolvingLedger, cancellationToken);
         var card = mapping.AllCards.FirstOrDefault(c => c.Id == id);
-        return card is null
-            ? Result.Failure<CardResponse>(CardErrors.NotFound)
-            : Result.Success(mapping.ToResponse(card));
+        if (card is null)
+        {
+            return Result.Failure<CardResponse>(CardErrors.NotFound);
+        }
+        // Only a revolving card shows a debt (revolving FR-5), and only its own one is needed.
+        if (card.IsRevolving)
+        {
+            var book = await revolvingLedger.LoadAsync(cancellationToken);
+            mapping.Debts = new Dictionary<Guid, Money> { [card.Id] = book.DebtOf(card.Id) };
+        }
+        return Result.Success(mapping.ToResponse(card));
     }
 }
 
