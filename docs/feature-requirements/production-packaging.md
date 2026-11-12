@@ -282,3 +282,52 @@ computer, without anyone noticing.
 - The base images the release image is built from, and the database image used by CI and the
   Docker one-click.
 - npm and NuGet packages, which lock files already fix.
+
+## Appendix 3: Backup before an update, no automatic undo of migrations
+
+- **Date:** 2026-11-11
+- **Branch:** `fix/migration_backup`
+- **Changes:** FR-3, FR-8, FR-9, FR-10, acceptance criteria 3, 5 and 6
+
+Bringing the database up to date can fail halfway. Undoing the changes already made, step by step,
+can itself remove data (for example a column and everything in it), and before an update nothing
+keeps a copy of the data. This appendix makes a copy of the database the safety net for every
+update instead.
+
+**FR-3 Database migrations** (replaces the second point)
+- If the database cannot be brought up to date, the application does not start working on it: it
+  reports the problem in the health response and in the log. The application itself never undoes
+  the changes it has already made to the database; the update backup (FR-3a) is how the data is
+  brought back.
+
+**FR-3a Backup before an update** (new)
+- On the Docker one-click (FR-8) and the native background service (FR-9), the update command
+  first saves a complete copy of the database (an **update backup**) on the installation, before
+  the new release touches the database.
+- If the update backup cannot be made, the update stops before anything is changed, says why, and
+  the running release keeps working.
+- Each update backup is named with the date and time and the version it was taken from. The last
+  three update backups are kept; older ones are deleted by the next update.
+- Update backups are kept next to the installation's data, survive stopping, updating and
+  uninstalling (as the data does, FR-8 and FR-9), and only the user's own account can read them.
+- If the new release cannot bring the database up to date or does not become ready, the update
+  command puts the database back exactly as it was in the update backup, starts the release that
+  was running before (on the Docker one-click the installation stays fixed to that version, as in
+  Appendix 2), and tells the user that the update failed, that the data is as it was before
+  the update, and where the update backup and the log are.
+- If putting the database back fails too, the update command stops, leaves Monthwise stopped, and
+  tells the user where the update backup is and that the user manual describes how to restore it
+  by hand.
+- On Azure (FR-10), the managed database's own backups are the update backup: the documented
+  deploy step says how to restore the database to the time just before the deploy if the new
+  release reports that bringing the database up to date failed.
+
+**Acceptance criteria** (3, 5 and 6 are read with these additions)
+- 3: when bringing the database up to date fails, the application makes no further change to the
+  database and reports the problem; it never removes data to undo earlier steps.
+- 5 and 6: every update first makes an update backup; when the update backup fails, nothing is
+  updated; when the new release fails to bring the database up to date, the data afterwards is
+  exactly as it was before the update and the previous release is running; at most three update
+  backups are kept.
+- The user manual's installation chapters say where the update backups are and how to restore
+  one by hand.

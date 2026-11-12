@@ -78,6 +78,9 @@ deploy() {
     --query 'properties.outputs.url.value' -o tsv
 }
 
+# The managed database's own backups are the update backup on Azure (FR-3a, Appendix 3): this is
+# the moment to restore to if the new release cannot bring the database up to date.
+before_deploy="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 say "Deploying Monthwise $VERSION (this takes several minutes the first time)..."
 # On the first deployment the app's access to Key Vault can take a minute to apply: try again once.
 url="$(deploy)" || { say "Retrying in 60 seconds..."; sleep 60; url="$(deploy)"; }
@@ -100,4 +103,11 @@ for _ in $(seq 1 60); do
   sleep 5
 done
 say "Monthwise did not answer yet. Its log: az containerapp logs show -g $RESOURCE_GROUP -n ca-monthwise"
+say ""
+say "If the log says that bringing the database up to date failed, Monthwise does not work on the"
+say "database and changes nothing more. To get the data back as it was before this deployment,"
+say "restore the database to $before_deploy as a new server and point Monthwise to it"
+say "(user manual, \"Azure's own backups\"):"
+say "  az postgres flexible-server restore --resource-group $RESOURCE_GROUP --name <new server name> \\"
+say "    --source-server $(az postgres flexible-server list --resource-group "$RESOURCE_GROUP" --query '[0].name' -o tsv) --restore-time $before_deploy"
 exit 1

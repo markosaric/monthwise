@@ -24,6 +24,8 @@ $ConfigDir = Join-Path $NativeDir 'config'
 $SecretsDir = Join-Path $ConfigDir 'secrets'
 $SettingsFile = Join-Path $ConfigDir 'settings.json'
 $LogDir = Join-Path $NativeDir 'logs'
+$BackupDir = Join-Path $NativeDir 'update-backups'
+$KeepUpdateBackups = 3
 $PgTask = 'Monthwise PostgreSQL'
 $AppTask = 'Monthwise'
 $AppExe = Join-Path $AppDir 'Monthwise.Api.exe'
@@ -201,28 +203,114 @@ function Install-Monthwise([string] $Version) {
     Write-Host "Manage it with: $(Join-Path $NativeDir 'monthwise.ps1') start|stop|update|status|logs|network|uninstall"
 }
 
+# Runs a PostgreSQL tool of this installation, signed in to its database server, and returns
+# whether it succeeded. The password is set for this one call only.
+function Invoke-PgTool([string] $Tool, [string[]] $Arguments) {
+    $env:PGPASSWORD = Get-Content (Join-Path $SecretsDir 'postgres_password') -Raw
+    try {
+        & (Join-Path $PgBin "$Tool.exe") -h 127.0.0.1 -p $PgPort -U monthwise @Arguments *> $null
+        return $LASTEXITCODE -eq 0
+    }
+    finally { Remove-Item Env:PGPASSWORD -ErrorAction SilentlyContinue }
+}
+
+function Start-Database {
+    if (Test-PostgresServer) { return $true }
+    Start-ScheduledTask -TaskName $PgTask
+    for ($i = 0; $i -lt 30; $i++) {
+        if (Test-PostgresServer) { return $true }
+        Start-Sleep -Seconds 1
+    }
+    return $false
+}
+
+function Get-RunningVersion {
+    try { return (Invoke-RestMethod -Uri "$(Get-Address)/api/health" -TimeoutSec 2).version }
+    catch { return $null }
+}
+
+# Saves a complete copy of the database before an update (FR-3a, Appendix 3) and returns its file,
+# or nothing when it failed. The Monthwise folder, and so this file, is private to this user account.
+function New-UpdateBackup([string] $FromVersion) {
+    New-Item -ItemType Directory -Force -Path $BackupDir | Out-Null
+    $safeVersion = $FromVersion -replace '[^A-Za-z0-9._-]', '_'
+    $file = Join-Path $BackupDir "monthwise-$(Get-Date -Format 'yyyyMMdd-HHmmss')-$safeVersion.dump"
+    if (-not (Start-Database)) { return $null }
+    # Written to .partial first, so a half-written file never looks like a backup.
+    if (-not (Invoke-PgTool 'pg_dump' @('-d', 'monthwise', '--format=custom', '--file', "$file.partial"))) {
+        Remove-Item -Force -ErrorAction SilentlyContinue "$file.partial"
+        return $null
+    }
+    Move-Item "$file.partial" $file
+    # The names start with the date and time, so sorting by name keeps the newest.
+    Get-ChildItem -Path $BackupDir -Filter 'monthwise-*.dump' | Sort-Object Name |
+        Select-Object -SkipLast $KeepUpdateBackups | Remove-Item -Force
+    return $file
+}
+
+# Puts the database back exactly as it was in the update backup, with the app stopped. The copy is
+# restored into a database of its own and swapped in only once it is complete, so a failed restore
+# leaves the database as it is.
+function Restore-UpdateBackup([string] $File) {
+    Stop-App
+    if (-not (Start-Database)) { return $false }
+    return (Invoke-PgTool 'dropdb' @('--if-exists', 'monthwise_restore')) -and
+        (Invoke-PgTool 'createdb' @('monthwise_restore')) -and
+        (Invoke-PgTool 'pg_restore' @('-d', 'monthwise_restore', '--no-owner', '--exit-on-error', $File)) -and
+        (Invoke-PgTool 'psql' @('-d', 'postgres', '-v', 'ON_ERROR_STOP=1', '-q',
+            '-c', "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = 'monthwise'",
+            '-c', 'ALTER DATABASE monthwise RENAME TO monthwise_before_restore',
+            '-c', 'ALTER DATABASE monthwise_restore RENAME TO monthwise')) -and
+        (Invoke-PgTool 'dropdb' @('--force', 'monthwise_before_restore'))
+}
+
 function Update-Monthwise([string] $Version) {
     Assert-Gh
     if (-not (Test-Path $AppExe)) { Fail 'Monthwise is not installed. Use: monthwise.ps1 install' }
+    $fromVersion = Get-RunningVersion
+    if (-not $fromVersion) { $fromVersion = 'unknown' }
     Write-Host "Downloading Monthwise ($Version)..."
     $new = Join-Path $NativeDir 'app.new'
     $previous = Join-Path $NativeDir 'app.previous'
     Expand-Release $Version $new
+
+    # The app is stopped first, so nothing changes in the database after its backup.
+    Write-Host 'Saving an update backup of the database...'
     Stop-App
+    $backup = New-UpdateBackup $fromVersion
+    if (-not $backup) {
+        Remove-Item -Recurse -Force $new
+        Start-ScheduledTask -TaskName $AppTask
+        Fail 'The update backup failed, so nothing was updated. Its log: monthwise.ps1 logs'
+    }
+    Write-Host "Update backup: $backup"
+
     if (Test-Path $previous) { Remove-Item -Recurse -Force $previous }
     Move-Item $AppDir $previous
     Move-Item $new $AppDir
     Start-ScheduledTask -TaskName $AppTask
     if (Wait-Ready) {
-        Write-Host "Monthwise is updated: $((Invoke-RestMethod "$(Get-Address)/api/health").version)"
+        Write-Host "Monthwise is updated: $(Get-RunningVersion)"
         return
     }
-    Write-Host 'The new version did not start; going back to the previous one.'
+
+    Write-Host 'The new version did not start. Putting the data back from the update backup and going back to the previous version...'
+    if (Restore-UpdateBackup $backup) {
+        Remove-Item -Recurse -Force $AppDir
+        Move-Item $previous $AppDir
+        Start-ScheduledTask -TaskName $AppTask
+        if (Wait-Ready) {
+            Fail ("The update failed. Your data is as it was before the update, and the previous version is running again.`n" +
+                "Update backup: $backup`nLog: monthwise.ps1 logs")
+        }
+        Fail ("The update failed. Your data is as it was before the update, but the previous version did not start either.`n" +
+            "Update backup: $backup`nLog: monthwise.ps1 logs")
+    }
+    # The new version stays installed: it refuses to work on a database it could not bring up to date.
     Stop-App
-    Remove-Item -Recurse -Force $AppDir
-    Move-Item $previous $AppDir
-    Start-ScheduledTask -TaskName $AppTask
-    Fail 'Update failed. The previous version is running again; its log: monthwise.ps1 logs'
+    Fail ("The update failed, and putting the data back failed too, so Monthwise is stopped.`n" +
+        "Your data is in the update backup: $backup`n" +
+        'The user manual explains how to restore it by hand ("Restoring an update backup by hand").')
 }
 
 switch ($Command) {
@@ -268,14 +356,14 @@ switch ($Command) {
             if (Test-Path $folder) { Remove-Item -Recurse -Force $folder }
         }
         if ($Data) {
-            $answer = Read-Host "Delete all Monthwise data and its secrets in $NativeDir? This cannot be undone. Type DELETE"
+            $answer = Read-Host "Delete all Monthwise data, its update backups and its secrets in $NativeDir? This cannot be undone. Type DELETE"
             if ($answer -ceq 'DELETE') {
                 Remove-Item -Recurse -Force $NativeDir
                 Write-Host 'Monthwise and its data are removed.'
                 return
             }
         }
-        Write-Host "Monthwise is uninstalled. The data, secrets, PostgreSQL and logs are kept in $NativeDir."
+        Write-Host "Monthwise is uninstalled. The data, update backups, secrets, PostgreSQL and logs are kept in $NativeDir."
     }
     default {
         Write-Host 'Usage: monthwise.ps1 install [version] | start | stop | update [version] | status | logs | network on|off | uninstall [-Data]'
