@@ -20,8 +20,11 @@ import { cashFlowTexts } from './texts'
 
 const t = cashFlowTexts.balance
 
-/** Balance of one account with its starting balance and corrections (FR-9, FR-10). */
-export function BalanceEntries({ accountId, canAdd }: { accountId: string; canAdd: boolean }) {
+/**
+ * Balance of one account with its starting balance and corrections (FR-9, FR-10). On an archived
+ * account (`readOnly`) the entries are only listed: no add, edit or delete (Appendix 3).
+ */
+export function BalanceEntries({ accountId, readOnly }: { accountId: string; readOnly: boolean }) {
   const { data, isPending, isError } = useAccountBalance(accountId)
   const [editor, setEditor] = useState<{ kind: BalanceEntryKind; entry?: BalanceEntry } | null>(
     null,
@@ -60,7 +63,7 @@ export function BalanceEntries({ accountId, canAdd }: { accountId: string; canAd
       {!balance.hasStartingBalance && (
         <p className="text-sm text-muted-foreground">{t.noStarting}</p>
       )}
-      {canAdd && editor === null && (
+      {!readOnly && editor === null && (
         <div className="flex flex-wrap gap-2">
           {!entries.some((e) => e.kind === 'Starting') && (
             <Button size="sm" onClick={() => setEditor({ kind: 'Starting' })}>
@@ -107,18 +110,20 @@ export function BalanceEntries({ accountId, canAdd }: { accountId: string; canAd
                   </span>
                 )}
                 {entry.note && <span className="text-muted-foreground">· {entry.note}</span>}
-                <span className="ml-auto flex gap-1">
-                  <Button
-                    size="xs"
-                    variant="ghost"
-                    onClick={() => setEditor({ kind: entry.kind ?? 'Correction', entry })}
-                  >
-                    {cashFlowTexts.actions.edit}
-                  </Button>
-                  <Button size="xs" variant="ghost" onClick={() => setDeleting(entry)}>
-                    {cashFlowTexts.actions.delete}
-                  </Button>
-                </span>
+                {!readOnly && (
+                  <span className="ml-auto flex gap-1">
+                    <Button
+                      size="xs"
+                      variant="ghost"
+                      onClick={() => setEditor({ kind: entry.kind ?? 'Correction', entry })}
+                    >
+                      {cashFlowTexts.actions.edit}
+                    </Button>
+                    <Button size="xs" variant="ghost" onClick={() => setDeleting(entry)}>
+                      {cashFlowTexts.actions.delete}
+                    </Button>
+                  </span>
+                )}
               </li>
             ))}
           </ul>

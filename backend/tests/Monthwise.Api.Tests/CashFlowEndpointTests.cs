@@ -248,6 +248,43 @@ public sealed class CashFlowEndpointTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Balance_entries_of_an_archived_account_cannot_be_edited_or_deleted()
+    {
+        var entry = await SendAsync(HttpMethod.Post, $"/api/cards/{_account}/balance-entries",
+            new { kind = "Starting", date = Iso(Today.AddDays(-10)), balanceCents = 10_000, note = "Opening" });
+        var entryId = entry.GetProperty("id").GetGuid();
+        await SendAsync(HttpMethod.Post, $"/api/cards/{_account}/archive");
+
+        var edit = await Client.PutAsJsonAsync($"/api/balance-entries/{entryId}",
+            new { kind = "Starting", date = Iso(Today), balanceCents = 99_000, note = "Changed" }, Ct);
+        Assert.Equal(HttpStatusCode.Conflict, edit.StatusCode);
+        var delete = await Client.DeleteAsync(new Uri($"/api/balance-entries/{entryId}", UriKind.Relative), Ct);
+        Assert.Equal(HttpStatusCode.Conflict, delete.StatusCode);
+
+        var unchanged = Assert.Single((await GetAsync($"/api/cards/{_account}/balance")).GetProperty("entries").EnumerateArray());
+        Assert.Equal(entryId, unchanged.GetProperty("id").GetGuid());
+        Assert.Equal(Iso(Today.AddDays(-10)), unchanged.GetProperty("date").GetString());
+        Assert.Equal(10_000, unchanged.GetProperty("balanceCents").GetInt64());
+        Assert.Equal("Opening", unchanged.GetProperty("note").GetString());
+    }
+
+    [Fact]
+    public async Task Balance_entries_of_a_blocked_account_can_still_be_edited_and_deleted()
+    {
+        var entry = await SendAsync(HttpMethod.Post, $"/api/cards/{_account}/balance-entries",
+            new { kind = "Correction", date = Iso(Today.AddDays(-1)), balanceCents = 5_000, note = (string?)null });
+        var entryId = entry.GetProperty("id").GetGuid();
+        await SendAsync(HttpMethod.Post, $"/api/cards/{_account}/block", new { reason = "lost" });
+
+        var edited = await SendAsync(HttpMethod.Put, $"/api/balance-entries/{entryId}",
+            new { kind = "Correction", date = Iso(Today.AddDays(-1)), balanceCents = 6_000, note = "Bank fee" });
+        Assert.Equal(6_000, edited.GetProperty("balanceCents").GetInt64());
+        var delete = await Client.DeleteAsync(new Uri($"/api/balance-entries/{entryId}", UriKind.Relative), Ct);
+        Assert.Equal(HttpStatusCode.NoContent, delete.StatusCode);
+        Assert.Empty((await GetAsync($"/api/cards/{_account}/balance")).GetProperty("entries").EnumerateArray());
+    }
+
+    [Fact]
     public async Task Chart_and_report_sum_inputs_by_day_month_and_group()
     {
         var previousMonth = MonthStart.AddMonths(-1);

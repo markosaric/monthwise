@@ -193,12 +193,14 @@ internal static class CashFlowEndpoints
                 (await handler.UpdateAsync(id, request, ct)).ToOk())
             .WithName("UpdateBalanceEntry")
             .WithSummary("Changes date, balance and note; the kind stays.")
-            .ProducesProblem(StatusCodes.Status404NotFound);
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status409Conflict);
 
         entries.MapDelete("/{id:guid}", async (Guid id, BalanceEntryHandler handler, CancellationToken ct) =>
                 (await handler.DeleteAsync(id, ct)).ToNoContent())
             .WithName("DeleteBalanceEntry")
-            .ProducesProblem(StatusCodes.Status404NotFound);
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status409Conflict);
     }
 
     private static void MapReports(IEndpointRouteBuilder routes)
