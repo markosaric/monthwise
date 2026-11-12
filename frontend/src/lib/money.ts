@@ -15,26 +15,36 @@ export function formatCents(cents: number): string {
 }
 
 /**
+ * Text shapes that are amounts, after spaces and "€" are removed (amount-input.md FR-1). With a
+ * comma: "1234,5" or "1.234,56" (dots group thousands in threes). Without a comma: "250",
+ * "1234.5" (a dot before one or two digits is a decimal point) or "1.234.567" (two or more
+ * thousands dots). A single dot before exactly three digits ("1.234") matches none of them,
+ * because it could mean either, and is refused (FR-2).
+ */
+const AMOUNT_SHAPES = [
+  /^(?<euros>\d+),(?<cents>\d{1,2})$/,
+  /^(?<euros>\d{1,3}(?:\.\d{3})+),(?<cents>\d{1,2})$/,
+  /^(?<euros>\d+)$/,
+  /^(?<euros>\d+)\.(?<cents>\d{1,2})$/,
+  /^(?<euros>\d{1,3}(?:\.\d{3}){2,})$/,
+]
+
+/**
  * Parses an amount typed in euros into cents, e.g. "1.234,56" → 123456, "1234.5" → 123450,
- * "250" → 25000. Accepts an optional "€" and spaces. Returns null when the text is not an amount
- * (negative amounts and more than two decimals are not amounts here).
+ * "250" → 25000. Accepts an optional "€" and spaces. Returns null when the text is not an amount:
+ * negative amounts, more than two decimals, badly placed dots, and a single dot before exactly
+ * three digits ("1.234"), which could be a thousands dot or a decimal point.
  */
 export function parseEuroInput(input: string): number | null {
-  let text = input.replace(/[\s€]/g, '')
-  if (text === '') return null
-
-  if (text.includes(',')) {
-    // de-DE style: "." groups thousands, "," is the decimal separator.
-    text = text.replace(/\./g, '').replace(',', '.')
-  } else if (!/^\d+\.\d{1,2}$/.test(text)) {
-    // A single "." with one or two digits after it is a decimal point; otherwise it groups thousands.
-    text = text.replace(/\./g, '')
+  const text = input.replace(/[\s€]/g, '')
+  for (const shape of AMOUNT_SHAPES) {
+    const groups = shape.exec(text)?.groups
+    if (!groups) continue
+    const { euros = '', cents = '' } = groups
+    const total = Number(euros.replace(/\./g, '')) * 100 + Number(cents.padEnd(2, '0'))
+    return Number.isSafeInteger(total) ? total : null
   }
-
-  const match = /^(\d+)(?:\.(\d{1,2}))?$/.exec(text)
-  if (!match) return null
-  const cents = Number(match[1]) * 100 + Number((match[2] ?? '').padEnd(2, '0'))
-  return Number.isSafeInteger(cents) ? cents : null
+  return null
 }
 
 /** Cents as an editable euro value, e.g. 123456 → "1234,56", -50 → "-0,50". */

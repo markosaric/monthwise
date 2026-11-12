@@ -85,7 +85,7 @@ describe('Card form for a revolving card', () => {
     await userEvent.selectOptions(screen.getByLabelText(cardTexts.fields.bank), zaba.id)
     await userEvent.type(screen.getByLabelText(cardTexts.fields.validThrough), '1229')
     await userEvent.selectOptions(screen.getByLabelText(cardTexts.fields.type), 'Revolving')
-    await userEvent.type(screen.getByLabelText(cardTexts.fields.debtLimit), '1.500')
+    await userEvent.type(screen.getByLabelText(cardTexts.fields.debtLimit), '1.500,00')
     await userEvent.type(screen.getByLabelText(t.form.minPaymentPercent), '8,33')
     await userEvent.type(screen.getByLabelText(t.form.minPaymentAmount), '13,27')
     await userEvent.type(screen.getByLabelText(t.form.interestPercent), '12,75')

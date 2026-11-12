@@ -1,7 +1,7 @@
 # Plan: Entering amounts in euros
 
 - **Branch:** `fix/euro_amount_input`
-- **Status:** In progress
+- **Status:** Done
 - **Date:** 2026-11-12
 - **Requirements:** [amount-input.md](../feature-requirements/amount-input.md)
 
