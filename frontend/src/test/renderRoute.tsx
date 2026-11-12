@@ -1,11 +1,12 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
 import { render } from '@testing-library/react'
 import { createMemoryRouter, RouterProvider } from 'react-router'
+import { createQueryClient } from '@/api/queryClient'
 import { routes } from '@/routes'
 
 /** Renders the app at the given path with a fresh query cache. */
 export function renderRoute(path = '/') {
-  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  const queryClient = createQueryClient({ defaultOptions: { queries: { retry: false } } })
   const router = createMemoryRouter(routes, { initialEntries: [path] })
   return render(
     <QueryClientProvider client={queryClient}>

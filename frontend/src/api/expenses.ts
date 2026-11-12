@@ -1,7 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { cardPurchasesQueryKey } from './cardPurchases'
-import { cardsQueryKey } from './cards'
-import { cashFlowQueryKey } from './cashFlow'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { api, type Schemas } from './client'
 import { ensureOk, unwrap } from './http'
 
@@ -27,21 +24,6 @@ export const cashWithdrawalCategoryId = '0199c8b0-0000-7000-8000-000000000499'
 export const expensesQueryKey = ['expenses'] as const
 const categoriesKey = ['expense-categories'] as const
 
-/**
- * Refreshes everything a bill or expense change can affect: bills and expenses, card payments (bills
- * and expenses paid with a credit card are in them), balances, chart and report.
- */
-function useInvalidateExpenses() {
-  const queryClient = useQueryClient()
-  return () =>
-    Promise.all([
-      queryClient.invalidateQueries({ queryKey: expensesQueryKey }),
-      queryClient.invalidateQueries({ queryKey: cardPurchasesQueryKey }),
-      queryClient.invalidateQueries({ queryKey: cashFlowQueryKey }),
-      queryClient.invalidateQueries({ queryKey: cardsQueryKey }),
-    ])
-}
-
 // Expense categories: one list for card purchases, bills and expenses (FR-1).
 
 export function useExpenseCategories(includeHidden = false) {
@@ -58,7 +40,6 @@ export type ExpenseCategoryChange =
   | { action: 'hide' | 'show' | 'delete'; id: string }
 
 export function useChangeExpenseCategory() {
-  const queryClient = useQueryClient()
   return useMutation({
     mutationFn: async (change: ExpenseCategoryChange) => {
       switch (change.action) {
@@ -91,12 +72,6 @@ export function useChangeExpenseCategory() {
           )
       }
     },
-    onSuccess: () =>
-      Promise.all([
-        queryClient.invalidateQueries({ queryKey: categoriesKey }),
-        queryClient.invalidateQueries({ queryKey: cardPurchasesQueryKey }),
-        queryClient.invalidateQueries({ queryKey: expensesQueryKey }),
-      ]),
   })
 }
 
@@ -126,7 +101,6 @@ export type RecurringBillChange =
   | { action: 'delete'; id: string }
 
 export function useChangeRecurringBill() {
-  const invalidate = useInvalidateExpenses()
   return useMutation({
     mutationFn: async (change: RecurringBillChange) => {
       switch (change.action) {
@@ -157,17 +131,14 @@ export function useChangeRecurringBill() {
           )
       }
     },
-    onSuccess: invalidate,
   })
 }
 
 /** Adds a Not issued bill for every active recurring bill to the month (FR-3). */
 export function useAddRecurringBills() {
-  const invalidate = useInvalidateExpenses()
   return useMutation({
     mutationFn: async (month: string) =>
       unwrap(await api.POST('/api/bills/add-recurring', { params: { query: { month } } })),
-    onSuccess: invalidate,
   })
 }
 
@@ -197,7 +168,6 @@ export type BillChange =
   | { action: 'delete'; id: string }
 
 export function useChangeBill() {
-  const invalidate = useInvalidateExpenses()
   return useMutation({
     mutationFn: async (change: BillChange) => {
       switch (change.action) {
@@ -232,7 +202,6 @@ export function useChangeBill() {
           )
       }
     },
-    onSuccess: invalidate,
   })
 }
 
@@ -270,7 +239,6 @@ export type ExpenseChange =
   | { action: 'delete'; id: string }
 
 export function useChangeExpense() {
-  const invalidate = useInvalidateExpenses()
   return useMutation({
     mutationFn: async (change: ExpenseChange) => {
       switch (change.action) {
@@ -298,6 +266,5 @@ export function useChangeExpense() {
           )
       }
     },
-    onSuccess: invalidate,
   })
 }

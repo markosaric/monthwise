@@ -67,6 +67,7 @@ function fileNameOf(response: Response): string {
 export function useExportData() {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { refreshAll: false },
     mutationFn: async (password: string) => {
       const response = await globalThis.fetch(url('/api/data/export'), {
         method: 'POST',
@@ -104,6 +105,7 @@ async function postForm<T>(path: string, form: FormData): Promise<T> {
 /** Reads a file and shows what it holds; changes nothing (FR-4). */
 export function useCheckImport() {
   return useMutation({
+    meta: { refreshAll: false },
     mutationFn: ({ file, password }: { file: File; password: string }) =>
       postForm<ImportCheck>('/api/data/import/check', importForm(file, password)),
   })
@@ -119,6 +121,7 @@ function useReloadEverything() {
 export function useImportData() {
   const reload = useReloadEverything()
   return useMutation({
+    meta: { refreshAll: false },
     mutationFn: ({
       file,
       password,
@@ -136,6 +139,7 @@ export function useImportData() {
 export function useRestoreSafetyCopy() {
   const reload = useReloadEverything()
   return useMutation({
+    meta: { refreshAll: false },
     mutationFn: async (confirmation: string) =>
       unwrap(await api.POST('/api/data/safety-copy/restore', { body: { confirmation } })),
     onSettled: reload,
@@ -145,6 +149,7 @@ export function useRestoreSafetyCopy() {
 export function useUpdateReminder() {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { refreshAll: false },
     mutationFn: async (body: { enabled: boolean; intervalDays: number }) =>
       unwrap(await api.PUT('/api/data/reminder', { body })),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: dataQueryKey }),
@@ -154,6 +159,7 @@ export function useUpdateReminder() {
 export function useDismissReminder() {
   const queryClient = useQueryClient()
   return useMutation({
+    meta: { refreshAll: false },
     mutationFn: async () => unwrap(await api.POST('/api/data/reminder/dismiss')),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: dataQueryKey }),
   })
