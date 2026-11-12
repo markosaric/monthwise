@@ -167,7 +167,7 @@ public sealed class DeleteInputHandler(
         }
         if (input.RecurringInputId is { } recurringId && input.OccurrenceDate is { } date)
         {
-            recurringInputs.AddSkip(new SkippedOccurrence(recurringId, date));
+            await recurringInputs.AddSkipAsync(new SkippedOccurrence(recurringId, date), cancellationToken);
         }
         inputs.Remove(input);
         await unitOfWork.SaveChangesAsync(cancellationToken);

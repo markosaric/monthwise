@@ -15,10 +15,7 @@ internal sealed class ParticipantRepository(MonthwiseDbContext db) : IParticipan
     public Task<bool> NameInUseAsync(string name, Guid? exceptId, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(name);
-        var lower = name.ToLowerInvariant();
-#pragma warning disable CA1304, CA1311, CA1862 // ToLower() is translated to SQL lower(), matching the unique index
-        return db.Participants.AnyAsync(p => p.Name.ToLower() == lower && p.Id != exceptId, cancellationToken);
-#pragma warning restore CA1304, CA1311, CA1862
+        return db.Participants.AnyAsync(p => p.Name == name && p.Id != exceptId, cancellationToken);
     }
 
     public async Task<bool> IsUsedAsync(Guid id, CancellationToken cancellationToken) =>

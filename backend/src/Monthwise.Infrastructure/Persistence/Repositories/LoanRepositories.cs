@@ -16,11 +16,8 @@ internal sealed class LoanRepository(MonthwiseDbContext db) : ILoanRepository
     public Task<bool> NameInUseAsync(string name, Guid? exceptLoanId, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(name);
-        var lower = name.ToLowerInvariant();
-#pragma warning disable CA1304, CA1311, CA1862 // ToLower() is translated to SQL lower(), matching the unique index
         return db.Loans.AnyAsync(
-            l => l.ClosedOn == null && l.Name.ToLower() == lower && l.Id != exceptLoanId, cancellationToken);
-#pragma warning restore CA1304, CA1311, CA1862
+            l => l.ClosedOn == null && l.Name == name && l.Id != exceptLoanId, cancellationToken);
     }
 
     public void Add(Loan loan) => db.Loans.Add(loan);
@@ -54,10 +51,7 @@ internal sealed class LoanCategoryRepository(MonthwiseDbContext db) : ILoanCateg
     public Task<bool> NameInUseAsync(string name, Guid? exceptId, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(name);
-        var lower = name.ToLowerInvariant();
-#pragma warning disable CA1304, CA1311, CA1862 // ToLower() is translated to SQL lower(), matching the unique index
-        return db.LoanCategories.AnyAsync(c => c.Name.ToLower() == lower && c.Id != exceptId, cancellationToken);
-#pragma warning restore CA1304, CA1311, CA1862
+        return db.LoanCategories.AnyAsync(c => c.Name == name && c.Id != exceptId, cancellationToken);
     }
 
     public Task<bool> IsUsedAsync(Guid id, CancellationToken cancellationToken) =>
@@ -79,11 +73,8 @@ internal sealed class LoanSubcategoryRepository(MonthwiseDbContext db) : ILoanSu
     public Task<bool> NameInUseAsync(Guid categoryId, string name, Guid? exceptId, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(name);
-        var lower = name.ToLowerInvariant();
-#pragma warning disable CA1304, CA1311, CA1862 // ToLower() is translated to SQL lower(), matching the unique index
         return db.LoanSubcategories.AnyAsync(
-            s => s.CategoryId == categoryId && s.Name.ToLower() == lower && s.Id != exceptId, cancellationToken);
-#pragma warning restore CA1304, CA1311, CA1862
+            s => s.CategoryId == categoryId && s.Name == name && s.Id != exceptId, cancellationToken);
     }
 
     public Task<bool> IsUsedAsync(Guid id, CancellationToken cancellationToken) =>

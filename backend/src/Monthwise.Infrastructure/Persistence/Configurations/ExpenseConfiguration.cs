@@ -12,10 +12,11 @@ internal sealed class ExpenseCategoryConfiguration : IEntityTypeConfiguration<Ex
         builder.ToTable("expense_category");
         builder.HasKey(c => c.Id);
         builder.Property(c => c.Id).ValueGeneratedNever();
-        builder.Property(c => c.Name).HasMaxLength(ExpenseCategory.NameMaxLength);
+        builder.Property(c => c.Name).HasMaxLength(ExpenseCategory.NameMaxLength).UseNameCollation();
         builder.Ignore(c => c.IsHidden);
-        // Name uniqueness ignoring case is a unique index on lower(name), and the starting categories are
-        // inserted with SQL, both in the migration: a user's own category may already have a starting name.
+        builder.HasIndex(c => c.Name).IsUnique().HasDatabaseName("ux_expense_category_name");
+        // The starting categories are inserted with SQL in the migration: a user's own category may
+        // already have a starting name.
     }
 }
 
@@ -32,7 +33,7 @@ internal sealed class RecurringBillConfiguration : IEntityTypeConfiguration<Recu
         });
         builder.HasKey(r => r.Id);
         builder.Property(r => r.Id).ValueGeneratedNever();
-        builder.Property(r => r.Name).HasMaxLength(RecurringBill.NameMaxLength);
+        builder.Property(r => r.Name).HasMaxLength(RecurringBill.NameMaxLength).UseNameCollation();
         builder.Property(r => r.Payee).HasMaxLength(RecurringBill.PayeeMaxLength);
         builder.Property(r => r.Description).HasMaxLength(RecurringBill.DescriptionMaxLength);
         builder.Property(r => r.Amount).HasColumnName("amount_cents");
@@ -47,8 +48,8 @@ internal sealed class RecurringBillConfiguration : IEntityTypeConfiguration<Recu
 
         builder.HasIndex(r => r.CategoryId).HasDatabaseName("ix_recurring_bill_category_id");
         builder.HasIndex(r => r.PaidFromId).HasDatabaseName("ix_recurring_bill_paid_from_id");
-        // Names are unique among active recurring bills ignoring case: a partial index on lower(name),
-        // created in the migration.
+        // Names are unique among active recurring bills only.
+        builder.HasIndex(r => r.Name).IsUnique().HasFilter("stopped_on IS NULL").HasDatabaseName("ux_recurring_bill_name");
     }
 }
 

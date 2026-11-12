@@ -54,6 +54,7 @@ public sealed class MonthwiseDbContext(DbContextOptions<MonthwiseDbContext> opti
     {
         // The model is built once per process and cached, together with the encrypting converters
         // and the cipher they hold. The API has one cipher (a singleton); tests use fixed test keys.
+        modelBuilder.HasNameCollation();
         modelBuilder.ApplyConfiguration(new CardConfiguration());
         modelBuilder.ApplyConfiguration(new CardSensitiveDataConfiguration(cipher));
         modelBuilder.ApplyConfiguration(new CardIssuerConfiguration());

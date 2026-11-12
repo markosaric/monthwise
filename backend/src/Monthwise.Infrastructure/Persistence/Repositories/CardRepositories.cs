@@ -22,10 +22,7 @@ internal sealed class CardRepository(MonthwiseDbContext db, ISensitiveDataCipher
 
     public Task<bool> NameInUseAsync(string name, Guid? exceptCardId, CancellationToken cancellationToken)
     {
-        var lower = name.ToLowerInvariant();
-#pragma warning disable CA1304, CA1311, CA1862 // ToLower() is translated to SQL lower(), matching the unique index
-        return db.Cards.AnyAsync(c => c.Name.ToLower() == lower && c.Id != exceptCardId, cancellationToken);
-#pragma warning restore CA1304, CA1311, CA1862
+        return db.Cards.AnyAsync(c => c.Name == name && c.Id != exceptCardId, cancellationToken);
     }
 
     public Task<bool> CardNumberInUseAsync(CardNumber cardNumber, Guid? exceptCardId, CancellationToken cancellationToken) =>
@@ -62,10 +59,7 @@ internal sealed class CardListRepository<TEntry>(MonthwiseDbContext db) : ICardL
 
     public Task<bool> NameInUseAsync(string name, CancellationToken cancellationToken)
     {
-        var lower = name.ToLowerInvariant();
-#pragma warning disable CA1304, CA1311, CA1862 // ToLower() is translated to SQL lower(), matching the unique index
-        return db.Set<TEntry>().AnyAsync(e => e.Name.ToLower() == lower, cancellationToken);
-#pragma warning restore CA1304, CA1311, CA1862
+        return db.Set<TEntry>().AnyAsync(e => e.Name == name, cancellationToken);
     }
 
     public void Add(TEntry entry) => db.Set<TEntry>().Add(entry);

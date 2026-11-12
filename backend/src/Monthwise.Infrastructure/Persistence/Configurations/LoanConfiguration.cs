@@ -22,7 +22,7 @@ internal sealed class LoanConfiguration : IEntityTypeConfiguration<Loan>
 
         builder.HasKey(l => l.Id);
         builder.Property(l => l.Id).ValueGeneratedNever();
-        builder.Property(l => l.Name).HasMaxLength(Loan.NameMaxLength);
+        builder.Property(l => l.Name).HasMaxLength(Loan.NameMaxLength).UseNameCollation();
         builder.Property(l => l.PaymentMethod).HasConversion<string>().HasMaxLength(20);
         builder.Property(l => l.MonthlyPayment).HasColumnName("monthly_payment_cents");
         builder.Property(l => l.ResidualValue).HasColumnName("residual_value_cents");
@@ -50,8 +50,8 @@ internal sealed class LoanConfiguration : IEntityTypeConfiguration<Loan>
         builder.HasIndex(l => l.SubcategoryId).HasDatabaseName("ix_loan_subcategory_id");
         builder.HasIndex(l => l.LenderId).HasDatabaseName("ix_loan_lender_id");
         builder.HasIndex(l => l.AccountId).HasDatabaseName("ix_loan_account_id");
-        // Name uniqueness ignoring case among loans that are not closed is a partial unique index on
-        // lower(name), created in the migration.
+        // Names are unique among loans that are not closed only.
+        builder.HasIndex(l => l.Name).IsUnique().HasFilter("closed_on IS NULL").HasDatabaseName("ux_loan_name");
     }
 }
 
@@ -118,7 +118,7 @@ internal sealed class LoanCategoryConfiguration : IEntityTypeConfiguration<LoanC
         builder.ToTable("loan_category");
         builder.HasKey(c => c.Id);
         builder.Property(c => c.Id).ValueGeneratedNever();
-        builder.Property(c => c.Name).HasMaxLength(LoanCategory.NameMaxLength);
+        builder.Property(c => c.Name).HasMaxLength(LoanCategory.NameMaxLength).UseNameCollation();
         builder.Ignore(c => c.IsHidden);
         builder.HasData(LoanSeedData.Categories.Select(c => new
         {
@@ -127,7 +127,7 @@ internal sealed class LoanCategoryConfiguration : IEntityTypeConfiguration<LoanC
             c.AllowsResidualValue,
             IsPredefined = true,
         }));
-        // Name uniqueness ignoring case is a unique index on lower(name), created in the migration.
+        builder.HasIndex(c => c.Name).IsUnique().HasDatabaseName("ux_loan_category_name");
     }
 }
 
@@ -138,7 +138,7 @@ internal sealed class LoanSubcategoryConfiguration : IEntityTypeConfiguration<Lo
         builder.ToTable("loan_subcategory");
         builder.HasKey(s => s.Id);
         builder.Property(s => s.Id).ValueGeneratedNever();
-        builder.Property(s => s.Name).HasMaxLength(LoanSubcategory.NameMaxLength);
+        builder.Property(s => s.Name).HasMaxLength(LoanSubcategory.NameMaxLength).UseNameCollation();
         builder.Ignore(s => s.IsHidden);
         builder.HasOne<LoanCategory>().WithMany().HasForeignKey(s => s.CategoryId)
             .OnDelete(DeleteBehavior.Restrict).HasConstraintName("fk_loan_subcategory_loan_category_category_id");
@@ -150,8 +150,8 @@ internal sealed class LoanSubcategoryConfiguration : IEntityTypeConfiguration<Lo
             s.Name,
             IsPredefined = true,
         }));
-        // Name uniqueness within the category ignoring case is a unique index on (category_id,
-        // lower(name)), created in the migration.
+        // Names are unique within their category only.
+        builder.HasIndex(s => new { s.CategoryId, s.Name }).IsUnique().HasDatabaseName("ux_loan_subcategory_category_id_name");
     }
 }
 

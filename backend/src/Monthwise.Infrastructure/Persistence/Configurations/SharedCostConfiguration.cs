@@ -13,14 +13,14 @@ internal sealed class ParticipantConfiguration : IEntityTypeConfiguration<Partic
         builder.ToTable("participant");
         builder.HasKey(p => p.Id);
         builder.Property(p => p.Id).ValueGeneratedNever();
-        builder.Property(p => p.Name).HasMaxLength(Participant.NameMaxLength);
+        builder.Property(p => p.Name).HasMaxLength(Participant.NameMaxLength).UseNameCollation();
         builder.Property(p => p.Description).HasMaxLength(Participant.DescriptionMaxLength);
         builder.Ignore(p => p.IsArchived);
 
         builder.HasOne<Payer>().WithMany().HasForeignKey(p => p.PayerId)
             .OnDelete(DeleteBehavior.Restrict).HasConstraintName("fk_participant_payer_payer_id");
         builder.HasIndex(p => p.PayerId).IsUnique().HasDatabaseName("ux_participant_payer_id");
-        // Name uniqueness ignoring case is a unique index on lower(name), created in the migration.
+        builder.HasIndex(p => p.Name).IsUnique().HasDatabaseName("ux_participant_name");
     }
 }
 

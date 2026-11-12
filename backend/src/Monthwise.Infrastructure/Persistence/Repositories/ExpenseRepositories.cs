@@ -16,10 +16,7 @@ internal sealed class ExpenseCategoryRepository(MonthwiseDbContext db) : IExpens
     public Task<bool> NameInUseAsync(string name, Guid? exceptId, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(name);
-        var lower = name.ToLowerInvariant();
-#pragma warning disable CA1304, CA1311, CA1862 // ToLower() is translated to SQL lower(), matching the unique index
-        return db.ExpenseCategories.AnyAsync(c => c.Name.ToLower() == lower && c.Id != exceptId, cancellationToken);
-#pragma warning restore CA1304, CA1311, CA1862
+        return db.ExpenseCategories.AnyAsync(c => c.Name == name && c.Id != exceptId, cancellationToken);
     }
 
     public async Task<bool> IsUsedAsync(Guid id, CancellationToken cancellationToken) =>
@@ -44,11 +41,8 @@ internal sealed class RecurringBillRepository(MonthwiseDbContext db) : IRecurrin
     public Task<bool> NameInUseAsync(string name, Guid? exceptId, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(name);
-        var lower = name.ToLowerInvariant();
-#pragma warning disable CA1304, CA1311, CA1862 // ToLower() is translated to SQL lower(), matching the unique index
         return db.RecurringBills.AnyAsync(
-            r => r.StoppedOn == null && r.Name.ToLower() == lower && r.Id != exceptId, cancellationToken);
-#pragma warning restore CA1304, CA1311, CA1862
+            r => r.StoppedOn == null && r.Name == name && r.Id != exceptId, cancellationToken);
     }
 
     public void Add(RecurringBill recurringBill) => db.RecurringBills.Add(recurringBill);
