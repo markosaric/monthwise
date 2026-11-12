@@ -1,7 +1,7 @@
 # Plan: Load only what one card needs
 
 - **Branch:** `fix/single_card_loading`
-- **Status:** In progress
+- **Status:** Done
 - **Date:** 2026-11-12
 - **Requirements:** none (performance fix without behaviour change)
 
@@ -47,7 +47,7 @@ now reads each table only once per request. Nothing the user sees changes.
   - Existing tests that read one card keep passing unchanged: a revolving card with its debt
     (`RevolvingEndpointTests`), a card with installments (`CardPurchaseEndpointTests`) and a
     replacement card (`CardEndpointTests`).
-  - New test: an unknown card id answers 404.
+  - The existing `Unknown_cards_return_not_found` test covers the 404 for an unknown id.
   - New test: the details of a debit card and of a revolving card with debt return the same
     fields as the card list for those cards, so skipping the revolving ledger changes nothing.
 - Manual checks: count the statements of one `GET /api/cards/{id}` in the PostgreSQL log for a
