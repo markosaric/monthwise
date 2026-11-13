@@ -310,3 +310,33 @@ Acceptance criterion 7 now reads: An import replaces all household data or, on a
 changes nothing; a safety copy of the data before the import is kept only when the import
 succeeds and can be brought back from the history; a failed import or a failed bringing back
 leaves the previous safety copy as it was.
+
+## Appendix 3: Size limits for imported files
+
+- **Date:** 2026-11-13
+- **Branch:** `fix/import-size-limit`
+- **Changes:** FR-6 (checks before importing), FR-7 (bringing back the safety copy), acceptance criterion 5
+
+Today an export file of up to 100 MB is accepted, and its packed content is unpacked without any
+limit. A damaged or deliberately crafted file of a few megabytes can unpack to many gigabytes and
+use up the memory of the installation (the Azure installation has 0.5 GB), which stops the app
+for everyone. The main branch code review lists this as finding M3.
+
+- An export file larger than **10 MB** is refused before it is read, with the message *This file
+  is too large to be a Monthwise export file (more than 10 MB).*, and nothing changes. This holds
+  for checking a file and for importing it.
+- A file whose content unpacks to more than **50 MB** is refused as soon as that size is reached,
+  with the message *This file is too large to be a Monthwise export file.*, and nothing changes.
+  The rest of the file is not unpacked.
+- Both refusals are listed in the history as failed imports, like the other refusals in FR-6. A
+  refused check is not listed, as today.
+- The same 50 MB limit applies when the safety copy is brought back. A safety copy that is too
+  large is refused with the same message and stays as it was.
+- The limits are far above the data of a household: ten years of data take a few megabytes
+  unpacked and well under one megabyte in the file. An export gives no warning about them; if real
+  data ever comes close, the limits are widened instead.
+- The user manual's Data and backups chapter names the 10 MB limit.
+
+Acceptance criterion 5 now reads: A wrong password, a file that is not a Monthwise export file, a
+damaged file, a file from a newer release, a file larger than 10 MB, or a file whose content
+unpacks to more than 50 MB is refused before anything changes, with a plain message.
