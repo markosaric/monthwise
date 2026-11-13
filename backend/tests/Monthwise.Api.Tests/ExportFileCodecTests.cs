@@ -19,13 +19,14 @@ public class ExportFileCodecTests
         new DataSummaryResponse(1, 0, 0, 0, 0, 0),
         new JsonObject { ["card"] = new JsonArray(new JsonObject { ["id"] = "x", ["amount_cents"] = 123_456_789_012L }) });
 
-    private static ExportFileCodec Codec() => new(new SensitiveDataCipher(new SensitiveDataOptions
+    private static SensitiveDataCipher Cipher() => new(new SensitiveDataOptions
     {
         ActiveKeyId = "test",
         EncryptionKeys = { ["test"] = MonthwiseApiFactory.TestEncryptionKey },
         HashKey = MonthwiseApiFactory.TestHashKey,
-    }))
-    { Iterations = 1_000 };
+    });
+
+    private static ExportFileCodec Codec() => new(Cipher()) { Iterations = 1_000 };
 
     [Fact]
     public void A_file_reads_back_with_its_password()
@@ -67,7 +68,7 @@ public class ExportFileCodecTests
         var content = codec.Protect(Data);
 
         Assert.StartsWith("v1:test:", content, StringComparison.Ordinal);
-        Assert.Equal(Data.Migration, codec.Unprotect(content).Migration);
+        Assert.Equal(Data.Migration, codec.Unprotect(content).Value.Migration);
     }
 
     [Theory]
@@ -134,6 +135,35 @@ public class ExportFileCodecTests
         Assert.Equal("unknown", read.Value.Release);
         Assert.Equal(new DataSummaryResponse(0, 0, 0, 0, 0, 0), read.Value.Summary);
     }
+
+    [Fact]
+    public void Content_that_unpacks_past_the_limit_is_too_large()
+    {
+        var plain = Gzip(Padded(ValidContent().ToJsonString(), DataTransferLimits.MaxContentBytes + 1));
+
+        Assert.True(plain.Length < 1024 * 1024, "the packed file is small");
+        Assert.Equal(DataTransferErrors.ContentTooLarge, Assert.Single(ReadContent(plain).Errors));
+    }
+
+    [Fact]
+    public void Content_that_unpacks_to_just_the_limit_is_read()
+    {
+        var read = ReadContent(Gzip(Padded(ValidContent().ToJsonString(), DataTransferLimits.MaxContentBytes)));
+
+        Assert.True(read.IsSuccess);
+    }
+
+    [Fact]
+    public void A_safety_copy_that_unpacks_past_the_limit_is_too_large()
+    {
+        var packed = Gzip(Padded(ValidContent().ToJsonString(), DataTransferLimits.MaxContentBytes + 1));
+        var content = Cipher().Encrypt(Convert.ToBase64String(packed));
+
+        Assert.Equal(DataTransferErrors.ContentTooLarge, Assert.Single(Codec().Unprotect(content).Errors));
+    }
+
+    /// <summary>The JSON with spaces after it, so it is <paramref name="length"/> bytes long and still valid.</summary>
+    private static string Padded(string json, long length) => json + new string(' ', (int)(length - Encoding.UTF8.GetByteCount(json)));
 
     /// <summary>The content <see cref="ExportFileCodec.Write"/> makes for <see cref="Data"/>, before compression.</summary>
     private static JsonObject ValidContent() => new()

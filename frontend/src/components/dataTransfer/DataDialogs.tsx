@@ -22,9 +22,11 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { formatDateTime } from './format'
-import { minPasswordLength, dataTexts as t } from './texts'
+import { maxImportFileMegabytes, minPasswordLength, dataTexts as t } from './texts'
 
 function errorText(error: unknown): string {
+  // The server refuses a request far above the file limit before it reaches Monthwise (Appendix 3).
+  if (error instanceof ApiError && error.status === 413) return t.import.tooLarge
   if (error instanceof ApiError) {
     return Object.values(error.fieldErrors)[0]?.[0] ?? error.message
   }
@@ -198,6 +200,11 @@ export function ImportDialog({
 
   async function submit() {
     if (!file) return
+    if (file.size > maxImportFileMegabytes * 1024 * 1024) {
+      // Refused before uploading anything (Appendix 3).
+      setError(t.import.tooLarge)
+      return
+    }
     setError(null)
     try {
       if (!checked) {

@@ -141,7 +141,7 @@ public sealed class ImportDataHandler(
             DataTransferKind.SafetyCopyRestore,
             fileName: null,
             async ct => await repository.GetSafetyCopyAsync(ct) is { } copy
-                ? Result.Success(codec.Unprotect(copy.Content))
+                ? codec.Unprotect(copy.Content)
                 : Result.Failure<HouseholdData>(DataTransferErrors.NoSafetyCopy),
             cancellationToken);
     }
@@ -237,6 +237,10 @@ public sealed class ImportDataHandler(
         if (file is null || file.Length == 0)
         {
             return Result.Failure<HouseholdData>(DataTransferErrors.FileRequired);
+        }
+        if (file.Length > DataTransferLimits.MaxFileBytes)
+        {
+            return Result.Failure<HouseholdData>(DataTransferErrors.FileTooLarge);
         }
         if (string.IsNullOrEmpty(password))
         {

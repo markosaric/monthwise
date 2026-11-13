@@ -6,6 +6,7 @@ using System.Text.Json.Nodes;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Monthwise.Application.DataTransfer;
+using Monthwise.Domain.DataTransfer;
 using Npgsql;
 
 namespace Monthwise.Api.Tests;
@@ -311,6 +312,65 @@ public sealed class DataEndpointTests : IAsyncLifetime
         await connection.OpenAsync(Ct);
         await using var command = new NpgsqlCommand("SELECT content FROM data_safety_copy", connection);
         Assert.Equal(broken, await command.ExecuteScalarAsync(Ct));
+    }
+
+    [Fact]
+    public async Task A_file_over_10_MB_is_refused_before_it_is_read()
+    {
+        await CreateCardAsync("Family Visa", Visa, null);
+        var before = await SnapshotAsync();
+        var file = new byte[DataTransferLimits.MaxFileBytes + 1];
+
+        var check = await PostFormAsync("/api/data/import/check", file, Password);
+        Assert.Equal("This file is too large to be a Monthwise export file (more than 10 MB).", await ErrorsAsync(check));
+        Assert.Equal(0, await HistoryCountAsync("Import", succeeded: false));
+
+        var import = await PostFormAsync("/api/data/import", file, Password, "REPLACE");
+        Assert.Equal("This file is too large to be a Monthwise export file (more than 10 MB).", await ErrorsAsync(import));
+        Assert.Equal(before, await SnapshotAsync());
+        Assert.Equal(1, await HistoryCountAsync("Import", succeeded: false));
+    }
+
+    [Fact]
+    public async Task A_small_file_that_unpacks_past_50_MB_is_refused()
+    {
+        await CreateCardAsync("Family Visa", Visa, null);
+        var before = await SnapshotAsync();
+        var file = Codec.Write(Oversized(Codec.Read(await ExportAsync(), Password).Value), Password);
+        Assert.True(file.Length < DataTransferLimits.MaxFileBytes, "the file itself is small");
+
+        var import = await PostFormAsync("/api/data/import", file, Password, "REPLACE");
+
+        Assert.Equal("This file is too large to be a Monthwise export file.", await ErrorsAsync(import));
+        Assert.Equal(before, await SnapshotAsync());
+        Assert.Equal(1, await HistoryCountAsync("Import", succeeded: false));
+    }
+
+    [Fact]
+    public async Task A_safety_copy_that_unpacks_past_50_MB_is_refused_and_kept()
+    {
+        await CreateCardAsync("Family Visa", Visa, null);
+        var file = await ExportAsync();
+        Assert.Equal(HttpStatusCode.OK, (await PostFormAsync("/api/data/import", file, Password, "REPLACE")).StatusCode);
+        var oversized = Codec.Protect(Oversized(Codec.Read(file, Password).Value));
+        await ExecuteSqlAsync($"UPDATE data_safety_copy SET content = '{oversized.Replace("'", "''", StringComparison.Ordinal)}'");
+        var before = await SnapshotAsync();
+
+        var restore = await Client.PostAsJsonAsync("/api/data/safety-copy/restore", new { confirmation = "REPLACE" }, Ct);
+
+        Assert.Equal("This file is too large to be a Monthwise export file.", await ErrorsAsync(restore));
+        Assert.Equal(before, await SnapshotAsync());
+        await using var connection = new NpgsqlConnection(_connectionString);
+        await connection.OpenAsync(Ct);
+        await using var command = new NpgsqlCommand("SELECT content FROM data_safety_copy", connection);
+        Assert.Equal(oversized, await command.ExecuteScalarAsync(Ct));
+    }
+
+    /// <summary>The data with one very long, very compressible value, so it unpacks past the 50 MB limit.</summary>
+    private static HouseholdData Oversized(HouseholdData data)
+    {
+        data.Tables["card"]![0]!["padding"] = new string('a', (int)DataTransferLimits.MaxContentBytes + 1);
+        return data;
     }
 
     /// <summary>The same file with a card without a name, which breaks a rule of the database while the data is copied.</summary>

@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Monthwise.Application.DataTransfer;
+using Monthwise.Domain.DataTransfer;
 
 namespace Monthwise.Api.Endpoints;
 
@@ -10,8 +11,11 @@ internal static class DataEndpoints
     /// <summary>Who may export and import (FR-1). Login comes in a later phase; until then it allows every request.</summary>
     public const string HouseholdAdminPolicy = "HouseholdAdmin";
 
-    /// <summary>The largest export file an import accepts.</summary>
-    public const long MaxFileBytes = 100L * 1024 * 1024;
+    /// <summary>
+    /// The largest import request: the file limit plus room for the form fields, so a file just over the limit
+    /// still reaches the handler and gets its plain message (backup and restore Appendix 3).
+    /// </summary>
+    public const long MaxRequestBytes = DataTransferLimits.MaxFileBytes + (1024L * 1024);
 
     public static IServiceCollection AddDataPolicies(this IServiceCollection services) =>
         services.AddAuthorizationBuilder()
@@ -49,7 +53,7 @@ internal static class DataEndpoints
             .WithName("CheckImport")
             .WithSummary("Reads an export file and shows what it holds next to what Monthwise holds now. Changes nothing.")
             .DisableAntiforgery()
-            .WithMetadata(new RequestSizeLimitAttribute(MaxFileBytes))
+            .WithMetadata(new RequestSizeLimitAttribute(MaxRequestBytes))
             .RequireAuthorization(HouseholdAdminPolicy);
 
         data.MapPost("/import", async (
@@ -62,7 +66,7 @@ internal static class DataEndpoints
             .WithName("ImportData")
             .WithSummary("Replaces all household data with the data of an export file. Needs the confirmation word REPLACE; makes a safety copy first.")
             .DisableAntiforgery()
-            .WithMetadata(new RequestSizeLimitAttribute(MaxFileBytes))
+            .WithMetadata(new RequestSizeLimitAttribute(MaxRequestBytes))
             .ProducesProblem(StatusCodes.Status409Conflict)
             .RequireAuthorization(HouseholdAdminPolicy);
 
@@ -93,8 +97,11 @@ internal static class DataEndpoints
         {
             return null;
         }
-        using var buffer = new MemoryStream((int)Math.Min(file.Length, MaxFileBytes));
-        await file.CopyToAsync(buffer, cancellationToken);
-        return buffer.ToArray();
+        // One byte more than the limit is enough for the handler to refuse the file; the rest is never read.
+        var length = (int)Math.Min(file.Length, DataTransferLimits.MaxFileBytes + 1);
+        var content = new byte[length];
+        await using var stream = file.OpenReadStream();
+        await stream.ReadExactlyAsync(content, cancellationToken);
+        return content;
     }
 }
