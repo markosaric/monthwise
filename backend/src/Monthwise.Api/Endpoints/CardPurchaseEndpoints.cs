@@ -43,26 +43,26 @@ internal static class CardPurchaseEndpoints
             .ProducesProblem(StatusCodes.Status404NotFound);
 
         card.MapGet("/card-payments/{month}", async (Guid id, string month, GetInstallmentCardHandler handler, CancellationToken ct) =>
-                YearMonth.TryParse(month, out var parsed)
+                MonthParameter.TryParse(month, out var parsed)
                     ? (await handler.PaymentDetailsAsync(id, parsed, ct)).ToOk()
-                    : InvalidMonth())
+                    : MonthParameter.Invalid("month", month))
             .WithName("GetCardPayment")
             .WithSummary("One card payment (yyyy-MM) with every purchase, installment and credit in it.")
             .ProducesProblem(StatusCodes.Status404NotFound);
 
         card.MapPost("/card-payments/{month}/paid", async (
                 Guid id, string month, CardPaymentPaidRequest request, CardPaymentHandler handler, CancellationToken ct) =>
-                YearMonth.TryParse(month, out var parsed)
+                MonthParameter.TryParse(month, out var parsed)
                     ? (await handler.MarkPaidAsync(id, parsed, request, ct)).ToOk()
-                    : InvalidMonth())
+                    : MonthParameter.Invalid("month", month))
             .WithName("MarkCardPaymentPaid")
             .WithSummary("Ticks Paid. The paid date defaults to today and the account to the card's paying account.")
             .ProducesProblem(StatusCodes.Status404NotFound);
 
         card.MapDelete("/card-payments/{month}/paid", async (Guid id, string month, CardPaymentHandler handler, CancellationToken ct) =>
-                YearMonth.TryParse(month, out var parsed)
+                MonthParameter.TryParse(month, out var parsed)
                     ? (await handler.MarkUnpaidAsync(id, parsed, ct)).ToOk()
-                    : InvalidMonth())
+                    : MonthParameter.Invalid("month", month))
             .WithName("MarkCardPaymentUnpaid")
             .WithSummary("Unticks Paid, also for a card payment paid automatically.")
             .ProducesProblem(StatusCodes.Status404NotFound);
@@ -116,14 +116,11 @@ internal static class CardPurchaseEndpoints
     {
         routes.MapGet("/card-payments", async Task<Results<Ok<MonthCardPaymentsResponse>, ValidationProblem>> (
                 string month, GetMonthCardPaymentsHandler handler, CancellationToken ct) =>
-                YearMonth.TryParse(month, out var parsed)
+                MonthParameter.TryParse(month, out var parsed)
                     ? TypedResults.Ok(await handler.HandleAsync(parsed, ct))
-                    : InvalidMonth())
+                    : MonthParameter.Invalid("month", month))
             .WithTags("Card purchases")
             .WithName("GetMonthCardPayments")
             .WithSummary("Card payments of a month (yyyy-MM), one per card, with totals.");
     }
-
-    private static ValidationProblem InvalidMonth() =>
-        TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["month"] = ["Enter the month as yyyy-MM."] });
 }

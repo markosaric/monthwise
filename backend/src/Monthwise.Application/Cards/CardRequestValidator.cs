@@ -14,9 +14,15 @@ internal sealed class CardRequestValidator : AbstractValidator<CardRequest>
     {
         RuleFor(r => r.ValidFrom)
             .Must(BeAYearMonth).When(r => !string.IsNullOrEmpty(r.ValidFrom)).WithMessage("Enter the month and year as printed on the card.")
+            .DependentRules(() => RuleFor(r => r.ValidFrom)
+                .Must(BeInSupportedRange).When(r => !string.IsNullOrEmpty(r.ValidFrom)).WithMessage(SupportedRange.MonthMessage)
+                .OverridePropertyName("validFrom"))
             .OverridePropertyName("validFrom");
         RuleFor(r => r.ValidThrough)
             .Must(BeAYearMonth).WithMessage("Enter the month and year as printed on the card.")
+            .DependentRules(() => RuleFor(r => r.ValidThrough)
+                .Must(BeInSupportedRange).WithMessage(SupportedRange.MonthMessage)
+                .OverridePropertyName("validThrough"))
             .OverridePropertyName("validThrough");
         RuleFor(r => r.CardNumber)
             .Must(n => CardNumber.TryParse(n, out _)).When(r => !string.IsNullOrEmpty(r.CardNumber))
@@ -30,6 +36,8 @@ internal sealed class CardRequestValidator : AbstractValidator<CardRequest>
     }
 
     private static bool BeAYearMonth(string? value) => YearMonth.TryParse(value, out _);
+
+    private static bool BeInSupportedRange(string? value) => YearMonth.TryParseSupported(value, out _);
 }
 
 internal static class ValidationResultExtensions

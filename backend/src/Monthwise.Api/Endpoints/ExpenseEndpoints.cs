@@ -109,17 +109,17 @@ internal static class ExpenseEndpoints
 
         bills.MapGet("/", async Task<Results<Ok<MonthBillsResponse>, ValidationProblem>> (
                 string month, GetMonthBillsHandler handler, CancellationToken ct) =>
-                YearMonth.TryParse(month, out var parsed)
+                MonthParameter.TryParse(month, out var parsed)
                     ? TypedResults.Ok(await handler.HandleAsync(parsed, ct))
-                    : InvalidMonth())
+                    : MonthParameter.Invalid("month", month))
             .WithName("GetMonthBills")
             .WithSummary("The bills of a month (yyyy-MM) with totals.");
 
         bills.MapPost("/add-recurring", async Task<Results<Ok<AddRecurringBillsResponse>, ValidationProblem>> (
                 string month, AddRecurringBillsHandler handler, CancellationToken ct) =>
-                YearMonth.TryParse(month, out var parsed)
+                MonthParameter.TryParse(month, out var parsed)
                     ? TypedResults.Ok(await handler.HandleAsync(parsed, ct))
-                    : InvalidMonth())
+                    : MonthParameter.Invalid("month", month))
             .WithName("AddRecurringBills")
             .WithSummary("Adds a Not issued bill for every active recurring bill that has none in the month (yyyy-MM) yet.");
 
@@ -129,9 +129,9 @@ internal static class ExpenseEndpoints
             .ProducesProblem(StatusCodes.Status404NotFound);
 
         bills.MapPost("/", async (string month, BillRequest request, BillHandler handler, CancellationToken ct) =>
-                YearMonth.TryParse(month, out var parsed)
+                MonthParameter.TryParse(month, out var parsed)
                     ? (await handler.CreateAsync(parsed, request, ct)).ToCreated(b => $"/api/bills/{b.Id}")
-                    : InvalidMonth())
+                    : MonthParameter.Invalid("month", month))
             .WithName("CreateBill")
             .WithSummary("Adds a one-off bill to a month (yyyy-MM), expected or paid.");
 
@@ -165,9 +165,9 @@ internal static class ExpenseEndpoints
 
         expenses.MapGet("/", async Task<Results<Ok<MonthExpensesResponse>, ValidationProblem>> (
                 string month, GetMonthExpensesHandler handler, CancellationToken ct) =>
-                YearMonth.TryParse(month, out var parsed)
+                MonthParameter.TryParse(month, out var parsed)
                     ? TypedResults.Ok(await handler.HandleAsync(parsed, ct))
-                    : InvalidMonth())
+                    : MonthParameter.Invalid("month", month))
             .WithName("GetMonthExpenses")
             .WithSummary("The expenses and cash withdrawals of a month (yyyy-MM), newest first, with totals.");
 
@@ -206,7 +206,4 @@ internal static class ExpenseEndpoints
             .WithName("DeleteExpense")
             .ProducesProblem(StatusCodes.Status404NotFound);
     }
-
-    private static ValidationProblem InvalidMonth() =>
-        TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["month"] = ["Enter the month as yyyy-MM."] });
 }

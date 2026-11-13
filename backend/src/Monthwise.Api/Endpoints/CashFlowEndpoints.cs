@@ -24,9 +24,9 @@ internal static class CashFlowEndpoints
 
         inputs.MapGet("/", async Task<Results<Ok<MonthInputsResponse>, ValidationProblem>> (
                 string month, GetMonthInputsHandler handler, CancellationToken ct) =>
-                YearMonth.TryParse(month, out var parsed)
+                MonthParameter.TryParse(month, out var parsed)
                     ? TypedResults.Ok(await handler.HandleAsync(parsed, ct))
-                    : InvalidMonth())
+                    : MonthParameter.Invalid("month", month))
             .WithName("GetMonthInputs")
             .WithSummary("Inputs of a month (yyyy-MM): stored inputs and calculated occurrences of recurring inputs, with totals.");
 
@@ -179,9 +179,9 @@ internal static class CashFlowEndpoints
                 string? month, OverallBalanceQuery query, TimeProvider timeProvider, CancellationToken ct) =>
                 month is null
                     ? TypedResults.Ok(await query.ForMonthAsync(YearMonth.FromDate(timeProvider.Today()), ct))
-                    : YearMonth.TryParse(month, out var parsed)
+                    : MonthParameter.TryParse(month, out var parsed)
                         ? TypedResults.Ok(await query.ForMonthAsync(parsed, ct))
-                        : InvalidMonth())
+                        : MonthParameter.Invalid("month", month))
             .WithTags("Balances")
             .WithName("GetOverallBalance")
             .WithSummary(
@@ -222,13 +222,10 @@ internal static class CashFlowEndpoints
 
         cashFlow.MapGet("/report", async Task<Results<Ok<MonthlyReportResponse>, ValidationProblem>> (
                 string month, GetMonthlyReportHandler handler, CancellationToken ct) =>
-                YearMonth.TryParse(month, out var parsed)
+                MonthParameter.TryParse(month, out var parsed)
                     ? TypedResults.Ok(await handler.HandleAsync(parsed, ct))
-                    : InvalidMonth())
+                    : MonthParameter.Invalid("month", month))
             .WithName("GetMonthlyReport")
             .WithSummary("Monthly cash flow report of a month (yyyy-MM).");
     }
-
-    private static ValidationProblem InvalidMonth() =>
-        TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["month"] = ["Enter the month as yyyy-MM."] });
 }

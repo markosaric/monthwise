@@ -22,9 +22,9 @@ internal static class SharedCostEndpoints
 
         routes.MapGet("/shared-costs", async Task<Results<Ok<SharedCostsResponse>, ValidationProblem>> (
                 string month, GetSharedCostsHandler handler, CancellationToken ct) =>
-                YearMonth.TryParse(month, out var parsed)
+                MonthParameter.TryParse(month, out var parsed)
                     ? TypedResults.Ok(await handler.HandleAsync(parsed, ct))
-                    : InvalidMonth())
+                    : MonthParameter.Invalid("month", month))
             .WithTags("Shared costs")
             .WithName("GetSharedCosts")
             .WithSummary("Each participant's shared costs, the month's (yyyy-MM) parts and contributions, and what is outstanding.");
@@ -80,9 +80,9 @@ internal static class SharedCostEndpoints
         share.MapPut("/", async (
                 Guid id, string month, LoanPaymentKind kind, LoanPaymentShareRequest request,
                 LoanPaymentHandler handler, CancellationToken ct) =>
-                YearMonth.TryParse(month, out var parsed)
+                MonthParameter.TryParse(month, out var parsed)
                     ? (await handler.ChangeShareAsync(id, parsed, kind, request, ct)).ToOk()
-                    : InvalidMonth())
+                    : MonthParameter.Invalid("month", month))
             .WithName("ChangeLoanPaymentShare")
             .WithSummary("Shares one payment, changes its share or stops sharing it (share null), whatever the loan's share is.")
             .ProducesProblem(StatusCodes.Status404NotFound)
@@ -90,9 +90,9 @@ internal static class SharedCostEndpoints
 
         share.MapDelete("/", async (
                 Guid id, string month, LoanPaymentKind kind, LoanPaymentHandler handler, CancellationToken ct) =>
-                YearMonth.TryParse(month, out var parsed)
+                MonthParameter.TryParse(month, out var parsed)
                     ? (await handler.ResetShareAsync(id, parsed, kind, ct)).ToOk()
-                    : InvalidMonth())
+                    : MonthParameter.Invalid("month", month))
             .WithName("ResetLoanPaymentShare")
             .WithSummary("The payment follows the loan's share again.")
             .ProducesProblem(StatusCodes.Status404NotFound)
@@ -132,9 +132,9 @@ internal static class SharedCostEndpoints
 
         payment.MapPut("/", async (
                 Guid id, string month, LoanPaymentKind kind, ContributionRequest request, ContributionHandler handler, CancellationToken ct) =>
-                YearMonth.TryParse(month, out var parsed)
+                MonthParameter.TryParse(month, out var parsed)
                     ? (await handler.EditAsync(ContributionSource.ForLoanPayment(id, parsed, kind), request, ct)).ToOk()
-                    : InvalidMonth())
+                    : MonthParameter.Invalid("month", month))
             .WithName("EditLoanPaymentContribution")
             .WithSummary(EditSummary)
             .ProducesProblem(StatusCodes.Status404NotFound);
@@ -142,27 +142,27 @@ internal static class SharedCostEndpoints
         payment.MapPost("/received", async (
                 Guid id, string month, LoanPaymentKind kind, ContributionReceivedRequest? request,
                 ContributionHandler handler, CancellationToken ct) =>
-                YearMonth.TryParse(month, out var parsed)
+                MonthParameter.TryParse(month, out var parsed)
                     ? (await handler.MarkReceivedAsync(ContributionSource.ForLoanPayment(id, parsed, kind), request, ct)).ToOk()
-                    : InvalidMonth())
+                    : MonthParameter.Invalid("month", month))
             .WithName("MarkLoanPaymentContributionReceived")
             .WithSummary(ReceivedSummary)
             .ProducesProblem(StatusCodes.Status404NotFound);
 
         payment.MapDelete("/received", async (
                 Guid id, string month, LoanPaymentKind kind, ContributionHandler handler, CancellationToken ct) =>
-                YearMonth.TryParse(month, out var parsed)
+                MonthParameter.TryParse(month, out var parsed)
                     ? (await handler.MarkExpectedAsync(ContributionSource.ForLoanPayment(id, parsed, kind), ct)).ToOk()
-                    : InvalidMonth())
+                    : MonthParameter.Invalid("month", month))
             .WithName("MarkLoanPaymentContributionExpected")
             .WithSummary(ExpectedSummary)
             .ProducesProblem(StatusCodes.Status404NotFound);
 
         payment.MapPost("/reset", async (
                 Guid id, string month, LoanPaymentKind kind, ContributionHandler handler, CancellationToken ct) =>
-                YearMonth.TryParse(month, out var parsed)
+                MonthParameter.TryParse(month, out var parsed)
                     ? (await handler.ResetAsync(ContributionSource.ForLoanPayment(id, parsed, kind), ct)).ToOk()
-                    : InvalidMonth())
+                    : MonthParameter.Invalid("month", month))
             .WithName("ResetLoanPaymentContribution")
             .WithSummary(ResetSummary)
             .ProducesProblem(StatusCodes.Status404NotFound)
@@ -174,7 +174,4 @@ internal static class SharedCostEndpoints
     private const string ExpectedSummary = "Unticks Received; a contribution that was not edited follows its cost again.";
     private const string ResetSummary =
         "Reset to part: an expected contribution follows its cost again, a received one gets the current part.";
-
-    private static ValidationProblem InvalidMonth() =>
-        TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["month"] = ["Enter the month as yyyy-MM."] });
 }

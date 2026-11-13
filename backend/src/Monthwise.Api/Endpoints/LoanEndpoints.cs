@@ -96,9 +96,9 @@ internal static class LoanEndpoints
     {
         routes.MapGet("/loan-payments", async Task<Results<Ok<MonthLoanPaymentsResponse>, ValidationProblem>> (
                 string month, GetMonthLoanPaymentsHandler handler, CancellationToken ct) =>
-                YearMonth.TryParse(month, out var parsed)
+                MonthParameter.TryParse(month, out var parsed)
                     ? TypedResults.Ok(await handler.HandleAsync(parsed, ct))
-                    : InvalidMonth())
+                    : MonthParameter.Invalid("month", month))
             .WithTags("Loans")
             .WithName("GetMonthLoanPayments")
             .WithSummary("Loan payments of a month (yyyy-MM), with totals.");
@@ -108,9 +108,9 @@ internal static class LoanEndpoints
         payment.MapPut("/", async (
                 Guid id, string month, LoanPaymentKind kind, LoanPaymentChangeRequest request,
                 LoanPaymentHandler handler, CancellationToken ct) =>
-                YearMonth.TryParse(month, out var parsed)
+                MonthParameter.TryParse(month, out var parsed)
                     ? (await handler.ChangeAsync(id, parsed, kind, request, ct)).ToOk()
-                    : InvalidMonth())
+                    : MonthParameter.Invalid("month", month))
             .WithName("ChangeLoanPayment")
             .WithSummary("Changes the amount and due date of one payment without changing the loan.")
             .ProducesProblem(StatusCodes.Status404NotFound)
@@ -119,18 +119,18 @@ internal static class LoanEndpoints
         payment.MapPost("/paid", async (
                 Guid id, string month, LoanPaymentKind kind, LoanPaymentPaidRequest request,
                 LoanPaymentHandler handler, CancellationToken ct) =>
-                YearMonth.TryParse(month, out var parsed)
+                MonthParameter.TryParse(month, out var parsed)
                     ? (await handler.MarkPaidAsync(id, parsed, kind, request, ct)).ToOk()
-                    : InvalidMonth())
+                    : MonthParameter.Invalid("month", month))
             .WithName("MarkLoanPaymentPaid")
             .WithSummary("Ticks Paid. The paid date defaults to today and the account to the loan's account.")
             .ProducesProblem(StatusCodes.Status404NotFound);
 
         payment.MapDelete("/paid", async (
                 Guid id, string month, LoanPaymentKind kind, LoanPaymentHandler handler, CancellationToken ct) =>
-                YearMonth.TryParse(month, out var parsed)
+                MonthParameter.TryParse(month, out var parsed)
                     ? (await handler.MarkUnpaidAsync(id, parsed, kind, ct)).ToOk()
-                    : InvalidMonth())
+                    : MonthParameter.Invalid("month", month))
             .WithName("MarkLoanPaymentUnpaid")
             .WithSummary("Unticks Paid.")
             .ProducesProblem(StatusCodes.Status404NotFound);
@@ -201,7 +201,4 @@ internal static class LoanEndpoints
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict);
     }
-
-    private static ValidationProblem InvalidMonth() =>
-        TypedResults.ValidationProblem(new Dictionary<string, string[]> { ["month"] = ["Enter the month as yyyy-MM."] });
 }
