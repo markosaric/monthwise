@@ -244,6 +244,88 @@ public sealed class DataEndpointTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task A_failing_import_keeps_the_safety_copy_of_an_earlier_import()
+    {
+        // The data before a wrong import, and the file of that wrong import.
+        await CreateCardAsync("Other card", null, null);
+        var wrongFile = await ExportAsync();
+        await ExecuteSqlAsync(CashFlowEndpointTests.DeleteAllSql);
+        await CreateCardAsync("Family Visa", Visa, null);
+        var original = await SnapshotAsync();
+
+        Assert.Equal(HttpStatusCode.OK, (await PostFormAsync("/api/data/import", wrongFile, Password, "REPLACE")).StatusCode);
+        var safetyCopyAt = (await GetJsonAsync("/api/data")).GetProperty("safetyCopyCreatedAt").GetString();
+        var wrong = await SnapshotAsync();
+
+        // Another import fails while the data is copied (backup and restore Appendix 2).
+        var failed = await PostFormAsync("/api/data/import", BrokenCopyOf(wrongFile), Password, "REPLACE");
+        Assert.Equal(HttpStatusCode.Conflict, failed.StatusCode);
+        Assert.Equal(wrong, await SnapshotAsync());
+        Assert.Equal(safetyCopyAt, (await GetJsonAsync("/api/data")).GetProperty("safetyCopyCreatedAt").GetString());
+        Assert.Equal(1, await HistoryCountAsync("SafetyCopy", succeeded: true));
+        Assert.Equal(1, await HistoryCountAsync("Import", succeeded: false));
+
+        // The safety copy still undoes the wrong import.
+        var restore = await Client.PostAsJsonAsync("/api/data/safety-copy/restore", new { confirmation = "REPLACE" }, Ct);
+        Assert.Equal(HttpStatusCode.OK, restore.StatusCode);
+        Assert.Equal(original, await SnapshotAsync());
+    }
+
+    [Fact]
+    public async Task A_failing_first_import_leaves_no_safety_copy()
+    {
+        await CreateCardAsync("Family Visa", Visa, null);
+        var file = await ExportAsync();
+
+        var failed = await PostFormAsync("/api/data/import", BrokenCopyOf(file), Password, "REPLACE");
+
+        Assert.Equal(HttpStatusCode.Conflict, failed.StatusCode);
+        Assert.Equal(JsonValueKind.Null, (await GetJsonAsync("/api/data")).GetProperty("safetyCopyCreatedAt").ValueKind);
+        Assert.Equal(0, await HistoryCountAsync("SafetyCopy", succeeded: true));
+        Assert.Equal(1, await HistoryCountAsync("Import", succeeded: false));
+    }
+
+    [Fact]
+    public async Task A_failing_restore_keeps_the_safety_copy()
+    {
+        await CreateCardAsync("Family Visa", Visa, null);
+        var file = await ExportAsync();
+        Assert.Equal(HttpStatusCode.OK, (await PostFormAsync("/api/data/import", file, Password, "REPLACE")).StatusCode);
+
+        // A safety copy whose data breaks a rule of the database while it is copied back.
+        var data = Codec.Read(file, Password).Value;
+        data.Tables["card"]![0]!["name"] = null;
+        var broken = Codec.Protect(data);
+        await ExecuteSqlAsync($"UPDATE data_safety_copy SET content = '{broken.Replace("'", "''", StringComparison.Ordinal)}'");
+        var safetyCopyAt = (await GetJsonAsync("/api/data")).GetProperty("safetyCopyCreatedAt").GetString();
+        var current = await SnapshotAsync();
+
+        var restore = await Client.PostAsJsonAsync("/api/data/safety-copy/restore", new { confirmation = "REPLACE" }, Ct);
+
+        Assert.Equal(HttpStatusCode.Conflict, restore.StatusCode);
+        Assert.Equal(current, await SnapshotAsync());
+        Assert.Equal(safetyCopyAt, (await GetJsonAsync("/api/data")).GetProperty("safetyCopyCreatedAt").GetString());
+        Assert.Equal(1, await HistoryCountAsync("SafetyCopy", succeeded: true));
+        Assert.Equal(1, await HistoryCountAsync("SafetyCopyRestore", succeeded: false));
+        await using var connection = new NpgsqlConnection(_connectionString);
+        await connection.OpenAsync(Ct);
+        await using var command = new NpgsqlCommand("SELECT content FROM data_safety_copy", connection);
+        Assert.Equal(broken, await command.ExecuteScalarAsync(Ct));
+    }
+
+    /// <summary>The same file with a card without a name, which breaks a rule of the database while the data is copied.</summary>
+    private byte[] BrokenCopyOf(byte[] file)
+    {
+        var data = Codec.Read(file, Password).Value;
+        data.Tables["card"]![0]!["name"] = null;
+        return Codec.Write(data, Password);
+    }
+
+    private async Task<int> HistoryCountAsync(string kind, bool succeeded) =>
+        (await GetJsonAsync("/api/data/history")).GetProperty("items").EnumerateArray()
+            .Count(i => i.GetProperty("kind").GetString() == kind && i.GetProperty("succeeded").GetBoolean() == succeeded);
+
+    [Fact]
     public async Task While_an_import_runs_other_calls_are_refused_except_health()
     {
         var gate = _factory!.Services.GetRequiredService<ImportGate>();

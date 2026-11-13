@@ -14,8 +14,12 @@ public interface IHouseholdDataStore
     /// <summary>Whether this release can import the data: a known release and every table complete. Changes nothing.</summary>
     Task<Result> CheckAsync(HouseholdData data, CancellationToken cancellationToken);
 
-    /// <summary>Replaces all household data with <paramref name="data"/>, brought up to this release; on any failure nothing changes.</summary>
-    Task<Result> ReplaceAllAsync(HouseholdData data, CancellationToken cancellationToken);
+    /// <summary>
+    /// Replaces all household data with <paramref name="data"/>, brought up to this release; on any failure nothing changes.
+    /// <paramref name="beforeCommit"/> runs in the same transaction after the data is replaced, so what it saves is
+    /// kept only together with the new data (backup and restore Appendix 2).
+    /// </summary>
+    Task<Result> ReplaceAllAsync(HouseholdData data, Func<CancellationToken, Task> beforeCommit, CancellationToken cancellationToken);
 }
 
 /// <summary>Writes and reads export files and safety copies (FR-3, FR-4, FR-7).</summary>

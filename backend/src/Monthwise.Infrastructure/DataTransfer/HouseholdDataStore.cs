@@ -109,9 +109,11 @@ internal sealed partial class HouseholdDataStore(
         return complete;
     }
 
-    public async Task<Result> ReplaceAllAsync(HouseholdData data, CancellationToken cancellationToken)
+    public async Task<Result> ReplaceAllAsync(
+        HouseholdData data, Func<CancellationToken, Task> beforeCommit, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(data);
+        ArgumentNullException.ThrowIfNull(beforeCommit);
         var known = CheckRelease(data);
         if (known.IsFailure)
         {
@@ -147,7 +149,10 @@ internal sealed partial class HouseholdDataStore(
             }
 
             await CopyAsync(importSchema, schema, targetTables, cancellationToken);
-            await ExecuteAsync($"DROP SCHEMA {Quote(importSchema)} CASCADE", cancellationToken);
+            // Back to the household tables, so the saves of beforeCommit land there.
+            await ExecuteAsync($"DROP SCHEMA {Quote(importSchema)} CASCADE; SET LOCAL search_path TO {Quote(schema)}", cancellationToken);
+            // The safety copy and the history are saved with the new data or not at all (Appendix 2).
+            await beforeCommit(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
             // The rest of the request reads the restored data (repeated loading FR-4).
             dbContext.Loaded.Clear();
@@ -155,6 +160,9 @@ internal sealed partial class HouseholdDataStore(
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
+            // Whatever beforeCommit staged was rolled back; it must not be saved by a later save of this request.
+            dbContext.ChangeTracker.Clear();
+            dbContext.Loaded.Clear();
             LogImportFailed(logger, ex);
             return Result.Failure(DataTransferErrors.ImportFailed);
         }
