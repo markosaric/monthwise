@@ -1,7 +1,7 @@
 # Plan: The safety copy survives a failed import
 
 - **Branch:** `fix/import-safety-copy`
-- **Status:** In progress
+- **Status:** Done
 - **Date:** 2026-11-13
 - **Requirements:** [backup-and-restore.md, Appendix 2](../feature-requirements/backup-and-restore.md#appendix-2-the-safety-copy-survives-a-failed-import)
 

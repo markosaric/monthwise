@@ -177,18 +177,27 @@ public sealed class ImportDataHandler(
                 return Result.Failure<ImportResponse>(check.Errors);
             }
 
-            await MakeSafetyCopyAsync(cancellationToken);
+            // The data as it is now; it becomes the safety copy only if the import succeeds (Appendix 2).
+            var safetyCopyAt = timeProvider.GetUtcNow();
+            var safetyCopy = codec.Protect(await store.ReadAllAsync(safetyCopyAt, ReleaseVersion.Current, cancellationToken));
 
-            var replaced = await store.ReplaceAllAsync(data, cancellationToken);
+            var now = safetyCopyAt;
+            var replaced = await store.ReplaceAllAsync(
+                data,
+                async ct =>
+                {
+                    now = timeProvider.GetUtcNow();
+                    await KeepSafetyCopyAsync(safetyCopyAt, safetyCopy, ct);
+                    repository.Add(DataTransferRecord.Create(kind, now, succeeded: true, ReleaseVersion.Current, fileName, data.CreatedAt));
+                    await unitOfWork.SaveChangesAsync(ct);
+                },
+                cancellationToken);
             if (replaced.IsFailure)
             {
                 await RecordAsync(kind, fileName, data.CreatedAt, replaced.Errors[0].Message, cancellationToken);
                 return Result.Failure<ImportResponse>(replaced.Errors);
             }
 
-            var now = timeProvider.GetUtcNow();
-            repository.Add(DataTransferRecord.Create(kind, now, succeeded: true, ReleaseVersion.Current, fileName, data.CreatedAt));
-            await unitOfWork.SaveChangesAsync(cancellationToken);
             gate.LastImportedAt = now;
             return Result.Success(new ImportResponse(data.CreatedAt, data.Summary));
         }
@@ -198,22 +207,21 @@ public sealed class ImportDataHandler(
         }
     }
 
-    /// <summary>Keeps the current data so a wrong import can be undone; replaces the previous safety copy.</summary>
-    private async Task MakeSafetyCopyAsync(CancellationToken cancellationToken)
+    /// <summary>
+    /// Keeps the data from before the import so it can be undone, replacing the previous safety copy. Runs inside the
+    /// import's transaction and saves together with the import record, so a failed import keeps the previous copy.
+    /// </summary>
+    private async Task KeepSafetyCopyAsync(DateTimeOffset createdAt, string content, CancellationToken cancellationToken)
     {
-        var now = timeProvider.GetUtcNow();
-        var current = await store.ReadAllAsync(now, ReleaseVersion.Current, cancellationToken);
-        var content = codec.Protect(current);
         if (await repository.GetSafetyCopyAsync(cancellationToken) is { } existing)
         {
-            existing.Replace(now, ReleaseVersion.Current, content);
+            existing.Replace(createdAt, ReleaseVersion.Current, content);
         }
         else
         {
-            repository.Add(SafetyCopy.Create(now, ReleaseVersion.Current, content));
+            repository.Add(SafetyCopy.Create(createdAt, ReleaseVersion.Current, content));
         }
-        repository.Add(DataTransferRecord.Create(DataTransferKind.SafetyCopy, now, succeeded: true, ReleaseVersion.Current));
-        await unitOfWork.SaveChangesAsync(cancellationToken);
+        repository.Add(DataTransferRecord.Create(DataTransferKind.SafetyCopy, createdAt, succeeded: true, ReleaseVersion.Current));
     }
 
     private async Task RecordAsync(
