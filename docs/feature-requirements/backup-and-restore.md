@@ -282,3 +282,31 @@ Acceptance criterion 3 now reads: Export asks for a password (twice, at least 12
 a hint showing how many characters are still missing) and downloads one file with all household
 data, named with its date and time and carrying the date, release and a summary inside; no data
 changes while exporting. A file exported earlier with a shorter password can still be imported.
+
+## Appendix 2: The safety copy survives a failed import
+
+- **Date:** 2026-11-13
+- **Branch:** `fix/import-safety-copy`
+- **Changes:** FR-7 (safety copy), FR-9 (history), acceptance criterion 7
+
+Today the safety copy is replaced before the data is, so an import that then fails has already
+thrown away the previous safety copy, and the new one is only a copy of the data that stayed
+unchanged. A user who imported the wrong file and then tries another file that fails can no longer
+undo the first import. The main branch code review lists this as finding M2.
+
+- The safety copy is replaced **only when the import succeeds**. It then holds the data as it was
+  right before that import, as today.
+- When an import fails at any point, the previous safety copy stays exactly as it was and can still
+  be brought back from the history. If there was none, there is still none.
+- Bringing back the safety copy follows the same rule: when it succeeds, the data it replaced
+  becomes the new safety copy, so bringing it back can itself be undone, as today. When it fails,
+  the safety copy stays as it was, so it can be tried again.
+- The history lists a safety copy as made only when the import or the bringing back that made it
+  succeeded. A failed import is still listed as failed, with its message (FR-9).
+- Everything else in FR-7 (all or nothing, only the newest safety copy is kept, no changes by
+  anyone while an import runs, every open screen shows the new data afterwards) is unchanged.
+
+Acceptance criterion 7 now reads: An import replaces all household data or, on any failure,
+changes nothing; a safety copy of the data before the import is kept only when the import
+succeeds and can be brought back from the history; a failed import or a failed bringing back
+leaves the previous safety copy as it was.
