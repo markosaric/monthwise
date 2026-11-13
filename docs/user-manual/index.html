@@ -235,7 +235,7 @@ Remove-Item Env:PGPASSWORD
 <div class="tip"><strong>Keep the file and its password safe.</strong> The file holds all your financial data, including the full card numbers and IBANs, and nothing in it can be read without the password. Monthwise does not keep the password: put it in your password manager. A file whose password is lost cannot be imported by anyone.</div>
 <h3 id="data-import">Import</h3>
 <ol>
-  <li>Choose <span class="ui">Import data</span>, pick an export file and enter its password, then <span class="ui">Check file</span>. Nothing changes yet.</li>
+  <li>Choose <span class="ui">Import data</span>, pick an export file and enter its password, then <span class="ui">Check file</span>. Nothing changes yet. An export file can be at most 10 MB; a larger file is refused.</li>
   <li>Monthwise shows when the file was made and how many cards, loans, inputs, card purchases, bills and expenses it holds, next to what is in Monthwise now.</li>
   <li>Type <code>REPLACE</code> and choose <span class="ui">Replace all data</span>. An import always replaces <em>all</em> data; it never adds the file to what is there.</li>
 </ol>

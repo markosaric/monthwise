@@ -120,6 +120,10 @@ internal sealed class ExportFileCodec(ISensitiveDataCipher cipher) : IExportFile
                 ? Result.Success(data)
                 : Result.Failure<HouseholdData>(DataTransferErrors.FileIncomplete);
         }
+        catch (ContentTooLargeException)
+        {
+            return Result.Failure<HouseholdData>(DataTransferErrors.ContentTooLarge);
+        }
         catch (Exception ex) when (ex is JsonException or InvalidDataException or FormatException or InvalidOperationException)
         {
             return Result.Failure<HouseholdData>(DataTransferErrors.FileIncomplete);
@@ -129,9 +133,18 @@ internal sealed class ExportFileCodec(ISensitiveDataCipher cipher) : IExportFile
     public string Protect(HouseholdData data) =>
         cipher.Encrypt(Convert.ToBase64String(Compress(Serialize(data))));
 
-    public HouseholdData Unprotect(string content) =>
-        Deserialize(Decompress(Convert.FromBase64String(cipher.Decrypt(content))))
-        ?? throw new InvalidDataException("The safety copy is incomplete.");
+    public Result<HouseholdData> Unprotect(string content)
+    {
+        try
+        {
+            return Result.Success(Deserialize(Decompress(Convert.FromBase64String(cipher.Decrypt(content))))
+                ?? throw new InvalidDataException("The safety copy is incomplete."));
+        }
+        catch (ContentTooLargeException)
+        {
+            return Result.Failure<HouseholdData>(DataTransferErrors.ContentTooLarge);
+        }
+    }
 
     private static byte[] DeriveKey(string password, ReadOnlySpan<byte> salt, int iterations) =>
         Rfc2898DeriveBytes.Pbkdf2(Encoding.UTF8.GetBytes(password), salt, iterations, HashAlgorithmName.SHA256, KeySize);
@@ -234,12 +247,24 @@ internal sealed class ExportFileCodec(ISensitiveDataCipher cipher) : IExportFile
         return output.ToArray();
     }
 
+    /// <summary>Unpacks at most <see cref="DataTransferLimits.MaxContentBytes"/>; stops as soon as more would follow (Appendix 3).</summary>
     private static byte[] Decompress(byte[] data)
     {
         using var input = new MemoryStream(data);
         using var gzip = new GZipStream(input, CompressionMode.Decompress);
         using var output = new MemoryStream();
-        gzip.CopyTo(output);
+        var block = new byte[81920];
+        int read;
+        while ((read = gzip.Read(block)) > 0)
+        {
+            if (output.Length + read > DataTransferLimits.MaxContentBytes)
+            {
+                throw new ContentTooLargeException();
+            }
+            output.Write(block, 0, read);
+        }
         return output.ToArray();
     }
+
+    private sealed class ContentTooLargeException : Exception;
 }

@@ -1,7 +1,7 @@
 # Plan: Size limits for imported files
 
 - **Branch:** `fix/import-size-limit`
-- **Status:** In progress
+- **Status:** Done
 - **Date:** 2026-11-13
 - **Requirements:** [backup-and-restore.md, Appendix 3](../feature-requirements/backup-and-restore.md#appendix-3-size-limits-for-imported-files)
 
@@ -35,12 +35,13 @@ changes FR-6, FR-7 and acceptance criterion 5 of the backup and restore requirem
 ## Design
 
 - Domain / data model changes:
+  - New `DataTransferLimits` with `MaxFileBytes = 10 MB` and `MaxContentBytes = 50 MB`, the one
+    place for both limits. It lives in the domain, next to the errors whose messages name the
+    limit, so the API, the application and the codec all use it.
   - Two new errors in `DataTransferErrors`: `FileTooLarge` (the 10 MB message, field `file`) and
     `ContentTooLarge` (the unpacked message, field `file`), both validation errors like the other
     file refusals.
 - Application:
-  - New `DataTransferLimits` with `MaxFileBytes = 10 MB` and `MaxContentBytes = 50 MB`, the one
-    place for both limits.
   - `ImportDataHandler.ReadFile` refuses a file longer than `MaxFileBytes` with `FileTooLarge`
     before the codec reads it. Because it runs inside `RunExclusiveAsync`, an import refused this
     way is recorded as failed (FR-6), and a check is not, as today.
@@ -67,7 +68,7 @@ changes FR-6, FR-7 and acceptance criterion 5 of the backup and restore requirem
 
 ## Steps
 
-1. Add `DataTransferLimits` and the two errors.
+1. Add `DataTransferLimits` and the two errors in the domain.
 2. Cap `Decompress`; make `Unprotect` return a result and update the restore path.
 3. Check the file length in `ReadFile`; lower the endpoint limits and cap `ReadAsync`.
 4. Import dialog: size check before upload and the 413 message.

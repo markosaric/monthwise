@@ -153,6 +153,43 @@ describe('Data and backups', () => {
     expect(imported[0]).toMatch(/name="file"; filename="/)
   })
 
+  it('refuses a file over 10 MB without sending it', async () => {
+    const user = userEvent.setup()
+    const sent: string[] = []
+    stubData(anOverview(), {
+      'POST /api/data/import/check': () => {
+        sent.push('check')
+        return json({})
+      },
+    })
+    renderRoute('/settings/data')
+
+    await user.click(await screen.findByRole('button', { name: t.import.action }))
+    const file = new File(['x'], 'big.monthwise')
+    Object.defineProperty(file, 'size', { value: 10 * 1024 * 1024 + 1 })
+    await user.upload(screen.getByLabelText(t.import.file), file)
+    await user.type(screen.getByLabelText(t.import.password), 'secret1')
+    await user.click(screen.getByRole('button', { name: t.import.check }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(t.import.tooLarge)
+    expect(sent).toHaveLength(0)
+  })
+
+  it('shows the size message when the server refuses the request as too large', async () => {
+    const user = userEvent.setup()
+    stubData(anOverview(), {
+      'POST /api/data/import/check': () => new Response('', { status: 413 }),
+    })
+    renderRoute('/settings/data')
+
+    await user.click(await screen.findByRole('button', { name: t.import.action }))
+    await user.upload(screen.getByLabelText(t.import.file), new File(['x'], 'big.monthwise'))
+    await user.type(screen.getByLabelText(t.import.password), 'secret1')
+    await user.click(screen.getByRole('button', { name: t.import.check }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(t.import.tooLarge)
+  })
+
   it('changes the reminder setting', async () => {
     const user = userEvent.setup()
     const saved: unknown[] = []

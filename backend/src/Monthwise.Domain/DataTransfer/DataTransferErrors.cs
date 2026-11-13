@@ -26,6 +26,14 @@ public static class DataTransferErrors
     public static readonly DomainError FileIncomplete = new(
         "data.file_incomplete", "The file is incomplete: it does not hold all the data Monthwise expects.", "file");
 
+    public static readonly DomainError FileTooLarge = new(
+        "data.file_too_large",
+        $"This file is too large to be a Monthwise export file (more than {DataTransferLimits.MaxFileMegabytes} MB).",
+        "file");
+
+    public static readonly DomainError ContentTooLarge = new(
+        "data.content_too_large", "This file is too large to be a Monthwise export file.", "file");
+
     public static readonly DomainError UnknownRelease = new(
         "data.unknown_release", "The file was not made by a release of Monthwise this one knows.", "file");
 

@@ -1,6 +1,9 @@
 /** Shortest password a new export file accepts (backup and restore Appendix 1). */
 export const minPasswordLength = 12
 
+/** Largest export file an import accepts (backup and restore Appendix 3). */
+export const maxImportFileMegabytes = 10
+
 /** Texts of the Data and backups section (docs/feature-requirements/backup-and-restore.md). */
 export const dataTexts = {
   section: 'Data and backups',
@@ -46,6 +49,7 @@ export const dataTexts = {
     typeWord: (word: string) => `Type ${word} to confirm`,
     confirm: 'Replace all data',
     done: 'Data imported.',
+    tooLarge: `This file is too large to be a Monthwise export file (more than ${maxImportFileMegabytes} MB).`,
   },
   safetyCopy: {
     title: 'Safety copy',

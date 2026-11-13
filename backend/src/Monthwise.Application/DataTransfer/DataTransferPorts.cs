@@ -33,7 +33,8 @@ public interface IExportFileCodec
     /// <summary>A safety copy, protected with the installation's encryption key instead of a password.</summary>
     string Protect(HouseholdData data);
 
-    HouseholdData Unprotect(string content);
+    /// <summary>The data of a safety copy; <see cref="DataTransferErrors.ContentTooLarge"/> when it unpacks past the limit.</summary>
+    Result<HouseholdData> Unprotect(string content);
 }
 
 /// <summary>The history, the reminder setting and the safety copy; none of them are household data.</summary>
