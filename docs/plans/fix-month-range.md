@@ -1,7 +1,7 @@
 # Plan: Months and dates stay within a supported range
 
 - **Branch:** `fix/month-range`
-- **Status:** In progress
+- **Status:** Done
 - **Date:** 2026-11-13
 - **Requirements:** [month-range.md](../feature-requirements/month-range.md)
 
@@ -31,8 +31,7 @@ range, never an internal error (500). Fixes finding M1 of the main branch code r
     (FR-5).
 - API changes (endpoints, DTOs):
   - **Month query and route values (FR-1):** one shared helper in `Monthwise.Api/Endpoints`,
-    `MonthParameter.TryParse(string? value, string field, out YearMonth month, out ValidationProblem? problem)`,
-    replaces the `YearMonth.TryParse` calls and the six private `InvalidMonth()` helpers in
+    `MonthParameter`, with `TryParse(value, out month)` and `Invalid(field, value)`, replaces the `YearMonth.TryParse` calls and the six private `InvalidMonth()` helpers in
     `CashFlowEndpoints`, `ExpenseEndpoints`, `LoanEndpoints`, `CardPurchaseEndpoints`,
     `RevolvingEndpoints` and `SharedCostEndpoints`. A wrong format keeps today's message ("Enter
     the month as yyyy-MM."); a month outside the range gets the range message. Every endpoint then
@@ -42,8 +41,9 @@ range, never an internal error (500). Fixes finding M1 of the main branch code r
     argument of the request: a `DateOnly` or `DateOnly?` argument (for example the occurrence
     `date`, the chart `from` and `to`, the revolving debt `date`) and every `DateOnly`/`DateOnly?`
     property of a request record, including nested records such as `RecurrenceRequest`. A value
-    outside the range answers 400 with problem details keyed by the camelCase field path (for
-    example `expectedDate`, `recurrence.endDate`), which the forms already show on the field. The
+    outside the range answers 400 with problem details keyed by the field's own camelCase name
+    (for example `expectedDate`, `endDate` of a recurrence), as the domain errors are, so the forms
+    already show it on the field. The
     property list of each request type is built once and cached. New request types are covered
     without listing them (non-functional requirements).
   - **Months in request bodies (FR-2):** the places that parse them use `TryParseSupported`:

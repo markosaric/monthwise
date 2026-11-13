@@ -30,7 +30,7 @@ internal static class RevolvingEndpoints
                 {
                     return (await handler.HandleAsync(id, null, ct)).ToOk();
                 }
-                return YearMonth.TryParse(to, out var parsed) ? (await handler.HandleAsync(id, parsed, ct)).ToOk() : InvalidMonth("to");
+                return MonthParameter.TryParse(to, out var parsed) ? (await handler.HandleAsync(id, parsed, ct)).ToOk() : MonthParameter.Invalid("to", to);
             })
             .WithName("GetRevolvingCard")
             .WithSummary("A revolving card with its terms, monthly bills (estimated up to `to`, yyyy-MM), extra payments, charges, debt entries and debt history.")
@@ -47,9 +47,9 @@ internal static class RevolvingEndpoints
     {
         routes.MapGet("/revolving-bills", async Task<Results<Ok<MonthRevolvingResponse>, ValidationProblem>> (
                 string month, GetMonthRevolvingHandler handler, CancellationToken ct) =>
-                YearMonth.TryParse(month, out var parsed)
+                MonthParameter.TryParse(month, out var parsed)
                     ? TypedResults.Ok(await handler.HandleAsync(parsed, ct))
-                    : InvalidMonth("month"))
+                    : MonthParameter.Invalid("month", month))
             .WithTags("Revolving cards")
             .WithName("GetMonthRevolvingBills")
             .WithSummary("Monthly bills and extra payments of revolving cards in a month (yyyy-MM), with totals.");
@@ -58,14 +58,14 @@ internal static class RevolvingEndpoints
 
         bill.MapPost("/paid", async (
                 Guid id, string month, RevolvingBillPaidRequest request, RevolvingBillHandler handler, CancellationToken ct) =>
-                YearMonth.TryParse(month, out var parsed) ? (await handler.MarkPaidAsync(id, parsed, request, ct)).ToOk() : InvalidMonth("month"))
+                MonthParameter.TryParse(month, out var parsed) ? (await handler.MarkPaidAsync(id, parsed, request, ct)).ToOk() : MonthParameter.Invalid("month", month))
             .WithName("MarkRevolvingBillPaid")
             .WithSummary("Pays a monthly bill. Defaults: today, the card's paying account and the minimum payment.")
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict);
 
         bill.MapDelete("/paid", async (Guid id, string month, RevolvingBillHandler handler, CancellationToken ct) =>
-                YearMonth.TryParse(month, out var parsed) ? (await handler.MarkUnpaidAsync(id, parsed, ct)).ToOk() : InvalidMonth("month"))
+                MonthParameter.TryParse(month, out var parsed) ? (await handler.MarkUnpaidAsync(id, parsed, ct)).ToOk() : MonthParameter.Invalid("month", month))
             .WithName("MarkRevolvingBillUnpaid")
             .WithSummary("Unticks Paid, also for a bill paid automatically.")
             .ProducesProblem(StatusCodes.Status404NotFound)
@@ -73,14 +73,14 @@ internal static class RevolvingEndpoints
 
         bill.MapPut("/correction", async (
                 Guid id, string month, RevolvingBillCorrectionRequest request, RevolvingBillHandler handler, CancellationToken ct) =>
-                YearMonth.TryParse(month, out var parsed) ? (await handler.CorrectAsync(id, parsed, request, ct)).ToOk() : InvalidMonth("month"))
+                MonthParameter.TryParse(month, out var parsed) ? (await handler.CorrectAsync(id, parsed, request, ct)).ToOk() : MonthParameter.Invalid("month", month))
             .WithName("CorrectRevolvingBill")
             .WithSummary("Sets the minimum payment and interest of the bank's bill; null keeps the calculated value.")
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict);
 
         bill.MapDelete("/correction", async (Guid id, string month, RevolvingBillHandler handler, CancellationToken ct) =>
-                YearMonth.TryParse(month, out var parsed) ? (await handler.ClearCorrectionAsync(id, parsed, ct)).ToOk() : InvalidMonth("month"))
+                MonthParameter.TryParse(month, out var parsed) ? (await handler.ClearCorrectionAsync(id, parsed, ct)).ToOk() : MonthParameter.Invalid("month", month))
             .WithName("ClearRevolvingBillCorrection")
             .WithSummary("Goes back to the calculated minimum payment and interest.")
             .ProducesProblem(StatusCodes.Status404NotFound)
@@ -136,7 +136,4 @@ internal static class RevolvingEndpoints
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict);
     }
-
-    private static ValidationProblem InvalidMonth(string field) =>
-        TypedResults.ValidationProblem(new Dictionary<string, string[]> { [field] = ["Enter the month as yyyy-MM."] });
 }

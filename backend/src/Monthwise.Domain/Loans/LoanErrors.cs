@@ -33,6 +33,8 @@ public static class LoanErrors
         new("loan.account.notForBill", "A bill has no account; it is chosen when a payment is paid.", "accountId");
     public static readonly DomainError StartMonthInvalid =
         new("loan.startMonth.invalid", "Start month is not valid.", "startMonth");
+    public static readonly DomainError StartMonthOutOfRange =
+        new("loan.startMonth.outOfRange", SupportedRange.MonthMessage, "startMonth");
     public static readonly DomainError PaymentDayInvalid = new(
         "loan.paymentDay.invalid",
         $"Payment day must be between {DueDateRule.MinPaymentDay} and {DueDateRule.MaxPaymentDay}.",
@@ -47,6 +49,8 @@ public static class LoanErrors
         new("loan.endMonth.beforeStart", "End month must be the same as or later than the start month.", "endMonth");
     public static readonly DomainError EndMonthInvalid =
         new("loan.endMonth.invalid", "End month is not valid.", "endMonth");
+    public static readonly DomainError EndMonthOutOfRange =
+        new("loan.endMonth.outOfRange", SupportedRange.MonthMessage, "endMonth");
     public static readonly DomainError PaymentCountOrEndMonthRequired =
         new("loan.paymentCount.required", "Enter the number of payments or the end month.", "paymentCount");
     public static readonly DomainError PaymentCountAndEndMonthDiffer = new(
@@ -66,6 +70,8 @@ public static class LoanErrors
 
     public static readonly DomainError ChangeFromMonthRequired =
         new("loan.change.fromMonth.required", "Choose the month the change applies from.", "fromMonth");
+    public static readonly DomainError ChangeFromMonthOutOfRange =
+        new("loan.change.fromMonth.outOfRange", SupportedRange.MonthMessage, "fromMonth");
     public static readonly DomainError ChangeNothingChanged = new(
         "loan.change.empty", "Enter a new monthly payment, a new payment day, or both.", "monthlyPaymentCents");
     public static readonly DomainError ChangeMonthlyPaymentNotPositive = new(

@@ -31,6 +31,11 @@ public sealed class LoanInputChecker(
         {
             errors.Add(LoanErrors.StartMonthInvalid);
         }
+        else if (!SupportedRange.Contains(startMonth))
+        {
+            errors.Add(LoanErrors.StartMonthOutOfRange);
+            startMonth = default;
+        }
         var paymentCount = PaymentCount(request, startMonth, errors);
 
         var allowsResidual = false;
@@ -118,6 +123,11 @@ public sealed class LoanInputChecker(
         if (!YearMonth.TryParse(request.EndMonth, out var endMonth))
         {
             errors.Add(LoanErrors.EndMonthInvalid);
+            return 0;
+        }
+        if (!SupportedRange.Contains(endMonth))
+        {
+            errors.Add(LoanErrors.EndMonthOutOfRange);
             return 0;
         }
         if (startMonth == default)

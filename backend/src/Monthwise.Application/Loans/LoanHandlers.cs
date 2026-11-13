@@ -380,6 +380,10 @@ public sealed class PaymentChangeHandler(
         {
             return Result.Failure<LoanDetailsResponse>(LoanErrors.ChangeFromMonthRequired);
         }
+        if (!SupportedRange.Contains(fromMonth))
+        {
+            return Result.Failure<LoanDetailsResponse>(LoanErrors.ChangeFromMonthOutOfRange);
+        }
         var details = new PaymentChangeDetails(
             fromMonth,
             request.MonthlyPaymentCents is { } cents ? Money.FromCents(cents) : null,

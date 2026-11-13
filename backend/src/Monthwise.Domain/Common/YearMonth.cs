@@ -78,5 +78,18 @@ public readonly record struct YearMonth : IComparable<YearMonth>
         return true;
     }
 
+    /// <summary>
+    /// Parses the ISO form <c>yyyy-MM</c> and accepts only months inside <see cref="SupportedRange"/>.
+    /// </summary>
+    public static bool TryParseSupported(string? value, out YearMonth result)
+    {
+        if (TryParse(value, out result) && SupportedRange.Contains(result))
+        {
+            return true;
+        }
+        result = default;
+        return false;
+    }
+
     public override string ToString() => $"{Year:D4}-{Month:D2}";
 }

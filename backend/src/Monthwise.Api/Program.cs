@@ -72,7 +72,7 @@ if (app.Configuration.GetValue<bool>("Database:MigrateOnStartup"))
     }
 }
 
-var api = app.MapGroup("/api");
+var api = app.MapGroup("/api").WithSupportedRange();
 api.MapHealthEndpoints();
 api.MapCardEndpoints();
 api.MapCashFlowEndpoints();
