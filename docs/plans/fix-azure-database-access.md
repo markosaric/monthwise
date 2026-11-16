@@ -74,13 +74,15 @@ of the production packaging requirements (2026-11-16, finding M6):
 
 - **Login:** `monthwise_app`, `LOGIN`, `NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION`, with
   its own random password.
-- **What it owns:** the `monthwise` database and its `public` schema. Owning the database lets it
-  create and drop the temporary import schema (backup and restore), create the name collation and
-  run every migration; it owns every table it creates. It is not a member of `azure_pg_admin`.
+- **What it owns:** the `monthwise` database, and through it the `public` schema (owned by
+  `pg_database_owner` since PostgreSQL 15). Owning the database lets it create and drop the
+  temporary import schema (backup and restore), create the name collation and run every migration;
+  it owns every table it creates. It is not a member of `azure_pg_admin`.
 - **What it cannot do:** create logins or databases, change server settings, or connect to the
-  other databases: `CONNECT` on `monthwise` is revoked from `PUBLIC` and given only to
-  `monthwise_app` and the administrator, and on the `postgres` database `CONNECT` is revoked from
-  `PUBLIC` where Azure allows the administrator to do so (see open questions).
+  other databases: all rights on `monthwise` are revoked from `PUBLIC` and `CONNECT` is given only
+  to the administrator besides the owner, and on the `postgres` database `CONNECT` is given to
+  `azure_pg_admin` and revoked from `PUBLIC` where Azure allows the administrator to do so (see open
+  questions).
 - **Secrets in Key Vault:** a new secret `app-database-password`. The secret `connection-string`
   now holds `Username=monthwise_app;Password=<app password>`. `postgres-password` (the
   administrator's) stays in Key Vault for the user and the setup job only.
@@ -96,17 +98,19 @@ of the production packaging requirements (2026-11-16, finding M6):
   `app-database-password`, mounted as files. The administrator password exists only in this job,
   which runs for a few seconds per deploy.
 - Its command runs `psql` with the setup SQL, passed in the template from `db-setup.sql` with
-  `loadTextContent`, so the SQL is a readable file in the repository. The SQL is idempotent:
-  1. create `monthwise_app` if it does not exist, otherwise set its password (so a changed Key Vault
-     value is applied), always with the `NO...` attributes above;
+  `loadTextContent` as an environment variable, so the SQL is a readable file in the repository.
+  The SQL is idempotent:
+  1. create `monthwise_app` if it does not exist, then always set its password (so a changed Key
+     Vault value is applied) and `NOCREATEDB NOCREATEROLE`; superuser, replication and bypassing
+     row security cannot be granted by Azure's administrator at all;
   2. `GRANT monthwise_app TO <administrator> WITH INHERIT FALSE, SET TRUE` (needed on PostgreSQL 16+
-     to hand ownership over);
-  3. `ALTER DATABASE monthwise OWNER TO monthwise_app`, `ALTER SCHEMA public OWNER TO monthwise_app`,
-     and `REASSIGN OWNED BY <administrator> TO monthwise_app` inside `monthwise`, for tables an
-     earlier start may have created as the administrator;
-  4. the `CONNECT` revokes and grants above.
-  Passwords reach `psql` as variables read from the mounted files, never on the command line or in
-  the log.
+     to hand ownership over and to act as the owner later);
+  3. `ALTER DATABASE monthwise OWNER TO monthwise_app` while the administrator still owns it;
+  4. as `monthwise_app` (`SET ROLE`), the `CONNECT` revokes and grants above.
+  No `REASSIGN OWNED` is needed: the app never connects as the administrator (see the order
+  below), so the administrator never owns Monthwise tables. The passwords reach `psql` from
+  environment variables that come from Key Vault (`PGPASSWORD`, and `APP_DATABASE_PASSWORD` read
+  with `\set` inside the script), never on the command line, and nothing prints them.
 
 ### Deploy step (`deploy.sh`)
 
@@ -122,12 +126,16 @@ of the production packaging requirements (2026-11-16, finding M6):
   server or environment in place, and the export file already works across installations with
   their own encryption keys. A copy inside the script is not possible either, because after the
   move the new database cannot be reached from Cloud Shell.
-- **Order:** deploy the template (which creates or updates the job and the app), then start the
-  setup job with `az containerapp job start` and wait for it to succeed (failure: print the job's
-  log command and stop with exit code 1). On the first deployment the app's first start fails to
-  sign in because `monthwise_app` does not exist yet; after the job has run, the script restarts
-  the active revision, then waits for health as today. On later deployments the job only re-applies
-  the same state, and the new revision signs in normally.
+- **Order:** the template gets a `setupOnly` parameter that leaves out the app. Every deployment
+  runs in three steps, so the app never starts without its login: (1) deploy with
+  `setupOnly=true` (network, database, Key Vault, environment, setup job; an existing app is kept,
+  because deployments are incremental), retried once after 60 seconds as before for the first
+  deployment's Key Vault access; (2) start the setup job with `az containerapp job start` and wait
+  for it to succeed, retried once after 30 seconds (failure: print the job's log command and stop
+  with exit code 1); (3) deploy with `setupOnly=false`, which creates or updates the app, then wait
+  for health as today. A deploy takes a minute or two longer than before; in return no revision
+  restart and no special first-deployment path are needed. On later deployments the job only
+  re-applies the same state.
 - The restore hint printed on failure (Appendix 3) stays; the restored server must be created in
   the same delegated subnet, so the printed command gets `--subnet` and `--private-dns-zone`.
 
@@ -153,7 +161,8 @@ of the production packaging requirements (2026-11-16, finding M6):
 3. Change `deploy.sh`: new secret, older installation check, run the setup job, restart on the
    first deployment, restore hint.
 4. Update the user manual's Azure chapter and `docs/INIT.md`.
-5. Run the CI checks locally where possible: `az bicep build` and `shellcheck`.
+5. Run the CI checks locally where possible: `az bicep build` and `shellcheck`, and run
+   `db-setup.sql` twice against a local PostgreSQL that imitates Azure's roles.
 6. Stage everything for review; the real deployment checks below need the user's Azure account.
 
 ## Tests
@@ -161,6 +170,11 @@ of the production packaging requirements (2026-11-16, finding M6):
 - **Unit / API tests:** none; no application code changes. The existing suites must stay green.
 - **CI:** the existing "Check Azure template" (`az bicep build`) and "Check deployment scripts"
   (`shellcheck`) steps cover the changed files.
+- **Local check of `db-setup.sql`:** on a local PostgreSQL 16 with an administrator like Azure's
+  (`CREATEDB CREATEROLE`, member of `azure_pg_admin`, owner of `monthwise`), the script runs twice
+  without error; afterwards `monthwise_app` can create a table, a schema and the ICU collation in
+  `monthwise`, but cannot create a role or a database or connect to `postgres`, and the
+  administrator can still connect to `monthwise`.
 - **Manual checks on Azure** (need the user's subscription; cannot be run from here):
   - New deployment into an empty resource group: `deploy.sh` ends with "Monthwise is running" and
     the health response reports the database as working (acceptance 16).

@@ -211,7 +211,9 @@ Remove-Item Env:PGPASSWORD
 <tr><th>Resource</th><th>What it is for</th><th>Expected cost per month</th></tr>
 <tr><td>Container App (scales to zero)</td><td>Runs Monthwise. When unused it stops, so the first page after a quiet spell takes a few seconds.</td><td>€0 within the monthly free grant</td></tr>
 <tr><td>PostgreSQL Flexible Server, Burstable B1ms</td><td>The database, with 7 days of automatic backups</td><td>€0 for 12 months on a new account, then about €13–15 plus storage</td></tr>
-<tr><td>Key Vault</td><td>The database password and the encryption keys</td><td>a few cents</td></tr>
+<tr><td>Virtual network and private DNS zone</td><td>Monthwise's private network: the database has no public address and can be reached only from there</td><td>about €0.50</td></tr>
+<tr><td>Container Apps job <em>caj-monthwise-db-setup</em></td><td>Runs for a few seconds on every deployment to set up Monthwise's own database login</td><td>€0 within the monthly free grant</td></tr>
+<tr><td>Key Vault</td><td>The database passwords and the encryption keys</td><td>a few cents</td></tr>
 <tr><td>Log Analytics</td><td>The log, kept 30 days</td><td>€0 at household use</td></tr>
 <tr><td>Budget alert</td><td>Emails you at 80 % of the budget (default 25) and when the month is forecast to go over it</td><td>€0</td></tr>
 </table></div>
@@ -223,6 +225,8 @@ Remove-Item Env:PGPASSWORD
   <li>The script prints the address of Monthwise and, the first time, how to copy the encryption keys from Key Vault into your password manager.</li>
 </ol>
 <p>To update, run the same command with the new version. The data and the secrets are kept. To see the log: <code>az containerapp logs show -g rg-monthwise -n ca-monthwise</code>.</p>
+<p>The database is private: it accepts connections only from Monthwise's own network in Azure, not from the internet, other Azure customers or database tools on your computer. Monthwise signs in with its own login, <em>monthwise_app</em>, which can use only the Monthwise data. The server administrator's password (<em>postgres-password</em> in Key Vault) is never given to Monthwise; you need it only for maintenance from inside the network.</p>
+<p>An installation set up before the database became private cannot be moved in place. <code>deploy.sh</code> then changes nothing and prints the steps: export your data in Settings, deploy into a new resource group (<code>MONTHWISE_RESOURCE_GROUP=rg-monthwise-2</code> in front of the same command), import the file there, check it and delete the old resource group.</p>
 <p>On Azure the database's own automatic backups take the place of update backups. If a new version cannot bring the database up to date, it stops working on the database, and <code>deploy.sh</code> prints the time just before the deployment and the command to restore the database to it (see <a href="#data-azure">Azure's own backups</a>).</p>
 
 <h2 id="data">11. Data and backups</h2>
@@ -246,7 +250,7 @@ Remove-Item Env:PGPASSWORD
 <h3 id="data-move">Moving Monthwise</h3>
 <p>To move to another computer or from Docker to the native service or Azure: export on the old installation, install the new one, and import the file there. The file works even though the new installation has its own encryption keys.</p>
 <h3 id="data-azure">Azure's own backups</h3>
-<p>On Azure the database also keeps 7 days of automatic backups. In the Azure portal, open the PostgreSQL server in <em>rg-monthwise</em> and choose <span class="ui">Restore</span> to create a copy of the database as it was at an earlier moment, then point Monthwise to it. Use this as a second safety net; your own export files stay the main backup.</p>
+<p>On Azure the database also keeps 7 days of automatic backups. In the Azure portal, open the PostgreSQL server in <em>rg-monthwise</em> and choose <span class="ui">Restore</span> to create a copy of the database as it was at an earlier moment, in the same virtual network and private DNS zone, then point Monthwise to it. Use this as a second safety net; your own export files stay the main backup.</p>
 
 <p class="lead" style="margin-top:32px">The <span class="ui">Savings</span> screen is not built yet.</p>
 </main>
