@@ -1,7 +1,7 @@
 # Plan: Screens load on demand and a failing screen can be recovered
 
 - **Branch:** `fix/page-loading-and-errors`
-- **Status:** In progress
+- **Status:** Done
 - **Date:** 2026-11-16
 - **Requirements:** [page-loading-and-errors.md](../feature-requirements/page-loading-and-errors.md)
 
@@ -69,10 +69,13 @@ release by reloading itself once (FR-4).
     - `NotFoundPage` and the redirect stay static imports; they are tiny and keep "Page not
       found" immediate (FR-2 last bullet). `routes.tsx` also exports `preloadScreens()`, which
       preloads every screen (used by the tests).
-  - **Bundle size (NFR-1, NFR-2):** a test build with on-demand screens gave a start file of about
-    466 kB (today 1,388 kB) and put the charts in their own file. No manual chunk rules are added
-    unless the build in step 6 shows a file over 500 kB; Vite's default warning limit of 500 kB
-    stays in place so the build warns if a file grows past it again.
+  - **Bundle size (NFR-1, NFR-2):** today the start downloads one 1,388 kB script file. With
+    on-demand screens the start file is about 465 kB (React, the router and the app shell) and the
+    charts get their own files. Measured in step 6: Settings starts with 558 kB of script (40 %)
+    and no chart code; the dashboard starts with 936 kB, of which about 380 kB are its charts.
+    NFR-1 was therefore changed before merge to measure on a screen without charts (decided
+    2026-11-16). No manual chunk rules are added; no file is over 500 kB, and Vite's default
+    warning limit of 500 kB stays in place so the build warns if a file grows past it again.
   - **Content policy (M5):** the screen files are `/assets/*.js` module scripts on the own origin,
     loaded with `import()`, which `script-src 'self'` allows. No inline script or `eval` is added.
 - **Database migrations:** none.
