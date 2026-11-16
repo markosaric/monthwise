@@ -393,3 +393,59 @@ application needed them, which hides what Monthwise really depends on.
 - Merging update proposals automatically.
 - Moving to a new major version of any package; major versions are proposed and handled one by one
   later.
+
+## Appendix 5: The Azure database is private, and Monthwise uses its own database login
+
+- **Date:** 2026-11-16
+- **Branch:** `fix/azure-database-access`
+- **Changes:** FR-6 (what the app is given on Azure), FR-10, new acceptance criteria 16 to 18
+
+**Why:** the code review of `main` (finding M6) found two weaknesses in the Azure deployment.
+First, the database accepts connections from the internet side of Azure: its firewall lets in
+every service running in Azure, from any customer's subscription, so only the password stands
+between them and the household data. Second, Monthwise signs in to the database as the server
+administrator, so a fault in Monthwise or a leaked connection string gives full control of the
+whole database server, not only of Monthwise's own data.
+
+**FR-10 Azure** (extended)
+- The database on Azure can be reached only from Monthwise's own private network in Azure. It
+  accepts no connection from the internet or from other Azure customers' services, whatever the
+  password.
+- Monthwise signs in to the database with its own login, which can read, change and bring up to
+  date (FR-3) only the Monthwise data. It cannot create other logins or databases, change server
+  settings or reach anything else on the server.
+- The server administrator's password is still created on the first deployment and kept only in
+  Azure's secret store (FR-6). Monthwise itself is never given it; the user can read it there for
+  maintenance.
+- Deploying a new release stays one documented step (as before), including for an installation
+  set up before this appendix. Such an installation is moved to the private database and the own
+  login by that step, keeping all data, or, if that is not possible, the step stops before
+  changing anything and tells the user exactly what to do (for example export, deploy, import) so
+  no data is lost.
+- The documentation lists any resources this adds and their expected monthly cost, as FR-10
+  already asks, and the expected total stays within the default budget alert of 25 per month.
+- Monthwise's public HTTPS address is not changed by this appendix; who may reach it is finding
+  H1 and its own work item.
+
+**FR-6 Secrets** (extended)
+- On Azure, Monthwise is given only its own database login (FR-10), the encryption keys and the
+  key for its image download, never the server administrator's password.
+
+**Acceptance criteria** (new)
+
+16. On a new Azure deployment, a connection attempt to the database from outside Monthwise's
+    private network (for example from Azure Cloud Shell or the user's own computer) is refused,
+    while Monthwise works normally and its health response reports the database as working.
+17. On Azure, Monthwise's database login can read and change Monthwise's data and bring it up to
+    date with a new release, but cannot create a login or a database; the server administrator's
+    password is not among the secrets given to Monthwise.
+18. Deploying a new release over an installation made before this appendix either ends with all
+    data present on the private database under Monthwise's own login, or stops before any change
+    with clear instructions; the user manual's Azure chapter describes the private database, the
+    own login, where the administrator password is, and the updated resource list and cost.
+
+**Out of scope**
+- Restricting who can reach Monthwise's public address, and login (finding H1).
+- Database logins on the Docker one-click and the native background service, where the database
+  is reachable only from the same computer.
+- Signing in to the database without a password (Microsoft Entra ID).
