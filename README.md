@@ -237,6 +237,12 @@ not. The PostgreSQL zip for Windows is checked against `POSTGRES_WINDOWS_SHA256`
 workflow; when changing `POSTGRES_WINDOWS`, record the SHA-256 of the new official zip in the same
 commit (`curl -fsSL <zip url> | shasum -a 256`).
 
+**Vulnerable packages:** CI fails when a front-end or back-end package, including the ones it
+brings in, has a known vulnerability rated high or critical (`npm audit --audit-level=high`, and
+NuGet audit on `dotnet restore`); low and moderate ones are listed in the CI log. Dependabot
+proposes package and action updates every week (see "Dependency updates" in
+[CONTRIBUTING.md](CONTRIBUTING.md#dependency-updates)).
+
 **Building locally:**
 
 ```bash
@@ -263,8 +269,10 @@ placeholder values are in [deploy/settings.example.json](deploy/settings.example
 |---|---|---|
 | `backend` | `dotnet test` | domain and API tests (set `MONTHWISE_TEST_DB` to a connection string to include tests against a real database; with `CI=true` they fail instead of being skipped when it is missing) |
 | `backend` | `dotnet format` | apply code style |
+| `backend` | `dotnet list package --vulnerable --include-transitive` | list packages with known vulnerabilities (a high or critical one already fails `dotnet restore`) |
 | `backend` | `dotnet tool restore && dotnet ef migrations add <Name> --project src/Monthwise.Infrastructure --output-dir Persistence/Migrations` | add a migration |
 | `frontend` | `npm test` / `npm run lint` / `npm run typecheck` / `npm run format` | tests, lint, types, formatting |
+| `frontend` | `npm audit` | list packages with known vulnerabilities (CI fails on high or critical) |
 | `frontend` | `npm run api:generate` | regenerate the TypeScript API types after building the API (`backend/openapi/monthwise.json`) |
 
 ## Repository layout

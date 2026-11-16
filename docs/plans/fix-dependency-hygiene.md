@@ -44,7 +44,8 @@ adds NFR-9, NFR-10 and acceptance criteria 13 to 15, and extends NFR-6:
 **Front-end packages (NFR-9).** Today `npm audit` reports 16 vulnerabilities (1 low, 8 moderate,
 7 high: vite, zod, undici, systeminformation and others). `npm audit fix` moves them all to fixed
 versions within the ranges in `package.json` (vite 8.3.8, zod 4.6.7, …); no major version changes.
-`zod` gets its range raised to `^4.6.7` so a fresh install cannot fall back to a vulnerable version.
+`zod` and `vite` get their ranges raised to `^4.6.7` and `^8.3.8` so a fresh install cannot fall
+back to a vulnerable version.
 
 After that, 6 remain (2 low, 4 moderate), all inside the `shadcn` command-line tool, which is only
 run by a developer to add a component and is never part of the release:
@@ -107,11 +108,12 @@ update for it (below) is the fix.
 **CONTRIBUTING.md.** New short section "Dependency updates": Dependabot proposes updates weekly and
 security fixes immediately; such a pull request needs no requirements document or plan; review the
 release notes, let CI pass and merge with Squash and merge; a major version that needs code changes
-is closed and redone as its own `build/` or `fix/` branch with a plan. Also mention that CI fails on
+is closed and redone as its own `build/` or `fix/` branch with a plan. The branch rules name
+Dependabot's `dependabot/...` branches as the only other allowed branch names. Also mention that CI fails on
 high or critical vulnerabilities and how to check locally (`npm audit`, `dotnet restore`).
 
 ## Steps
-1. `npm audit fix` in `frontend`, raise `zod` to `^4.6.7`, move the three build tools to
+1. `npm audit fix` in `frontend`, raise `zod` to `^4.6.7` and `vite` to `^8.3.8`, move the three build tools to
    `devDependencies`, `npm install` to refresh the lock file.
 2. Run lint, format check, type-check, tests and build in `frontend`; check `npm audit` and
    `npm audit --omit=dev`.

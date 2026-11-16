@@ -70,6 +70,25 @@ Every feature (and every non-trivial fix or refactor) has a written plan in `doc
 - If the approach changes during implementation, update the plan in the same branch.
 - When the feature is done, set the plan's status to `Done`; plans stay in the repo as history.
 
+## Dependency updates
+
+[Dependabot](.github/dependabot.yml) proposes newer versions of the front-end (npm) and back-end
+(NuGet) packages and of the GitHub Actions every Monday, and security fixes as soon as they are
+published (requirements: [production packaging, Appendix 4](docs/feature-requirements/production-packaging.md#appendix-4-no-known-high-risk-vulnerabilities-kept-current-automatically)).
+
+- Minor and patch updates arrive grouped in one pull request per kind; each major version arrives
+  on its own.
+- Titles already follow Conventional Commits: `build(deps): …` for packages, `ci(deps): …` for
+  actions.
+- Such a pull request is a version change only, so it needs **no requirements document and no
+  plan**. Read the release notes, let CI pass, and merge it with **Squash and merge**. Nothing is
+  merged automatically.
+- If an update needs code changes (usually a major version), close the proposal and do it on its
+  own `build/` or `fix/` branch with a plan, following the [feature workflow](#feature-workflow).
+- CI fails when any package has a known vulnerability rated high or critical. Check locally with
+  `npm audit` in `frontend` and `dotnet restore` in `backend`; low and moderate findings are
+  reported but do not fail.
+
 ## Secrets and sensitive data
 
 Never commit secrets or store them in code. This covers passwords, connection strings with
@@ -99,6 +118,8 @@ passwords, API keys, tokens, certificates and private keys, as well as personal 
   | `chore/`, `docs/`, `refactor/`, `test/`, `ci/` | matching commit types (see below) |
 
 - One branch = one feature. Do not mix unrelated changes.
+- Dependabot's update branches (`dependabot/...`) are the only other names allowed; see
+  [Dependency updates](#dependency-updates).
 
 ### Rebase workflow
 
