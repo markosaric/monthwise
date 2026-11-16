@@ -331,3 +331,65 @@ update instead.
   backups are kept.
 - The user manual's installation chapters say where the update backups are and how to restore
   one by hand.
+
+## Appendix 4: No known high-risk vulnerabilities, kept current automatically
+
+- **Date:** 2026-11-16
+- **Branch:** `fix/dependency-hygiene`
+- **Changes:** new NFR-9 and NFR-10, NFR-6 (what CI checks), new acceptance criteria 13 to 15;
+  takes into scope what Appendix 2 left out ("keeping the pinned versions current")
+
+**Why:** the code review of `main` (finding M4) found that the front-end's third-party packages
+have known vulnerabilities (16 on 2026-11-16, 7 of them high), for all of which a fixed version
+exists. Nothing in CI reports a known vulnerability, so new ones go unnoticed, and nothing proposes
+newer versions, so the versions pinned in Appendix 2 and fixed by the lock files only ever age.
+Tools that are needed only to build or develop Monthwise are also declared as if the running
+application needed them, which hides what Monthwise really depends on.
+
+**NFR-9 No known high-risk vulnerabilities** (new)
+- A change can only be merged when none of the third-party packages of the front-end or the
+  back-end, including the packages they bring in themselves, has a known vulnerability rated high
+  or critical. CI checks this on every change and on `main`, and names each vulnerable package,
+  its rating and the advisory.
+- Vulnerabilities rated low or moderate are reported by the same check but do not stop a change.
+- The front-end and back-end packages in use when this appendix is merged have no known high or
+  critical vulnerability, and every known low or moderate one with a fixed version available is
+  fixed too.
+- The screens, calculations and data behave exactly as before; only package versions change.
+
+**NFR-10 Versions kept current** (new)
+- Once a week, the repository proposes newer versions of the front-end packages, the back-end
+  packages and the automation steps CI and the release use (NFR-8), each as its own pull request
+  per kind, with minor and patch versions grouped together and each major version on its own.
+- A fix for a known vulnerability is proposed as soon as it is published, not only weekly.
+- Every proposal goes through the same CI checks as any other change and is merged only after the
+  user reviews it; nothing is updated or merged automatically. Proposals keep the pinned form of
+  NFR-8 (exact version, readable next to it).
+- Proposals follow the repository's commit message rules (Conventional Commits, type `build` for
+  packages and `ci` for automation steps). As a pure version change, a proposal needs no
+  requirements document or plan; `CONTRIBUTING.md` says so.
+
+**Packages declared by purpose** (new, part of NFR-9)
+- Tools used only to build, check or develop Monthwise (for example the component generator and
+  the styling build tools) are declared as development packages, separate from the packages the
+  running application uses. The release is unchanged by this.
+
+**NFR-6 Built and checked by CI** (extended)
+- In addition, every change and every push to `main` runs the vulnerability check of NFR-9.
+
+**Acceptance criteria** (new)
+
+13. On the merged branch, the vulnerability check of the front-end and the back-end reports no
+    known vulnerability rated high or critical, and no low or moderate one that has a fixed
+    version available; all tests pass and the release builds and starts as before.
+14. A change that brings in a package with a known high or critical vulnerability fails CI, and
+    the CI log names the package and the advisory.
+15. The repository is set up to propose weekly updates of front-end packages, back-end packages
+    and CI automation steps, and immediate security fixes, as reviewable pull requests with
+    Conventional Commits titles; `CONTRIBUTING.md` describes how such a proposal is handled.
+
+**Out of scope**
+- The base images the release image is built from and the database image (as in Appendix 2).
+- Merging update proposals automatically.
+- Moving to a new major version of any package; major versions are proposed and handled one by one
+  later.
