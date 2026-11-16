@@ -1,0 +1,50 @@
+# Weekly update proposals for packages and CI automation steps (production packaging NFR-10).
+# Security fixes arrive as soon as they are published through Dependabot security updates,
+# which are turned on in the repository settings and use the same commit message rules.
+# Every proposal is reviewed and merged by hand; see "Dependency updates" in CONTRIBUTING.md.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /frontend
+    schedule:
+      interval: weekly
+      day: monday
+      timezone: Europe/Zagreb
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: build
+      include: scope
+    groups:
+      minor-and-patch:
+        applies-to: version-updates
+        update-types: [minor, patch]
+
+  - package-ecosystem: nuget
+    directory: /backend
+    schedule:
+      interval: weekly
+      day: monday
+      timezone: Europe/Zagreb
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: build
+      include: scope
+    groups:
+      minor-and-patch:
+        applies-to: version-updates
+        update-types: [minor, patch]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      timezone: Europe/Zagreb
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: ci
+      include: scope
+    groups:
+      minor-and-patch:
+        applies-to: version-updates
+        update-types: [minor, patch]

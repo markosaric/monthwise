@@ -8,5 +8,12 @@
     <AnalysisLevel>latest-recommended</AnalysisLevel>
     <!-- Release builds pass -p:Version=X.Y.Z from the git tag; the SDK appends the commit. -->
     <Version>0.0.0-dev</Version>
+    <!-- Check every package, including the ones they bring in, for known vulnerabilities on
+         restore. TreatWarningsAsErrors makes high (NU1903) and critical (NU1904) ones stop the
+         build; low (NU1901) and moderate (NU1902) ones are reported only (NFR-9). -->
+    <NuGetAudit>true</NuGetAudit>
+    <NuGetAuditMode>all</NuGetAuditMode>
+    <NuGetAuditLevel>low</NuGetAuditLevel>
+    <WarningsNotAsErrors>$(WarningsNotAsErrors);NU1901;NU1902</WarningsNotAsErrors>
   </PropertyGroup>
 </Project>

@@ -39,7 +39,12 @@ jobs:
         with:
           global-json-file: backend/global.json
       - name: Restore
+        # Fails on a package with a known high or critical vulnerability (NFR-9).
         run: dotnet restore
+      - name: List vulnerable packages
+        # Shows every known vulnerability with its rating and advisory, including low and
+        # moderate ones that do not stop the build.
+        run: dotnet list package --vulnerable --include-transitive
       - name: Check formatting
         run: dotnet format --verify-no-changes --no-restore
       - name: Build
@@ -64,6 +69,9 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
       - name: Install
         run: npm ci
+      - name: Check for vulnerable packages
+        # Lists every known vulnerability; fails only on high or critical ones (NFR-9).
+        run: npm audit --audit-level=high
       - name: Check API client is up to date
         run: |
           npm run api:generate
