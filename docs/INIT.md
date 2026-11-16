@@ -176,6 +176,7 @@ Key rules:
 | Charts | Recharts | income vs. expense trend, debt over time |
 | Local dev | Docker Compose for PostgreSQL | one command to start the database |
 | Release | One version for Docker one-click, a native background service (macOS, Windows) and Azure Container Apps; the API serves the built front-end | see [production-packaging.md](feature-requirements/production-packaging.md) and [ADR 0006](decisions/0006-single-release-api-serves-frontend.md) |
+| Security headers | Set by the API on every answer (`Hosting/SecurityHeaders.cs`): a content policy that runs only the app's own scripts, no framing, no type guessing, no referrer, no device features; HSTS (one year) only over HTTPS, directly or through the trusted proxy | see [security-headers.md](feature-requirements/security-headers.md); front-end code must not use inline scripts or `eval` |
 
 Back-end layering: **Domain** (entities and pure calculation logic, no dependencies) → **Application** (use cases, DTOs, validation) → **Infrastructure** (EF Core, PostgreSQL) → **Api** (endpoints, auth).
 
