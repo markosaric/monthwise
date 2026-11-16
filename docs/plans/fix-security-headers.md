@@ -1,7 +1,7 @@
 # Plan: The browser is told how to protect the app
 
 - **Branch:** `fix/security-headers`
-- **Status:** In progress
+- **Status:** Done
 - **Date:** 2026-11-16
 - **Requirements:** [security-headers.md](../feature-requirements/security-headers.md)
 
@@ -14,7 +14,7 @@ over HTTPS, to keep using HTTPS for a year (FR-1 to FR-4). The app keeps working
 ## Scope
 
 - In scope: one API middleware that adds the security headers to every answer, its place in the
-  pipeline, API tests, a release build check in a browser, and a short note in the docs.
+  pipeline, turning off zod's eval probe in the front-end, API tests, a release build check in a browser, and a short note in the docs.
 - Out of scope: everything in section 5 of the requirements (login, cross-site request checks,
   HTTP to HTTPS redirect, HSTS preload, violation reports). The Vite development server is not
   changed; it is a development tool, not a way of running a release.
@@ -56,13 +56,17 @@ over HTTPS, to keep using HTTPS for a year (FR-1 to FR-4). The app keeps working
   pages, the migration gate, the import gate and the front-end, so every answer, including 404s
   and gate refusals, passes through it (FR-1). Docker, the native install and Azure all run this
   same pipeline.
-- **Front-end:** no change. The built `index.html` loads only `/assets/...` module scripts and
-  style sheets, and the fonts are bundled (`@fontsource-variable`). If the release build check
-  finds a violation, the fix goes in the policy constants, not in a relaxed default.
+- **Front-end (`src/zodConfig.ts`, new, imported first in `main.tsx`):** `z.config({ jitless: true })`.
+  The release build check (step 4) found one violation on every screen: zod probes for `eval`
+  with `new Function` on its first parse, and the browser reports the refused probe as a policy
+  violation (acceptance 4). Turning zod's compiled parsers off removes the probe; zod then parses
+  without generated code, so the policy keeps `script-src 'self'`. Otherwise the built
+  `index.html` loads only `/assets/...` module scripts and style sheets, and the fonts are bundled
+  (`@fontsource-variable`).
 - **Database migrations:** none.
-- **Docs:** `docs/INIT.md` (or the hosting section that describes the proxy) gets one paragraph:
-  the app sends its security headers itself, where they are set, and that HSTS is sent only over
-  HTTPS.
+- **Docs:** the architecture table in `docs/INIT.md` gets a row: the app sends its security
+  headers itself, where they are set, that HSTS is sent only over HTTPS, and that front-end code
+  must not use inline scripts or `eval`.
 
 ## Steps
 
@@ -72,7 +76,7 @@ over HTTPS, to keep using HTTPS for a year (FR-1 to FR-4). The app keeps working
 4. Build the front-end, run a release build locally and go through the screens in a browser,
    checking the console for policy violations (acceptance 4) and a framing page (acceptance 3).
 5. Open the API reference page in development (acceptance 5).
-6. Add the docs paragraph.
+6. Add the docs paragraph (a row in the architecture table of `docs/INIT.md`).
 
 ## Tests
 

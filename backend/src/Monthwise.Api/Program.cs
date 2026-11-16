@@ -38,6 +38,7 @@ if (Assembly.GetEntryAssembly()?.GetName().Name != "GetDocument.Insider")
 }
 
 app.UseProxyHosting();
+app.UseSecurityHeaders();
 app.UseExceptionHandler();
 app.UseStatusCodePages();
 app.UseMigrationGate();
