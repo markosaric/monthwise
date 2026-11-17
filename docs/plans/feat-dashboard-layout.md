@@ -1,7 +1,7 @@
 # Plan: Dashboard without repeated figures, in two rows
 
 - **Branch:** `feat/dashboard-layout`
-- **Status:** Draft
+- **Status:** Done
 - **Date:** 2026-11-17
 - **Requirements:** [design-refresh.md Appendix 4](../feature-requirements/design-refresh.md#appendix-4-dashboard-without-repeated-figures-in-two-rows)
 
