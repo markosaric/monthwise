@@ -1,5 +1,8 @@
 {
   "Urls": "http://127.0.0.1:8080",
+  "Household": {
+    "TimeZone": "Europe/Zagreb"
+  },
   "Database": {
     "MigrateOnStartup": true,
     "StartupWaitSeconds": 60

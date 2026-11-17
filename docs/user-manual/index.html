@@ -121,6 +121,7 @@
 <p>Lists the app uses everywhere: cards and accounts, payers, input categories, expense categories, loan categories and recurring bills. Add your own entries next to the starting ones. A category that is already in use cannot be deleted; hide it instead.</p>
 <figure><img src="images/settings.jpg" alt="Settings overview"><figcaption>Settings</figcaption></figure>
 <p>Card numbers and IBANs are stored encrypted and shown only on request.</p>
+<p>At the bottom, Settings shows the Monthwise version and the time zone it uses for "today" (see <a href="#install">Installing Monthwise</a>).</p>
 <p>The <span class="ui">Data and backups</span> tile, in the <em>Data</em> group, exports and imports all your data; see <a href="#data">Data and backups</a>.</p>
 
 <h2 id="phone">9. On the phone</h2>
@@ -136,6 +137,7 @@
 </table></div>
 <p>To move Monthwise from one way to another, export your data on the old one and import it on the new one (see <a href="#data">Data and backups</a>).</p>
 <p>Every way needs the <a href="https://cli.github.com/">GitHub CLI</a>, because the Monthwise repository is private. Sign in once with <code>gh auth login</code>, then allow it to download the app image with <code>gh auth refresh --scopes read:packages</code>.</p>
+<p><strong>Time zone.</strong> Monthwise decides what "today" and the current month are in the household time zone, <code>Europe/Zagreb</code> unless you change it, whatever time zone your computer or Azure runs in. To use another one, give an IANA time zone name such as <code>Europe/Vienna</code>: on Docker and the native service add <code>"Household": { "TimeZone": "Europe/Vienna" }</code> to <em>settings.json</em> in the settings folder and restart Monthwise; on Azure set the container app's environment variable <code>Household__TimeZone</code>. An unknown name stops Monthwise from starting, and the log says which setting is wrong.</p>
 <div class="tip"><strong>Your secrets.</strong> On the first start Monthwise creates a database password and two encryption keys for card numbers and IBANs, and shows the folder they are in. Copy the files in that folder into your password manager straight away. Without them the stored card numbers and IBANs can never be read again, for example on a new computer. Monthwise never creates new keys for a database that already exists.</div>
 
 <h3 id="install-docker">Docker one-click</h3>

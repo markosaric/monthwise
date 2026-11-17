@@ -90,7 +90,9 @@ describe('Settings screen', () => {
       'href',
       '/recurring-bills',
     )
-    expect(await screen.findByText('Monthwise version 1.0.0+abc1234')).toBeInTheDocument()
+    expect(
+      await screen.findByText('Monthwise version 1.0.0+abc1234 · time zone Europe/Zagreb'),
+    ).toBeInTheDocument()
   })
 })
 

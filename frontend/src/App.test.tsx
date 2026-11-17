@@ -39,6 +39,7 @@ describe('app shell', () => {
       database: 'Healthy',
       migrations: 'Failed',
       version: '1.0.0',
+      timeZone: 'Europe/Zagreb',
     })
 
     renderRoute('/')

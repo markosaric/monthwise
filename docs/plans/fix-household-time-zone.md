@@ -1,7 +1,7 @@
 # Plan: "Today" is the household's date, not the server's
 
 - **Branch:** `fix/household-time-zone`
-- **Status:** Draft
+- **Status:** In progress
 - **Date:** 2026-11-17
 - **Requirements:** [production-packaging.md, Appendix 6](../feature-requirements/production-packaging.md#appendix-6-today-is-the-households-date-not-the-servers)
 
@@ -56,16 +56,18 @@ changes which time zone counts as "local", not the call sites:
   the household zone. `GetUtcNow()`, timers and timestamps come from the wrapped provider
   unchanged, and .NET's `GetLocalNow()` then converts with the household zone, including daylight
   saving.
-- New `Application/Common/HouseholdOptions.cs`: the `Household` settings section with
-  `TimeZone` (default `Europe/Zagreb`), and `HouseholdTimeZone.Resolve(string?)`, which uses
+- `HouseholdTimeZone` (same file): the setting name `Household:TimeZone`, the default
+  `Europe/Zagreb` (also used when the setting is empty), and `Resolve(string?)`, which uses
   `TimeZoneInfo.TryFindSystemTimeZoneById` (IANA ids work on Linux, macOS and Windows) and
   otherwise throws an `InvalidOperationException` such as
   "The setting Household:TimeZone has the unknown time zone 'Europe/Zagrb'. Use an IANA time
   zone such as Europe/Zagreb." The message names the setting and the given value only (no
   secret is involved).
-- `AddApplication(IConfiguration)` reads `Household:TimeZone` and registers
-  `new HouseholdTimeProvider(TimeProvider.System, zone)` as the singleton `TimeProvider`, instead
-  of `TimeProvider.System`. The zone is resolved when the provider is first needed.
+- `AddApplication()` no longer registers `TimeProvider.System`. The Api registers the clock
+  (`Api/Hosting/HouseholdClock.cs`, `AddHouseholdClock()`): `new HouseholdTimeProvider(
+  TimeProvider.System, zone)` as the singleton `TimeProvider`, with the zone read from
+  `Household:TimeZone` when the provider is first needed. This keeps Application free of a
+  configuration dependency and lets tests swap the clock.
 - `TimeProviderExtensions.Today()` keeps its code; its comment says "the household's time zone"
   and no longer mentions the server.
 
@@ -99,8 +101,8 @@ changes which time zone counts as "local", not the call sites:
 
 ## Steps
 
-1. `HouseholdOptions`, `HouseholdTimeZone.Resolve` and `HouseholdTimeProvider` in Application,
-   with `AddApplication(IConfiguration)` and the call in `Program.cs`.
+1. `HouseholdTimeZone.Resolve` and `HouseholdTimeProvider` in Application; `AddHouseholdClock()`
+   in the Api and the call in `Program.cs`.
 2. Startup check in `Program.cs`; default in `appsettings.json`.
 3. `TimeZone` on the health response; regenerate the front-end client; show it on Settings.
 4. Example settings, user manual, `docs/INIT.md`.
@@ -108,6 +110,9 @@ changes which time zone counts as "local", not the call sites:
 
 ## Tests
 
+- **Existing endpoint tests** compare with "today" in the household time zone
+  (`HouseholdToday.Value`) instead of `DateTime.Now`, so they also pass on a UTC machine between
+  23:00 and 01:00 UTC.
 - **Unit tests** (Api test project, which already references Application; no database):
   - With a fixed UTC clock at 2026-11-30 23:30 UTC (winter, UTC+1), `Today()` is 2026-12-01.
   - At 2026-06-30 22:30 UTC (summer, UTC+2), `Today()` is 2026-07-01.
@@ -120,7 +125,8 @@ changes which time zone counts as "local", not the call sites:
   - The fixed clock is a small `TimeProvider` subclass in the test project, so no new package.
 - **API / integration tests:**
   - With the factory's clock fixed at 2026-11-30 23:30 UTC, marking an input received and a bill
-    paid without a date stores 2026-12-01, and the Dashboard opens on December 2026. The factory
+    paid without a date stores 2026-12-01, and the Dashboard opens on December 2026 (the input is
+    the tested example; bills use the same `Today()`). The factory
     gets an optional clock, replacing the registered `TimeProvider` with the household provider
     around it.
   - With `Household:TimeZone` set to `America/New_York` at the same instant, the date is

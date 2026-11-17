@@ -13,11 +13,13 @@ namespace Monthwise.Application;
 
 public static class DependencyInjection
 {
-    /// <summary>Registers use case handlers and validators.</summary>
+    /// <summary>
+    /// Registers use case handlers and validators. The host registers the <see cref="TimeProvider"/>
+    /// (a <see cref="Common.HouseholdTimeProvider"/>), since it comes from the settings.
+    /// </summary>
     public static IServiceCollection AddApplication(this IServiceCollection services)
     {
         services.AddValidatorsFromAssembly(typeof(DependencyInjection).Assembly, includeInternalTypes: true);
-        services.AddSingleton(TimeProvider.System);
 
         services.AddScoped<CardInputChecker>();
         services.AddScoped<CardStateChanger>();

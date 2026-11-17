@@ -23,5 +23,6 @@ export const healthy = {
       database: 'Healthy',
       migrations: 'Applied',
       version: '1.0.0+abc1234',
+      timeZone: 'Europe/Zagreb',
     }),
 }
