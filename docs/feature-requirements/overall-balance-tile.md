@@ -131,3 +131,21 @@ The redesigned Dashboard shows nothing about account balances
 the Month screen (FR-15). This feature changes that through
 [Appendix 1 of design-refresh.md](design-refresh.md#appendix-1-overall-balance-key-figure); the
 approved text of design-refresh.md is not rewritten.
+
+## Appendix 1: Label as an icon tooltip
+
+- **Date:** 2026-11-17
+- **Branch:** `feat/tile-label-tooltips`
+- **Changes:** FR-1, FR-3, acceptance criterion 3
+
+As described in [tile-label-tooltips.md](tile-label-tooltips.md) and
+[Appendix 3 of design-refresh.md](design-refresh.md#appendix-3-key-figure-labels-as-icon-tooltips):
+
+- FR-1: the tile shows its icon and big number; the label **Overall balance** is not shown on the
+  tile but appears as a tooltip on its icon, and screen readers read it with the number.
+- FR-3: under the number, the detail line shows only its details (number of primary accounts,
+  outputs without account, starting balance missing), e.g. "2 primary accounts", without
+  "Overall balance" in front. Without any of these details, nothing is shown under the number.
+- Acceptance criterion 3 is read with this change: the detail line says "2 primary accounts".
+
+**Why:** all key figures show their label as an icon tooltip instead of under the number.

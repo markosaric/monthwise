@@ -508,3 +508,20 @@ value it passes to the page stays empty and no change is reported (reproduced in
 engine Safari uses, when the year is set with the arrow keys). The page cannot read a date the
 browser does not pass on, so the browser's date field is replaced by a typed one, the same
 approach as the `MM/YY` card validity fix.
+
+## Appendix 3: Key figure labels as icon tooltips
+
+- **Date:** 2026-11-17
+- **Branch:** `feat/tile-label-tooltips`
+- **Changes:** FR-2 (the short label under the number of a key figure)
+
+As described in [tile-label-tooltips.md](tile-label-tooltips.md):
+
+- FR-2: a key figure is shown as a small stat card with a coloured icon, the amount in large bold
+  type, and, where it has them, a detail under the amount and a change pill. Its short label is
+  **not** shown on the card; it appears as a tooltip on the icon (after about one second of
+  pointing, on keyboard focus, and on a long press on touch screens), and screen readers always
+  read it with the amount.
+
+**Why:** once the user knows a screen, the icon and the number are enough; the labels under every
+number add noise.
