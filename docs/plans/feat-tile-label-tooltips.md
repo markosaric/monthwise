@@ -1,7 +1,7 @@
 # Plan: Key figure labels as icon tooltips
 
 - **Branch:** `feat/tile-label-tooltips`
-- **Status:** In progress
+- **Status:** Done
 - **Date:** 2026-11-17
 - **Requirements:** [tile-label-tooltips.md](../feature-requirements/tile-label-tooltips.md) (approved),
   [design-refresh.md Appendix 3](../feature-requirements/design-refresh.md#appendix-3-key-figure-labels-as-icon-tooltips),
@@ -43,7 +43,8 @@ changes FR-1, FR-3 and acceptance criterion 3:
       "Outstanding, 427,69 €, …" (FR-2). Existing tests that find tiles by their label text keep
       working.
     - The `IconTile` becomes the tooltip trigger, using the same Radix tooltip and look as
-      `QuickActionButton` (dark bubble, `side="bottom"`), so it does not cover the number (NFR-1).
+      `QuickActionButton` (dark bubble), opening to the right of the icon so it does not cover the
+      number (NFR-1).
     - **Tile that opens a screen** (`to`): the whole card stays one link (no second focusable
       element inside it). The tooltip is controlled: it opens when the pointer rests on the icon,
       and when the link gets keyboard focus (`:focus-visible` only, not on a mouse click); it closes

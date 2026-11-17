@@ -63,7 +63,8 @@ describe('Overall balance key figure', () => {
       { name: /Overall balance/ },
     )
     await within(tile).findByText('1.250,50 €')
-    expect(tile).toHaveTextContent(/Overall balance$/)
+    // The label is read first and is not repeated under the number (Appendix 1).
+    expect(tile).toHaveTextContent(/^Overall balance 1\.250,50 €$/)
     expect(tile).toHaveAttribute('href', '/cards')
     const links = within(keyFigures()).getAllByRole('link')
     expect(links).toHaveLength(5)
@@ -113,7 +114,7 @@ describe('Overall balance key figure', () => {
     const tile = await screen.findByRole('link', { name: /Overall balance/ })
     await within(tile).findByText('1.250,50 €')
     expect(tile).toHaveTextContent(
-      'Overall balance · 2 primary accounts · 3 outputs without account · starting balance missing',
+      /1\.250,50 €2 primary accounts · 3 outputs without account · starting balance missing$/,
     )
   })
 
@@ -135,7 +136,7 @@ describe('Overall balance key figure', () => {
     const figures = await screen.findByRole('region', { name: 'Key figures' })
     const tile = await within(figures).findByRole('link', { name: /Overall balance/ })
     await within(tile).findByText('980,00 €')
-    expect(tile).toHaveTextContent(/Overall balance$/)
+    expect(tile).toHaveTextContent(/^Overall balance 980,00 €$/)
   })
 })
 
