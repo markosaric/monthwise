@@ -11,7 +11,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Reports whether the API and its database work, the migration state and the running version. */
+        /** Reports whether the API and its database work, the migration state, the running version and the household time zone. */
         get: operations["GetHealth"];
         put?: never;
         post?: never;
@@ -2486,6 +2486,7 @@ export interface components {
             database: components["schemas"]["HealthStatusValue"];
             migrations: components["schemas"]["MigrationStatusValue"];
             version: string;
+            timeZone: string;
             /** Format: date-time */
             dataImportedAt: null | string;
         };

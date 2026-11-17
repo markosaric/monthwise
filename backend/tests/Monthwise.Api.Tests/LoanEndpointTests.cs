@@ -19,7 +19,7 @@ public sealed class LoanEndpointTests : IAsyncLifetime
     private static readonly Guid Lease = new("0199c2a0-0000-7000-8000-000000000302");
     private static readonly Guid CashLoan = new("0199c2a0-0000-7000-8000-000000000312");
     private static readonly Guid CarLease = new("0199c2a0-0000-7000-8000-000000000321");
-    private static readonly DateOnly Today = DateOnly.FromDateTime(DateTime.Now);
+    private static readonly DateOnly Today = HouseholdToday.Value;
     private static readonly DateOnly MonthStart = new(Today.Year, Today.Month, 1);
     private static readonly long[] AmountsAfterChange = [50_000, 60_000, 60_000, 60_000, 60_000, 60_000];
 

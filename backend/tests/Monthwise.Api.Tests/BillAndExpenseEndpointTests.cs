@@ -17,7 +17,7 @@ public sealed class BillAndExpenseEndpointTests : IAsyncLifetime
     private static readonly Guid VisaIssuer = new("0199b0c0-0000-7000-8000-000000000001");
     private static readonly Guid ZaBa = new("0199b0c0-0000-7000-8000-000000000101");
     private static readonly Guid CashWithdrawal = new("0199c8b0-0000-7000-8000-000000000499");
-    private static readonly DateOnly Today = DateOnly.FromDateTime(DateTime.Now);
+    private static readonly DateOnly Today = HouseholdToday.Value;
     private static readonly DateOnly MonthStart = new(Today.Year, Today.Month, 1);
 
     private MonthwiseApiFactory? _factory;

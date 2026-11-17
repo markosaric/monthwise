@@ -12,7 +12,8 @@ builder.Logging.AddFileLogging(builder.Configuration);
 
 builder.Services
     .AddApplication()
-    .AddInfrastructure(builder.Configuration);
+    .AddInfrastructure(builder.Configuration)
+    .AddHouseholdClock();
 
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<DatabaseRuleExceptionHandler>();
@@ -29,6 +30,9 @@ builder.Services.AddDataPolicies();
 // Authentication (ASP.NET Core Identity, cookie) is added in its own feature plan.
 
 var app = builder.Build();
+
+// Fail fast when the household time zone setting is not a known time zone.
+app.Services.EnsureHouseholdTimeZone();
 
 // Fail fast without the card number encryption keys, except while the build generates the
 // OpenAPI document (it starts the app without secrets).

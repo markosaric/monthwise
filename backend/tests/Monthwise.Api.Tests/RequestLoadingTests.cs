@@ -24,7 +24,7 @@ public sealed partial class RequestLoadingTests : IAsyncLifetime
     private static readonly Guid Salary = new("0199b0c0-0000-7000-8000-000000000201");
     private static readonly Guid BankLoan = new("0199c2a0-0000-7000-8000-000000000301");
     private static readonly Guid CashLoan = new("0199c2a0-0000-7000-8000-000000000312");
-    private static readonly DateOnly Today = DateOnly.FromDateTime(DateTime.Now);
+    private static readonly DateOnly Today = HouseholdToday.Value;
     private static readonly DateOnly MonthStart = new(Today.Year, Today.Month, 1);
 
     private readonly StatementCounter _counter = new();

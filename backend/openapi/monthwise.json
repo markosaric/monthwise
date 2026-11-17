@@ -10,7 +10,7 @@
         "tags": [
           "Health"
         ],
-        "summary": "Reports whether the API and its database work, the migration state and the running version.",
+        "summary": "Reports whether the API and its database work, the migration state, the running version and the household time zone.",
         "operationId": "GetHealth",
         "responses": {
           "200": {
@@ -10593,6 +10593,7 @@
           "database",
           "migrations",
           "version",
+          "timeZone",
           "dataImportedAt"
         ],
         "type": "object",
@@ -10607,6 +10608,9 @@
             "$ref": "#/components/schemas/MigrationStatusValue"
           },
           "version": {
+            "type": "string"
+          },
+          "timeZone": {
             "type": "string"
           },
           "dataImportedAt": {

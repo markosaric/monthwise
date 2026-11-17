@@ -31,7 +31,7 @@ public sealed class CashFlowEndpointTests : IAsyncLifetime
     private static readonly Guid ZaBa = new("0199b0c0-0000-7000-8000-000000000101");
     private static readonly Guid Salary = new("0199b0c0-0000-7000-8000-000000000201");
     private static readonly Guid OtherIncome = new("0199b0c0-0000-7000-8000-000000000204");
-    private static readonly DateOnly Today = DateOnly.FromDateTime(DateTime.Now);
+    private static readonly DateOnly Today = HouseholdToday.Value;
     private static readonly DateOnly MonthStart = new(Today.Year, Today.Month, 1);
 
     private MonthwiseApiFactory? _factory;

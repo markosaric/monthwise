@@ -16,7 +16,7 @@ public sealed class CardPurchaseEndpointTests : IAsyncLifetime
 {
     private static readonly Guid VisaIssuer = new("0199b0c0-0000-7000-8000-000000000001");
     private static readonly Guid ZaBa = new("0199b0c0-0000-7000-8000-000000000101");
-    private static readonly DateOnly Today = DateOnly.FromDateTime(DateTime.Now);
+    private static readonly DateOnly Today = HouseholdToday.Value;
     private static readonly DateOnly NextMonth = new DateOnly(Today.Year, Today.Month, 1).AddMonths(1);
 
     private MonthwiseApiFactory? _factory;

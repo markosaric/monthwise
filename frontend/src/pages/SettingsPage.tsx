@@ -173,7 +173,9 @@ export function SettingsPage() {
         </section>
       ))}
       {health?.version && (
-        <p className="text-xs text-muted-foreground">Monthwise version {health.version}</p>
+        <p className="text-xs text-muted-foreground">
+          Monthwise version {health.version} · time zone {health.timeZone}
+        </p>
       )}
     </div>
   )
