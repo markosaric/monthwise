@@ -525,3 +525,49 @@ As described in [tile-label-tooltips.md](tile-label-tooltips.md):
 
 **Why:** once the user knows a screen, the icon and the number are enough; the labels under every
 number add noise.
+
+## Appendix 4: Simpler Dashboard cash flow row
+
+- **Date:** 2026-11-17
+- **Branch:** `feat/dashboard-layout`
+- **Changes:** FR-10 items 4, 5 and 6, acceptance criterion 11
+
+The Dashboard repeated the month result: once as the **Month result** key figure (K3) and again
+as the big number in the overview card. It also showed the month's outputs by kind, which the
+Month screen already shows. The Dashboard becomes shorter:
+
+- **FR-10 item 4, Cash flow card** (was the overview card): shows the bar chart of inputs versus
+  outputs for the last 6 months, with its legend and the exact amounts on point or tap, and
+  opens the Cash flow screen. It no longer shows the month result as a big number, its
+  "Month result" title or the caption "Inputs minus outputs this month"; the month result is
+  shown only by the K3 key figure. The comparison with last month (the percent change of inputs
+  and of outputs, green or red) stays in the card.
+- **FR-10 item 5:** the **This month's outputs by kind** card is removed from the Dashboard. The
+  ring chart of outputs by kind stays on the Month screen (FR-15). Coming up stays where it is,
+  beside the highlight card.
+- **FR-10 item 6:** the small cards (Loans, Card payments, Shared costs, Recurring bills) move up
+  into the same row as the Cash flow card, beside it on desktop, with the same content and rules
+  as before (only sections with data). The Cash flow card becomes narrower so that the small
+  cards fit beside it without scrolling sideways; on phones the small cards come under it. When
+  no section has data, the Cash flow card takes the whole row.
+- The Dashboard therefore has, from top to bottom: quick actions, key figures, the row with the
+  highlight card and Coming up, and the row with the Cash flow card and the small cards. Nothing
+  comes after it.
+- Acceptance criterion 11 is read with these changes: the Dashboard shows the key figures, the
+  highlight card, Coming up, the Cash flow card with the 6-month chart, and the small cards for
+  sections that have data beside it; it shows the month result only once and no outputs by kind.
+
+**Acceptance criteria**
+
+1. On a desktop browser window the Dashboard shows the Cash flow card and the small cards in one
+   row; there is no row below it and no "This month's outputs by kind" card.
+2. The Cash flow card shows the 6-month inputs and outputs chart and no "Month result" heading,
+   big month result amount or "Inputs minus outputs this month" caption; when last month has
+   data, the percent changes of inputs and outputs are still shown.
+3. The month result is shown once on the Dashboard, in the Month result key figure.
+4. With no loans, card payments, shared costs or recurring bills, the Cash flow card fills the
+   row. On a phone the small cards are under the Cash flow card and nothing scrolls sideways.
+5. The Month screen still shows its outputs by kind ring chart.
+
+**Why:** the user found the month result shown twice and wanted the Dashboard to fit on one screen
+with less repetition.
