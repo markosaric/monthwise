@@ -3,7 +3,10 @@ import { dashboardTexts } from './texts'
 
 const t = dashboardTexts.overallBalance
 
-/** What the figure covers and how reliable it is (FR-3 to FR-5), joined with " · " after the label. */
+/**
+ * What the figure covers and how reliable it is (FR-3 to FR-5, Appendix 1), joined with " · " and
+ * shown alone under the number; the label itself is a tooltip on the icon.
+ */
 export function overallBalanceDetail(data: OverallBalance): string | undefined {
   if (data.balanceCents === null) return t.noPrimary
   const parts = [

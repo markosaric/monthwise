@@ -1,13 +1,12 @@
 import type { LucideIcon } from 'lucide-react'
 import { Tooltip } from 'radix-ui'
-import { useRef, useState } from 'react'
+import { useState } from 'react'
 import { Link } from 'react-router'
 import { tint } from './colors'
+import { useLongPress } from './useLongPress'
 
 /** How long the pointer must rest on a quick action before its label appears (FR-14). */
 export const QUICK_ACTION_LABEL_DELAY_MS = 1000
-/** A press this long on a touch screen shows the label instead of opening the form. */
-const LONG_PRESS_MS = 500
 
 /**
  * A Dashboard quick action (FR-14): only a coloured icon; the label appears as a tooltip after the
@@ -26,9 +25,7 @@ export function QuickActionButton({
   color: string
 }) {
   const [open, setOpen] = useState(false)
-  const timer = useRef<number | undefined>(undefined)
-  const longPressed = useRef(false)
-  const endPress = () => window.clearTimeout(timer.current)
+  const longPress = useLongPress(() => setOpen(true))
 
   return (
     <Tooltip.Root open={open} onOpenChange={setOpen}>
@@ -36,22 +33,7 @@ export function QuickActionButton({
         <Link
           to={to}
           aria-label={label}
-          onPointerDown={(e) => {
-            if (e.pointerType !== 'touch') return
-            longPressed.current = false
-            timer.current = window.setTimeout(() => {
-              longPressed.current = true
-              setOpen(true)
-            }, LONG_PRESS_MS)
-          }}
-          onPointerUp={endPress}
-          onPointerCancel={endPress}
-          onClick={(e) => {
-            if (!longPressed.current) return
-            e.preventDefault()
-            longPressed.current = false
-          }}
-          onContextMenu={(e) => e.preventDefault()}
+          {...longPress}
           className="grid size-11 shrink-0 place-items-center rounded-xl transition-transform hover:-translate-y-0.5 focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none max-md:rounded-full max-md:size-12"
           style={{ background: tint(color), color }}
         >
