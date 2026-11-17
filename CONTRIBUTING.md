@@ -34,6 +34,11 @@ approved **before** the plan.
 - The approved requirements are the **first commit** on the feature branch, pushed right after
   approval: `docs: add requirements for card reconciliation`
 - Fixes and refactors that do not change behaviour need no requirements document.
+- Documentation-only changes (a `docs/` branch, e.g. updating the user manual) need neither a
+  requirements document nor a plan. They still go through review with staged changes, an approved
+  commit message and a pull request.
+- A change the user can see also updates the [user manual](docs/user-manual/index.html) in the
+  same branch, kept short.
 
 ### Changing requirements
 

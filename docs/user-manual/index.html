@@ -46,7 +46,7 @@
   <li><a href="#dashboard">Dashboard</a></li>
   <li><a href="#month">Month</a></li>
   <li><a href="#cashflow">Cash flow</a></li>
-  <li><a href="#cards">Cards and installments</a></li>
+  <li><a href="#cards">Cards, installments and revolving cards</a></li>
   <li><a href="#loans">Loans and leasing</a></li>
   <li><a href="#shared">Shared costs</a></li>
   <li><a href="#settings">Settings</a></li>
@@ -59,18 +59,25 @@
 <h2 id="start">1. Getting started</h2>
 <p>Use the menu on the left to move between screens. The button next to the logo collapses the menu to icons. Set the app up once, in this order:</p>
 <ol>
-  <li><span class="ui">Settings → Cards and accounts</span>: add your bank accounts and payment cards. Mark your main current account as <em>Primary</em> and give it a starting balance so balances match your bank.</li>
+  <li><span class="ui">Settings → Cards and accounts</span>: add your bank accounts and payment cards. Mark your main current account as <em>Primary</em> and give it a starting balance so balances match your bank. For a revolving card, also enter its terms and its current debt (see <a href="#revolving">Revolving cards</a>).</li>
   <li><span class="ui">Settings → Recurring bills</span>: add the bills that arrive every month (electricity, internet, building reserve…). Amount, issue day and due day are optional: fill them in for a bill that is always the same, such as a gym membership, and leave them empty when they change every month.</li>
   <li><span class="ui">Loans</span>: add your loans and leases once; their monthly payments then appear on their own.</li>
   <li><span class="ui">Month → Add input</span>: add your salary as a <em>Recurring</em> input so it shows up every month.</li>
 </ol>
-<p>Amounts are in euros. Anything Monthwise can calculate (installments, loan payments, card payments, contributions) is calculated for you and only needs to be ticked off.</p>
+<p>Amounts are in euros. Anything Monthwise can calculate (installments, loan payments, card payments, revolving card bills, contributions) is calculated for you and only needs to be ticked off.</p>
+<ul>
+  <li><strong>Typing amounts</strong>: <code>1.234,56</code>, <code>1234,56</code> and <code>1234.56</code> all work. <code>1.234</code> is refused, because it could mean a thousand or one euro: write <code>1234</code> or <code>1,23</code>.</li>
+  <li><strong>Dates</strong> run from January 2000 to December 2100.</li>
+  <li><strong>One person at a time.</strong> Monthwise is made for one person keeping the household's books. If the same thing is edited in two tabs or on two devices at once, the last save wins.</li>
+  <li><strong>When something goes wrong</strong>: if a screen cannot be shown, a short message offers to reload or go to the Dashboard; the menu keeps working. A red <em>System problem</em> box at the bottom of the menu (a bar above the bottom menu on a phone) means the app cannot reach its server or database.</li>
+  <li>The <span class="ui">Savings</span> screen is not built yet.</li>
+</ul>
 
 <h2 id="dashboard">2. Dashboard</h2>
 <p>The home screen answers “how is this month going?”.</p>
 <figure><img src="images/dashboard.jpg" alt="Dashboard with inputs, outputs, month result, overdue warning and charts"><figcaption>Dashboard</figcaption></figure>
 <ul>
-  <li><strong>Quick add buttons</strong> under the title: add an input, bill, expense, cash withdrawal or card purchase.</li>
+  <li><strong>Quick add buttons</strong> under the title: add income, a bill, an expense, a cash withdrawal or a card purchase, or pay a revolving card.</li>
   <li><strong>Five tiles</strong>: inputs (and how much is received), outputs (and how much is paid), the month result, what is still to pay, and the <strong>Overall balance</strong>: what your primary accounts will hold at the end of the month once everything is received and paid. With several primary accounts it is their sum; open it to see each account on the Cards screen.</li>
   <li><strong>Red banner</strong>: appears only when something is overdue. Open the Month screen to pay it.</li>
   <li><strong>Coming up</strong>: payments and inputs due in the next 7 days.</li>
@@ -86,18 +93,18 @@
   <li><strong>Income</strong>: <span class="ui">Add input</span> for salary and other inputs. Contributions from people who share costs with you are grouped under their name.</li>
   <li><strong>Bills</strong>: <span class="ui">Add recurring bills</span> creates this month's bills from your recurring list. A recurring bill with an amount, issue day and due day arrives as expected; the others arrive <em>Not issued</em> with what is known filled in, and you open them to enter the rest once the bill arrives. <span class="ui">Add bill</span> adds a one-off bill; turn on <em>Recurring</em> in its form to add it to your recurring bills as well, so it comes back in the following months.</li>
   <li><strong>Expenses</strong>: one-off spending such as groceries. <span class="ui">Cash withdrawal</span> records cash taken from an account.</li>
-  <li><strong>Loan payments</strong> and <strong>Card payments</strong> are filled in automatically from your loans and card purchases.</li>
+  <li><strong>Loan payments</strong>, <strong>Card payments</strong> and revolving card bills are filled in automatically from your loans, card purchases and revolving cards.</li>
   <li>Click a row's arrow to see details and to edit or delete it.</li>
 </ul>
 <figure><img src="images/new-input.jpg" alt="Add input form"><figcaption>Adding an input. Turn on <em>Recurring</em> for salary and other regular income.</figcaption></figure>
-<p class="tip">A bill or expense paid with a credit or charge card is not taken from your account straight away: it becomes part of that card's next card payment.</p>
+<p class="tip">A bill or expense paid with a credit or charge card is not taken from your account straight away: it becomes part of that card's next card payment. Paid with a revolving card, it adds to that card's debt.</p>
 
 <h2 id="cashflow">4. Cash flow</h2>
-<p>Shows inputs and outputs over time: <span class="ui">This month</span> (day by day), <span class="ui">Last 12 months</span> or <span class="ui">This year</span>. Use <span class="ui">Filters</span> to narrow by payer, account or category, and <span class="ui">Show as table</span> for the numbers. Click a month in the list for its monthly report.</p>
+<p>Shows inputs and outputs over time: <span class="ui">This month</span> (day by day), <span class="ui">Last 12 months</span> or <span class="ui">This year</span>. Use <span class="ui">Filters</span> to narrow by payer, account or category, and <span class="ui">Show as table</span> for the numbers. Click a month in the list for its monthly report, which also lists that month's starting balances and corrections.</p>
 <figure><img src="images/cash-flow.jpg" alt="Cash flow chart for the current month"><figcaption>Cash flow</figcaption></figure>
 
-<h2 id="cards">5. Cards and installments</h2>
-<p>The <span class="ui">Cards</span> screen shows the balance of each account now and at the end of the month, and every card that allows installments.</p>
+<h2 id="cards">5. Cards, installments and revolving cards</h2>
+<p>The <span class="ui">Cards</span> screen shows the balance of each account now and at the end of the month, every card that allows installments, and your revolving cards.</p>
 <figure><img src="images/cards.jpg" alt="Cards screen with account balances and cards with installments"><figcaption>Cards</figcaption></figure>
 <ul>
   <li><span class="ui">Add purchase</span>: choose the card, amount and date. Turn on <em>In monthly installments</em> and set the number of installments; Monthwise spreads the amount over the card payments.</li>
@@ -105,6 +112,15 @@
   <li>A card payment is ticked off as paid on the Month screen or on the card itself.</li>
 </ul>
 <figure><img src="images/card-installments.jpg" alt="Card detail with monthly card payments"><figcaption>One card: statement and payment day, upcoming card payments, purchases</figcaption></figure>
+<h3 id="revolving">Revolving cards</h3>
+<p>A revolving card has a debt instead of card payments. Add it in <span class="ui">Settings → Cards and accounts</span> with type <em>Revolving</em>, its max debt limit and its terms: minimum payment (percentage and lowest amount), interest rate, bill day, due day and paying account. Enter its <em>Starting debt</em> from your last bank statement.</p>
+<ul>
+  <li>Bills, expenses and purchases paid with it add to the debt; they are not taken from an account. It does not allow installments.</li>
+  <li>Every month with debt brings a <strong>bill</strong> for the minimum payment, with interest added. It appears on the Month screen and is paid like a loan payment: by itself on the due date when the card is <em>Connected to the paying account</em>, otherwise when you tick it. You can pay more than the minimum.</li>
+  <li><span class="ui">Pay revolving card</span> (also on the Dashboard) makes an <strong>extra payment</strong> at any time; <span class="ui">Pay the whole debt</span> fills in the full amount. It lowers the next bill.</li>
+  <li>Open the card to see its debt, remaining limit, bills, charges and payments. <span class="ui">Correct debt</span> sets the debt to what the bank shows; <span class="ui">Correct</span> on a bill sets its minimum payment and interest to the bank's figures.</li>
+  <li>A card with debt cannot be archived. When the bank issues a new card, mark the old one expired with the new one as its replacement, and the debt moves over.</li>
+</ul>
 
 <h2 id="loans">6. Loans and leasing</h2>
 <p>All bank loans and leases with monthly payment, progress and what is left to repay. <span class="ui">Add loan</span> asks for the lender, start month, payment day, monthly amount and number of payments (and a residual value for a lease).</p>
@@ -120,7 +136,7 @@
 <h2 id="settings">8. Settings</h2>
 <p>Lists the app uses everywhere: cards and accounts, payers, input categories, expense categories, loan categories and recurring bills. Add your own entries next to the starting ones. A category that is already in use cannot be deleted; hide it instead.</p>
 <figure><img src="images/settings.jpg" alt="Settings overview"><figcaption>Settings</figcaption></figure>
-<p>Card numbers and IBANs are stored encrypted and shown only on request.</p>
+<p>Card numbers and IBANs are stored encrypted and shown only on request. Open an account and choose <span class="ui">Add correction</span> when its balance differs from your bank; corrections change the balance but do not count as income or output.</p>
 <p>At the bottom, Settings shows the Monthwise version and the time zone it uses for "today" (see <a href="#install">Installing Monthwise</a>).</p>
 <p>The <span class="ui">Data and backups</span> tile, in the <em>Data</em> group, exports and imports all your data; see <a href="#data">Data and backups</a>.</p>
 
@@ -254,7 +270,6 @@ Remove-Item Env:PGPASSWORD
 <h3 id="data-azure">Azure's own backups</h3>
 <p>On Azure the database also keeps 7 days of automatic backups. In the Azure portal, open the PostgreSQL server in <em>rg-monthwise</em> and choose <span class="ui">Restore</span> to create a copy of the database as it was at an earlier moment, in the same virtual network and private DNS zone, then point Monthwise to it. Use this as a second safety net; your own export files stay the main backup.</p>
 
-<p class="lead" style="margin-top:32px">The <span class="ui">Savings</span> screen is not built yet.</p>
 </main>
 </body>
 </html>

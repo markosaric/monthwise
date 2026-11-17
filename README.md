@@ -1,6 +1,8 @@
 # Monthwise
 
-Personal home finance app for tracking monthly income and expenses, credit card and loan installments, card statement reconciliation and savings.
+Personal home finance app for tracking monthly income and expenses, card purchases in installments,
+revolving cards, loans and leases, and costs shared with other people. Card statement
+reconciliation and savings are planned and not built yet.
 
 Starting document with the domain, data model and architecture: [docs/INIT.md](docs/INIT.md).
 Architecture decisions: [docs/decisions](docs/decisions/README.md). Working practices: [CONTRIBUTING.md](CONTRIBUTING.md).
@@ -20,7 +22,8 @@ received or paid.
 
 ![Month](docs/user-manual/images/month.jpg)
 
-**Cards**: account balances now and at month end, and cards with purchases in installments.
+**Cards**: account balances now and at month end, cards with purchases in installments, and
+revolving cards with their debt and monthly bill.
 
 ![Cards](docs/user-manual/images/cards.jpg)
 
@@ -180,7 +183,8 @@ cd frontend && npm run dev
 and open http://localhost:5173.
 
 In Development the API applies database migrations on startup, and Vite forwards `/api` to the API.
-The dashboard should show **API: Reachable** and **Database: Healthy**. Interactive API docs:
+When the API or the database cannot be reached, a red **System problem** box appears at the bottom
+of the menu; when everything works, there is none. Interactive API docs:
 http://localhost:5080/scalar.
 
 ### 8. Run the tests (optional)
@@ -206,7 +210,7 @@ encryption keys.
 - **`dotnet --list-sdks` is empty or `dotnet build` says .NET 10 is missing:** another `dotnet` comes
   first in your `PATH` (for example `~/.dotnet` added by an editor extension in `~/.zshrc`). Check
   `which dotnet`, remove the extra entry from your shell profile, then quit and reopen the terminal app.
-- **Database: Unhealthy on the dashboard:** check `docker compose ps` and that the password in user
+- **System problem "Database unhealthy" in the menu:** check `docker compose ps` and that the password in user
   secrets matches `.env`.
 - **API stops on startup with "SensitiveData:… is missing":** create the encryption keys (step 5).
 
@@ -261,7 +265,8 @@ deploy/smoke-test.sh http://localhost:8080
 A release reads its settings and secrets from a configuration folder (`--config-dir` or
 `MONTHWISE_CONFIG_DIR`): `settings.json` and one file per secret in `secrets/`. Examples with
 placeholder values are in [deploy/settings.example.json](deploy/settings.example.json) and
-[deploy/secrets.example](deploy/secrets.example).
+[deploy/secrets.example](deploy/secrets.example). `Household:TimeZone` sets the IANA time zone that decides
+"today" and the current month (default `Europe/Zagreb`, also in development).
 
 ## Everyday commands
 
