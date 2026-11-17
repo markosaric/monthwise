@@ -35,7 +35,7 @@ jobs:
       MONTHWISE_TEST_DB: Host=localhost;Port=5432;Database=monthwise_test;Username=monthwise;Password=monthwise
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
-      - uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 # v5.4.0
+      - uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6.1.0
         with:
           global-json-file: backend/global.json
       - name: Restore
