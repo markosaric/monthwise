@@ -449,3 +449,54 @@ whole database server, not only of Monthwise's own data.
 - Database logins on the Docker one-click and the native background service, where the database
   is reachable only from the same computer.
 - Signing in to the database without a password (Microsoft Entra ID).
+
+## Appendix 6: "Today" is the household's date, not the server's
+
+- **Date:** 2026-11-17
+- **Branch:** `fix/household-time-zone`
+- **Changes:** FR-5 (a new household time zone setting), FR-2 (Settings shows it), new acceptance
+  criteria 19 to 21
+
+**Why:** the code review of `main` (finding H3) found that Monthwise takes "today" from the time
+zone of the computer it runs on. In the Docker package and on Azure that is UTC, not the
+household's time zone. Between midnight and 01:00 (winter) or 02:00 (summer) in Croatia Monthwise
+still sees the previous day. On the first night of a month the Dashboard, the current month,
+due and overdue bills, and dates filled in for the user (a bill paid today, an input received
+today, a recurring item stopped today) are a day, and so a month, behind.
+
+**FR-5 Settings outside the code** (extended)
+- Each installation has one **household time zone**, given like every other setting (FR-5). It
+  defaults to `Europe/Zagreb`, so a new installation needs no change; a household elsewhere sets
+  its own.
+- Everything that depends on the current date or time uses the household's date and time, on
+  every deployment target, whatever time zone the computer or the cloud service is set to. That
+  includes the current month, the Dashboard, due and overdue bills, dates Monthwise fills in for
+  the user, the backup reminder and the time in the name of an export file.
+- The household's date changes at midnight in the household time zone, including on the days the
+  clocks change for summer and winter time.
+- Moments that Monthwise records only for its own bookkeeping (when something was created or
+  last changed) keep meaning the same moment in time; this appendix changes no saved data.
+- If the household time zone is not a known time zone, Monthwise refuses to start and says which
+  setting is wrong and what a valid value looks like, as it does for missing encryption keys
+  (FR-6).
+
+**FR-2 Same release for every target** (extended)
+- The Settings screen shows the household time zone next to the version, so the user can check
+  which time zone Monthwise uses.
+
+**Acceptance criteria** (new)
+
+19. With the computer or cloud service set to UTC and the household time zone left at its
+    default, at 00:30 Croatian time on the first day of a month (both in winter and in summer
+    time) the Dashboard and the screens open on the new month, and a bill marked paid or an input
+    marked received without a date gets the new day's date.
+20. With the household time zone set to another valid time zone, "today" follows that zone; with
+    an unknown value, Monthwise does not start and names the setting.
+21. The Settings screen shows the household time zone; the example settings and the user manual
+    describe the setting for each deployment target.
+
+**Out of scope**
+- Dates the screens fill in on the user's own device (for example the default date of a new
+  entry), which already follow the device's own time zone.
+- More than one time zone per installation, or a time zone per user.
+- Changing the household time zone from the Settings screen.
