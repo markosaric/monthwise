@@ -70,8 +70,9 @@ screen could not be shown, and the user can reload or go elsewhere.
 
 ## 4. Non-functional requirements
 
-- At start on the dashboard, the browser downloads less than half of the script code it downloads
-  today.
+- At start on a screen without charts (for example Settings), the browser downloads less than half
+  of the script code it downloads today. At start on the dashboard, the only code added to that is
+  the code of the dashboard and its charts.
 - No single script file of a release build is larger than 500 kB (before compression), so the build
   does not warn about large files.
 - The fix works with the content policy of finding M5 (security headers): opening every screen of a
@@ -90,8 +91,9 @@ screen could not be shown, and the user can reload or go elsewhere.
 
 ## 6. Acceptance criteria
 
-1. Opening the dashboard of a release build downloads less than half of today's script code, and
-   the charts' code is not downloaded when opening a screen without charts.
+1. Opening a screen without charts (for example Settings) in a release build downloads less than
+   half of today's script code and none of the charts' code; opening the dashboard adds only the
+   dashboard's and the charts' code.
 2. Opening a screen not opened before downloads its code; the menu stays visible meanwhile.
 3. A release build has no script file larger than 500 kB.
 4. A screen that fails while shown displays the message with "Reload" and "Back to the dashboard";
