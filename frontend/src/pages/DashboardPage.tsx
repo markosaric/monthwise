@@ -11,7 +11,6 @@ import {
   Users,
   type LucideIcon,
 } from 'lucide-react'
-import type { ReactNode } from 'react'
 import { Link } from 'react-router'
 import { useInstallmentCards } from '@/api/cardPurchases'
 import { useRevolvingCards } from '@/api/revolving'
@@ -25,9 +24,7 @@ import { ChangePill } from '@/components/design/ChangePill'
 import { meaningColors, sectionColors } from '@/components/design/colors'
 import { IconTile } from '@/components/design/IconTile'
 import { PairedBarChart } from '@/components/design/PairedBarChart'
-import { percentChange } from '@/components/design/percent'
 import { QuickActionButton, QuickActionRow } from '@/components/design/QuickActionButton'
-import { RingChart } from '@/components/design/RingChart'
 import { StatCard, StatGrid } from '@/components/design/StatCard'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { formatYearMonth } from '@/lib/dates'
@@ -183,46 +180,12 @@ function DashboardContent({ data }: { data: Dashboard }) {
         <OverallBalanceCard month={data.month} />
       </StatGrid>
 
-      <div className="grid gap-4 lg:grid-cols-2">
+      {/* Desktop: the Cash flow card on the left, the rest stacked on the right (Appendix 4).
+          Phones keep the reading order: highlight, Coming up, Cash flow, small cards. */}
+      <div className="grid gap-4 lg:grid-cols-2 lg:grid-rows-[auto_auto_1fr]">
         <HighlightCard data={data} />
         <ComingUp items={data.comingUp} />
-      </div>
-
-      <Overview data={data} />
-
-      <div className="grid gap-4 lg:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base font-semibold">{t.outputsByKind.title}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <RingChart
-              label={t.outputsByKind.title}
-              slices={[
-                {
-                  label: t.outputsByKind.bills,
-                  cents: data.outputsByKind.billsCents,
-                  color: meaningColors.moneyOut,
-                },
-                {
-                  label: t.outputsByKind.expenses,
-                  cents: data.outputsByKind.expensesCents,
-                  color: meaningColors.expense,
-                },
-                {
-                  label: t.outputsByKind.loanPayments,
-                  cents: data.outputsByKind.loanPaymentsCents,
-                  color: sectionColors.loans,
-                },
-                {
-                  label: t.outputsByKind.cardPayments,
-                  cents: data.outputsByKind.cardPaymentsCents,
-                  color: sectionColors.cards,
-                },
-              ]}
-            />
-          </CardContent>
-        </Card>
+        <CashFlowCard data={data} />
         <SmallCards data={data} />
       </div>
     </>
@@ -335,49 +298,22 @@ function ComingUp({ items }: { items: DashboardItem[] }) {
   )
 }
 
-/** The month result, the comparison with last month and the 6-month chart (FR-10). */
-function Overview({ data }: { data: Dashboard }) {
-  const inputsChange = percentChange(data.inputs.totalCents, data.inputs.previousMonthTotalCents)
-  const outputsChange = percentChange(data.outputs.totalCents, data.outputs.previousMonthTotalCents)
+/** The 6-month chart; the month result and the changes are in the key figures (Appendix 4). */
+function CashFlowCard({ data }: { data: Dashboard }) {
   return (
-    <Card>
-      <CardContent className="grid items-end gap-6 md:grid-cols-[minmax(12rem,1fr)_2fr]">
-        <div>
-          <h2 className="text-base font-semibold">{t.overview.title}</h2>
-          <p
-            className={cn(
-              'mt-1 font-heading text-4xl font-bold tabular-nums md:text-5xl',
-              data.monthResultCents < 0 && 'text-problem',
-            )}
-          >
-            {formatCents(data.monthResultCents)}
-          </p>
-          <p className="text-sm text-muted-foreground">{t.overview.caption}</p>
-          <ul className="mt-5 flex flex-col gap-2 text-sm">
-            {inputsChange !== null && (
-              <Comparison good={inputsChange >= 0}>
-                {inputsChange >= 0
-                  ? t.overview.moreInputs(inputsChange)
-                  : t.overview.lessInputs(-inputsChange)}
-              </Comparison>
-            )}
-            {outputsChange !== null && (
-              <Comparison good={outputsChange <= 0}>
-                {outputsChange >= 0
-                  ? t.overview.moreOutputs(outputsChange)
-                  : t.overview.lessOutputs(-outputsChange)}
-              </Comparison>
-            )}
-          </ul>
-          <Link
-            to="/cash-flow"
-            className="mt-4 inline-block text-sm text-muted-foreground underline-offset-4 hover:underline"
-          >
-            Cash flow
+    <Card className="lg:col-start-1 lg:row-span-3 lg:row-start-1">
+      <CardHeader>
+        <CardTitle className="text-base font-semibold">
+          <Link to="/cash-flow" className="underline-offset-4 hover:underline">
+            {t.cashFlow.title}
           </Link>
-        </div>
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="flex flex-1 flex-col">
         <PairedBarChart
-          label={t.overview.chart}
+          className="flex flex-1 flex-col"
+          height="h-56 lg:h-auto lg:min-h-56 lg:flex-1"
+          label={t.cashFlow.chart}
           rows={data.lastSixMonths.map((m) => ({
             label: formatYearMonth(m.month, 'short').split(' ')[0]!,
             inputs: m.inputsCents,
@@ -390,26 +326,6 @@ function Overview({ data }: { data: Dashboard }) {
         />
       </CardContent>
     </Card>
-  )
-}
-
-function Comparison({ good, children }: { good: boolean; children: ReactNode }) {
-  return (
-    <li className="flex items-center gap-2">
-      <span
-        aria-hidden
-        className={cn(
-          'grid size-6 place-items-center rounded-md text-xs',
-          good ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700',
-        )}
-      >
-        {good ? '▲' : '▼'}
-      </span>
-      <span>
-        <b className={cn('font-semibold', good ? 'text-green-700' : 'text-red-700')}>{children}</b>
-        {t.overview.thanLastMonth}
-      </span>
-    </li>
   )
 }
 

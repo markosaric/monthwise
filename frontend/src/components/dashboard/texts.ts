@@ -44,22 +44,9 @@ export const dashboardTexts = {
   comingUp: 'Coming up · next 7 days',
   nothingComingUp: 'Nothing due in the next 7 days.',
   openMonth: 'Open Month',
-  overview: {
-    title: 'Month result',
-    caption: 'Inputs minus outputs this month',
-    moreInputs: (percent: number) => `${percent}% more inputs`,
-    lessInputs: (percent: number) => `${percent}% less inputs`,
-    moreOutputs: (percent: number) => `${percent}% more outputs`,
-    lessOutputs: (percent: number) => `${percent}% less outputs`,
-    thanLastMonth: ' than last month',
+  cashFlow: {
+    title: 'Cash flow',
     chart: 'Inputs and outputs of the last 6 months',
-  },
-  outputsByKind: {
-    title: "This month's outputs by kind",
-    bills: 'Bills',
-    expenses: 'Expenses',
-    loanPayments: 'Loan payments',
-    cardPayments: 'Card payments',
   },
   small: {
     loans: (amount: string) => `${amount} / month`,

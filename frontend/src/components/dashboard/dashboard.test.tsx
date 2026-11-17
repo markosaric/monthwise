@@ -221,14 +221,24 @@ describe('Dashboard', () => {
     expect(await screen.findByText(t.nothingComingUp)).toBeInTheDocument()
   })
 
-  it('shows outputs by kind with exact amounts and small cards only for sections with data', async () => {
+  it('shows the month result once, a Cash flow card without outputs by kind, and small cards only for sections with data', async () => {
     stubDashboard(aDashboard({ loans: null, sharedCosts: null }))
     renderRoute('/')
 
-    const ring = (await screen.findByText(t.outputsByKind.title)).closest(
-      '[data-slot=card]',
-    ) as HTMLElement
-    expect(within(ring).getByText('Loan payments').closest('li')).toHaveTextContent('595,20 €')
+    await screen.findByRole('heading', { name: 'October 2026' })
+    const cashFlow = screen
+      .getAllByRole('link', { name: t.cashFlow.title })
+      .map((l) => l.closest('[data-slot=card]'))
+      .find(Boolean) as HTMLElement
+    expect(within(cashFlow).getByRole('link', { name: t.cashFlow.title })).toHaveAttribute(
+      'href',
+      '/cash-flow',
+    )
+    expect(within(cashFlow).queryByText('770,00 €')).not.toBeInTheDocument()
+    expect(screen.queryByText(/than last month/)).not.toBeInTheDocument()
+    expect(screen.getAllByText('770,00 €')).toHaveLength(1)
+    expect(screen.queryByText('Inputs minus outputs this month')).not.toBeInTheDocument()
+    expect(screen.queryByText("This month's outputs by kind")).not.toBeInTheDocument()
     expect(screen.getByRole('link', { name: /9 recurring bills/ })).toHaveAttribute(
       'href',
       '/recurring-bills',

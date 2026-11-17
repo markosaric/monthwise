@@ -23,14 +23,17 @@ export function PairedBarChart<Row extends { label: string }>({
   series,
   label,
   height = 'h-56',
+  className,
 }: {
   rows: Row[]
   series: BarSeries[]
   label: string
   height?: string
+  /** Classes for the whole chart with its legend, e.g. to let it fill a taller card. */
+  className?: string
 }) {
   return (
-    <div>
+    <div className={className}>
       <div className={`${height} w-full`} role="img" aria-label={label}>
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={rows} margin={{ top: 4, right: 4, bottom: 0, left: 0 }} barGap={3}>
