@@ -22,7 +22,13 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { formatDateTime } from './format'
-import { maxImportFileMegabytes, minPasswordLength, dataTexts as t } from './texts'
+import {
+  apiConfirmationWord,
+  maxImportFileMegabytes,
+  minPasswordLength,
+  dataTexts as t,
+} from './texts'
+import { appTexts } from '@/components/common/texts'
 
 function errorText(error: unknown): string {
   // The server refuses a request far above the file limit before it reaches Monthwise (Appendix 3).
@@ -30,7 +36,7 @@ function errorText(error: unknown): string {
   if (error instanceof ApiError) {
     return Object.values(error.fieldErrors)[0]?.[0] ?? error.message
   }
-  return 'Something went wrong. Please try again.'
+  return appTexts.common.somethingWentWrongRetry
 }
 
 function ErrorLine({ error }: { error: string | null }) {
@@ -170,7 +176,7 @@ function SummaryTable({ file, current }: { file: DataSummary; current: DataSumma
   )
 }
 
-/** File and password → check → compare and type REPLACE → import (FR-4, FR-5). */
+/** File and password → check → compare and type the confirmation word → import (FR-4, FR-5). */
 export function ImportDialog({
   open,
   onOpenChange,
@@ -211,7 +217,7 @@ export function ImportDialog({
         setChecked(await check.mutateAsync({ file, password }))
         return
       }
-      await importData.mutateAsync({ file, password, confirmation: word.trim() })
+      await importData.mutateAsync({ file, password, confirmation: apiConfirmationWord })
       toast.success(t.import.done)
       close(false)
     } catch (e) {
@@ -289,7 +295,7 @@ export function ImportDialog({
   )
 }
 
-/** Brings back the data from before the last import, after typing REPLACE (FR-7). */
+/** Brings back the data from before the last import, after typing the confirmation word (FR-7). */
 export function RestoreSafetyCopyDialog({
   open,
   onOpenChange,
@@ -312,7 +318,7 @@ export function RestoreSafetyCopyDialog({
   async function submit() {
     setError(null)
     try {
-      await restore.mutateAsync(word.trim())
+      await restore.mutateAsync(apiConfirmationWord)
       toast.success(t.safetyCopy.done)
       close(false)
     } catch (e) {

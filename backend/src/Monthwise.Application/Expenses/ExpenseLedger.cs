@@ -3,6 +3,7 @@ using Monthwise.Application.Cards;
 using Monthwise.Application.CashFlow;
 using Monthwise.Application.Common;
 using Monthwise.Application.Loans;
+using Monthwise.Application.Localization;
 using Monthwise.Application.SharedCosts;
 using Monthwise.Domain.Cards;
 using Monthwise.Domain.Common;
@@ -53,7 +54,7 @@ public sealed class ExpenseBook
     public IReadOnlyList<Bill> Bills { get; }
     public IReadOnlyList<Expense> Expenses { get; }
 
-    public NamedReference Category(Guid id) => new(id, _categories.TryGetValue(id, out var category) ? category.Name : "Unknown");
+    public NamedReference Category(Guid id) => new(id, _categories.TryGetValue(id, out var category) ? PredefinedNames.Display(id, category.Name) : ServerTexts.Unknown);
 
     /// <summary>
     /// Whether what is paid with <paramref name="id"/> is a charge on a card, not an output of an account:
@@ -63,7 +64,7 @@ public sealed class ExpenseBook
 
     public PaidFromResponse? PaidFrom(Guid? id) =>
         id is { } cardId
-            ? new PaidFromResponse(cardId, _cards.TryGetValue(cardId, out var card) ? card.Name : "Unknown", IsCreditCard(cardId))
+            ? new PaidFromResponse(cardId, _cards.TryGetValue(cardId, out var card) ? card.Name : ServerTexts.Unknown, IsCreditCard(cardId))
             : null;
 
     /// <summary>A paid bill whose amount is in a card payment (FR-6).</summary>

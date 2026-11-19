@@ -17,6 +17,7 @@ import { NativeSelect } from '@/components/ui/native-select'
 import { formatCents } from '@/lib/money'
 import { formatBasisPoints } from '@/lib/percent'
 import { PageHeader } from '@/pages/PageHeader'
+import { appTexts } from '@/components/common/texts'
 
 type Dialog = 'block' | 'unblock' | 'expire' | 'archive' | null
 const t = cardTexts
@@ -31,8 +32,8 @@ export function CardDetailsPage() {
   const { id } = useParams()
   const { data: card, isPending, isError } = useCard(id)
 
-  if (isPending) return <p className="text-sm text-muted-foreground">Loading…</p>
-  if (isError) return <p className="text-sm text-destructive">This card could not be loaded.</p>
+  if (isPending) return <p className="text-sm text-muted-foreground">{appTexts.common.loading}</p>
+  if (isError) return <p className="text-sm text-destructive">{appTexts.loadErrors.card}</p>
   return <CardDetails card={card} />
 }
 
@@ -106,13 +107,15 @@ function CardDetails({ card }: { card: Card }) {
               <RevealableNumber cardId={card.id} kind="Iban" masked={card.ibanMasked} />
             </Row>
           )}
-          <Row label="Valid">
+          <Row label={appTexts.cardDetails.valid}>
             {card.validFrom
               ? `${formatMonth(card.validFrom)} – ${formatMonth(card.validThrough)}`
-              : `until ${formatMonth(card.validThrough)}`}
+              : appTexts.cardDetails.until(formatMonth(card.validThrough))}
           </Row>
           {!isRevolving && (
-            <Row label={t.fields.allowsInstallments}>{card.allowsInstallments ? 'Yes' : 'No'}</Row>
+            <Row label={t.fields.allowsInstallments}>
+              {card.allowsInstallments ? appTexts.common.yes : appTexts.common.no}
+            </Row>
           )}
           {card.billing && (
             <>
@@ -188,31 +191,33 @@ function CardDetails({ card }: { card: Card }) {
               </Row>
             </>
           )}
-          <Row label="Max debt limit">
+          <Row label={appTexts.cardDetails.maxDebtLimit}>
             {card.debtLimitCents === null ? '—' : formatCents(card.debtLimitCents)}
           </Row>
           {card.blockedOn && (
-            <Row label="Blocked on">
+            <Row label={appTexts.cardDetails.blockedOn}>
               {formatDate(card.blockedOn)}
               {card.blockReason && ` · ${card.blockReason}`}
             </Row>
           )}
           {card.expiredOn && (
-            <Row label="Expired on">
+            <Row label={appTexts.cardDetails.expiredOn}>
               {formatDate(card.expiredOn)}
               {card.expiryReason && ` · ${card.expiryReason}`}
             </Row>
           )}
-          {card.archivedOn && <Row label="Archived on">{formatDate(card.archivedOn)}</Row>}
+          {card.archivedOn && (
+            <Row label={appTexts.cardDetails.archivedOn}>{formatDate(card.archivedOn)}</Row>
+          )}
           {card.replacedBy && (
-            <Row label="Replaced by">
+            <Row label={appTexts.cardDetails.replacedBy}>
               <Link className="underline" to={`/settings/cards/${card.replacedBy.id}`}>
                 {card.replacedBy.name}
               </Link>
             </Row>
           )}
           {card.replaces && (
-            <Row label="Replaces">
+            <Row label={appTexts.cardDetails.replaces}>
               <Link className="underline" to={`/settings/cards/${card.replaces.id}`}>
                 {card.replaces.name}
               </Link>
@@ -253,7 +258,7 @@ function CardDetails({ card }: { card: Card }) {
         )}
         {!isRevolving && <BalanceEntries accountId={card.id} readOnly={archived} />}
         <Link to="/settings/cards" className="text-sm text-muted-foreground underline">
-          Back to {t.section.toLowerCase()}
+          {appTexts.common.backToCardSettings}
         </Link>
       </div>
 

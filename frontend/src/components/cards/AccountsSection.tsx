@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/card'
 import { CardSummary } from './CardSummary'
 import { cardTexts } from './texts'
+import { appTexts } from '@/components/common/texts'
 
 /**
  * The Accounts part of the Cards screen: all valid cards and accounts with their current and
@@ -40,8 +41,8 @@ export function AccountsSection({
         )}
       </CardHeader>
       <CardContent className="flex flex-col gap-2">
-        {isPending && <CardDescription>Loading…</CardDescription>}
-        {isError && <CardDescription>Cards could not be loaded.</CardDescription>}
+        {isPending && <CardDescription>{appTexts.common.loading}</CardDescription>}
+        {isError && <CardDescription>{appTexts.loadErrors.cards}</CardDescription>}
         {data && data.cards.length === 0 && (
           <div className="flex flex-col items-start gap-3">
             <CardDescription>

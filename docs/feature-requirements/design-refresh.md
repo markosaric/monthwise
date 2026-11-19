@@ -576,3 +576,12 @@ by kind, which the Month screen already shows. The Dashboard becomes shorter:
 
 **Why:** the user found the month result and the changes against last month shown twice, and
 wanted the whole Dashboard to fit in two rows on a desktop screen.
+
+## Appendix 5: UI text in English and Croatian
+
+- **Date:** 2026-11-19
+- **Branch:** `feat/croatian-language`
+- **Changes:** NFR-5
+
+- **NFR-5 Language:** UI text in English and Croatian; the user chooses the language in Settings.
+  See [croatian-language.md](croatian-language.md).

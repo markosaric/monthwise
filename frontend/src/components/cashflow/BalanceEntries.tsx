@@ -17,6 +17,7 @@ import { centsToEuroInput, formatCents, parseSignedEuroInput } from '@/lib/money
 import { cn } from '@/lib/utils'
 import { Field } from './InputForm'
 import { cashFlowTexts } from './texts'
+import { appTexts } from '@/components/common/texts'
 
 const t = cashFlowTexts.balance
 
@@ -32,8 +33,8 @@ export function BalanceEntries({ accountId, readOnly }: { accountId: string; rea
   const [deleting, setDeleting] = useState<BalanceEntry | null>(null)
   const change = useChangeBalanceEntry(accountId)
 
-  if (isPending) return <p className="text-sm text-muted-foreground">Loading…</p>
-  if (isError) return <p className="text-sm text-destructive">The balance could not be loaded.</p>
+  if (isPending) return <p className="text-sm text-muted-foreground">{appTexts.common.loading}</p>
+  if (isError) return <p className="text-sm text-destructive">{appTexts.loadErrors.balance}</p>
 
   const { balance, entries } = data
   return (
@@ -195,7 +196,7 @@ function BalanceEntryForm({
       setError(
         e instanceof ApiError
           ? (Object.values(e.fieldErrors)[0]?.[0] ?? e.message)
-          : 'Saving failed.',
+          : appTexts.common.savingFailed,
       )
     } finally {
       setBusy(false)

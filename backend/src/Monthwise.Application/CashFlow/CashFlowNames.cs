@@ -1,4 +1,5 @@
 using Monthwise.Application.Cards;
+using Monthwise.Application.Localization;
 using Monthwise.Domain.CashFlow;
 
 namespace Monthwise.Application.CashFlow;
@@ -28,7 +29,7 @@ public sealed class CashFlowNames
         ArgumentNullException.ThrowIfNull(cards);
         return new CashFlowNames(
             (await payers.ListAsync(cancellationToken)).ToDictionary(p => p.Id, p => p.Name),
-            (await categories.ListAsync(cancellationToken)).ToDictionary(c => c.Id, c => c.Name),
+            (await categories.ListAsync(cancellationToken)).ToDictionary(c => c.Id, c => PredefinedNames.Display(c.Id, c.Name)),
             (await cards.ListAsync(cancellationToken)).ToDictionary(c => c.Id, c => c.Name));
     }
 
@@ -37,7 +38,7 @@ public sealed class CashFlowNames
     /// <summary>The account's name; an empty id is a contribution without an account yet (shared bills FR-5).</summary>
     public NamedReference Account(Guid id) => id == Guid.Empty ? new(id, NoAccountYet) : Reference(_accounts, id);
 
-    public const string NoAccountYet = "No account yet";
+    public static string NoAccountYet => ServerTexts.Translate("No account yet");
 
     public InputEntryResponse ToResponse(InputEntry entry)
     {
@@ -98,5 +99,5 @@ public sealed class CashFlowNames
             .ToList();
 
     private static NamedReference Reference(Dictionary<Guid, string> names, Guid id) =>
-        new(id, names.TryGetValue(id, out var name) ? name : "Unknown");
+        new(id, names.TryGetValue(id, out var name) ? name : ServerTexts.Unknown);
 }

@@ -18,6 +18,7 @@ import { NativeSelect } from '@/components/ui/native-select'
 import { dateEntryMessage, formatYearMonth, isInvalidDateEntry, todayIso } from '@/lib/dates'
 import { centsToEuroInput, formatCents, parseEuroInput } from '@/lib/money'
 import { revolvingTexts } from './texts'
+import { appTexts } from '@/components/common/texts'
 
 const t = revolvingTexts.bill
 
@@ -210,7 +211,7 @@ export function BillPaidDialog({
           value={accountId}
           onChange={(e) => setAccountId(e.target.value)}
         >
-          <option value="">Choose…</option>
+          <option value="">{appTexts.common.choose}</option>
           {options.map((account) => (
             <option key={account.id} value={account.id}>
               {account.name}

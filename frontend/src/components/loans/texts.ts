@@ -1,10 +1,12 @@
 import type { LoanStatus, PaymentMethod } from '@/api/loans'
+import { localized } from '@/i18n/texts'
+import { loanTextsHr } from './texts.hr'
 
 /**
- * Loan labels and messages in one place, so they can be translated to Croatian later
+ * Loan labels and messages in one place, in English and Croatian (croatian-language.md)
  * (requirements NFR-5).
  */
-export const loanTexts = {
+const en = {
   title: 'Loans and leasing',
   description: 'Bank loans and leases: monthly payments, due dates and what is left to pay.',
   addLoan: 'Add loan',
@@ -196,3 +198,7 @@ export const loanTexts = {
     saved: 'Category saved.',
   },
 }
+
+export type LoanTextsEn = typeof en
+
+export const loanTexts = localized(en, loanTextsHr)

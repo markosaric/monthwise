@@ -1,6 +1,7 @@
 import { Check, ChevronDown } from 'lucide-react'
 import { useId, useState, type ChangeEvent, type ReactNode } from 'react'
 import { cn } from '@/lib/utils'
+import { appTexts } from '@/components/common/texts'
 
 /**
  * The one-tap Paid / Received check of a row (FR-15): a round check that turns green. It stays a
@@ -83,7 +84,9 @@ export function ListRow({
             onClick={() => setOpen((o) => !o)}
             aria-expanded={open}
             aria-controls={detailsId}
-            aria-label={open ? `Hide details: ${label}` : `Show details: ${label}`}
+            aria-label={
+              open ? appTexts.common.hideDetails(label) : appTexts.common.showDetails(label)
+            }
             className="grid size-7 shrink-0 place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
           >
             <ChevronDown className={cn('size-4 transition-transform', open && 'rotate-180')} />

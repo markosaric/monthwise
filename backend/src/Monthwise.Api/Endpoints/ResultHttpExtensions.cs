@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Http.HttpResults;
+using Monthwise.Application.Localization;
 using Monthwise.Domain.Common;
 
 namespace Monthwise.Api.Endpoints;
@@ -77,16 +78,16 @@ internal static class ResultHttpExtensions
         var first = result.Errors[0];
         return first.Kind switch
         {
-            ErrorKind.NotFound => (null, TypedResults.Problem(statusCode: StatusCodes.Status404NotFound, title: first.Message)),
+            ErrorKind.NotFound => (null, TypedResults.Problem(statusCode: StatusCodes.Status404NotFound, title: ServerTexts.Translate(first.Message))),
             ErrorKind.Conflict => (null, TypedResults.Problem(
                 statusCode: StatusCodes.Status409Conflict,
-                title: first.Message,
+                title: ServerTexts.Translate(first.Message),
                 extensions: new Dictionary<string, object?> { ["code"] = first.Code })),
             _ => (TypedResults.ValidationProblem(
                 result.Errors
                     .Where(e => e.Kind == ErrorKind.Validation)
                     .GroupBy(e => e.Field ?? string.Empty)
-                    .ToDictionary(g => g.Key, g => g.Select(e => e.Message).Distinct().ToArray())), null),
+                    .ToDictionary(g => g.Key, g => g.Select(e => ServerTexts.Translate(e.Message)).Distinct().ToArray())), null),
         };
     }
 }

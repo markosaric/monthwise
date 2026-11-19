@@ -4,6 +4,7 @@ import { Link, useRouteError } from 'react-router'
 import { Button } from '@/components/ui/button'
 import { pageReload } from '@/lib/lazyScreen'
 import { PageHeader } from '@/pages/PageHeader'
+import { appTexts } from '@/components/common/texts'
 
 /**
  * Shown instead of a screen that failed, below the app shell (page loading and errors FR-3), or
@@ -21,17 +22,17 @@ export function ScreenError({ fullPage = false }: { fullPage?: boolean }) {
     <section aria-labelledby="screen-error-title">
       <div id="screen-error-title">
         <PageHeader
-          title="This screen could not be shown"
-          description="Something went wrong. Reload the page, or go back to the dashboard."
+          title={appTexts.screenError.title}
+          description={appTexts.screenError.description}
         />
       </div>
       <div className="flex flex-wrap gap-2">
         <Button type="button" onClick={() => pageReload.reload()}>
           <RotateCwIcon aria-hidden />
-          Reload
+          {appTexts.screenError.reload}
         </Button>
         <Button asChild variant="outline">
-          <Link to="/">Back to the dashboard</Link>
+          <Link to="/">{appTexts.common.backToDashboard}</Link>
         </Button>
       </div>
     </section>

@@ -11,6 +11,7 @@ import { cn } from '@/lib/utils'
 import { CardStatusBadge } from './CardStatusBadge'
 import { formatMonth } from './format'
 import { cardTexts } from './texts'
+import { appTexts } from '@/components/common/texts'
 
 /**
  * One card in the Settings list or the Accounts part of the Cards screen; links to its details. There
@@ -51,7 +52,9 @@ export function CardSummary({
             <span>
               {cardTexts.fields.validThrough} {formatMonth(card.validThrough)}
             </span>
-            {card.debtLimitCents !== null && <span>Limit {formatCents(card.debtLimitCents)}</span>}
+            {card.debtLimitCents !== null && (
+              <span>{appTexts.cardsScreen.limit(formatCents(card.debtLimitCents))}</span>
+            )}
           </div>
           {card.billing && (
             <div className="text-sm text-muted-foreground">

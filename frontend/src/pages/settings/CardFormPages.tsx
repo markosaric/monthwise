@@ -8,6 +8,7 @@ import { yearMonthToCardMonth } from '@/lib/dates'
 import { centsToEuroInput } from '@/lib/money'
 import { basisPointsToPercentInput } from '@/lib/percent'
 import { PageHeader } from '@/pages/PageHeader'
+import { appTexts } from '@/components/common/texts'
 
 function detailsOf(card: Card): Partial<CardFormValues> {
   return {
@@ -58,12 +59,13 @@ export function CardNewPage() {
   const { data: oldCard, isPending } = useCard(replaces)
   const createCard = useCreateCard()
 
-  if (replaces && isPending) return <p className="text-sm text-muted-foreground">Loading…</p>
+  if (replaces && isPending)
+    return <p className="text-sm text-muted-foreground">{appTexts.common.loading}</p>
 
   const prefill = oldCard
     ? {
         ...detailsOf(oldCard),
-        name: `${oldCard.name} (new)`.slice(0, 50),
+        name: appTexts.cardsScreen.newCardName(oldCard.name).slice(0, 50),
         isPrimary: oldCard.isPrimary || searchParams.get('primary') === '1',
       }
     : {}
@@ -72,7 +74,7 @@ export function CardNewPage() {
     <>
       <PageHeader
         title={cardTexts.addCard}
-        description={oldCard ? `Replacement for ${oldCard.name}.` : undefined}
+        description={oldCard ? appTexts.cardsScreen.replacementFor(oldCard.name) : undefined}
       />
       <CardForm
         defaultValues={emptyCardFormValues(prefill)}
@@ -95,8 +97,8 @@ export function CardEditPage() {
   const { data: card, isPending, isError } = useCard(id)
   const updateCard = useUpdateCard(id!)
 
-  if (isPending) return <p className="text-sm text-muted-foreground">Loading…</p>
-  if (isError) return <p className="text-sm text-destructive">This card could not be loaded.</p>
+  if (isPending) return <p className="text-sm text-muted-foreground">{appTexts.common.loading}</p>
+  if (isError) return <p className="text-sm text-destructive">{appTexts.loadErrors.card}</p>
 
   return (
     <>

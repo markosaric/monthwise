@@ -40,6 +40,7 @@ import {
 import { formatCents } from '@/lib/money'
 import { cn } from '@/lib/utils'
 import { PageHeader } from '@/pages/PageHeader'
+import { appTexts } from '@/components/common/texts'
 
 const t = cashFlowTexts.cashFlow
 type Period = keyof typeof t.periods
@@ -257,8 +258,8 @@ export function CashFlowPage() {
               </Button>
             </span>
           </div>
-          {isPending && <p className="text-sm text-muted-foreground">Loading…</p>}
-          {isError && <p className="text-sm text-destructive">The chart could not be loaded.</p>}
+          {isPending && <p className="text-sm text-muted-foreground">{appTexts.common.loading}</p>}
+          {isError && <p className="text-sm text-destructive">{appTexts.loadErrors.chart}</p>}
           {chart &&
             (asTable ? (
               <CashFlowTable chart={chart} />

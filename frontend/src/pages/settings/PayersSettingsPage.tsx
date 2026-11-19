@@ -7,6 +7,7 @@ import { cashFlowTexts } from '@/components/cashflow/texts'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { PageHeader } from '@/pages/PageHeader'
+import { appTexts } from '@/components/common/texts'
 
 const t = cashFlowTexts.payers
 
@@ -20,8 +21,8 @@ export function PayersSettingsPage() {
     <>
       <PageHeader title={t.section} description={t.description} />
       <div className="flex max-w-2xl flex-col gap-2">
-        {isPending && <p className="text-sm text-muted-foreground">Loading…</p>}
-        {isError && <p className="text-sm text-destructive">Payers could not be loaded.</p>}
+        {isPending && <p className="text-sm text-muted-foreground">{appTexts.common.loading}</p>}
+        {isError && <p className="text-sm text-destructive">{appTexts.loadErrors.payers}</p>}
         {payers?.length === 0 && <p className="text-sm text-muted-foreground">{t.empty}</p>}
         {payers?.map((payer) => (
           <PayerRow key={payer.id} payer={payer} onRemove={() => setRemoving(payer)} />
@@ -30,7 +31,7 @@ export function PayersSettingsPage() {
       <CardActionDialog
         open={removing !== null}
         onOpenChange={(open) => !open && setRemoving(null)}
-        title={`${t.removeTitle.replace('this payer', removing?.name ?? 'this payer')}`}
+        title={removing ? t.removeNamedTitle(removing.name) : t.removeTitle}
         description={t.removeDescription}
         confirmLabel={t.remove}
         destructive
@@ -59,7 +60,7 @@ function PayerRow({ payer, onRemove }: { payer: Payer; onRemove: () => void }) {
       setError(
         e instanceof ApiError
           ? (Object.values(e.fieldErrors)[0]?.[0] ?? e.message)
-          : 'Saving failed.',
+          : appTexts.common.savingFailed,
       )
     }
   }

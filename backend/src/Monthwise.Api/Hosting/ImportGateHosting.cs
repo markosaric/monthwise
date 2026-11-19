@@ -1,4 +1,5 @@
 using Monthwise.Application.DataTransfer;
+using Monthwise.Application.Localization;
 
 namespace Monthwise.Api.Hosting;
 
@@ -20,7 +21,7 @@ internal static class ImportGateHosting
                 && !(HttpMethods.IsGet(context.Request.Method) && path.Equals("/api/data", StringComparison.OrdinalIgnoreCase)))
             {
                 await TypedResults.Problem(
-                        title: "An import is running. Try again in a moment.",
+                        title: ServerTexts.Translate("An import is running. Try again in a moment."),
                         statusCode: StatusCodes.Status503ServiceUnavailable,
                         extensions: new Dictionary<string, object?> { ["code"] = "data.import_running" })
                     .ExecuteAsync(context);

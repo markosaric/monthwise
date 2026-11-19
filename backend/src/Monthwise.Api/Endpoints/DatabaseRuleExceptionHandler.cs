@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Diagnostics;
 using Monthwise.Application.Common;
+using Monthwise.Application.Localization;
 
 namespace Monthwise.Api.Endpoints;
 
@@ -22,7 +23,7 @@ internal sealed class DatabaseRuleExceptionHandler(IProblemDetailsService proble
         return await problemDetails.TryWriteAsync(new ProblemDetailsContext
         {
             HttpContext = httpContext,
-            ProblemDetails = { Status = status, Title = exception.Message },
+            ProblemDetails = { Status = status, Title = ServerTexts.Translate(exception.Message) },
             Exception = exception,
         });
     }

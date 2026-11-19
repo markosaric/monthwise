@@ -32,6 +32,7 @@ import {
 import { formatCents } from '@/lib/money'
 import { PaidFromSelect } from './PaidFromSelect'
 import { expenseTexts } from './texts'
+import { appTexts } from '@/components/common/texts'
 
 const t = expenseTexts
 
@@ -71,8 +72,8 @@ export function BillsSection({ month }: { month: string }) {
       }
     >
       <div className="flex flex-col gap-3">
-        {isPending && <p className="text-sm text-muted-foreground">Loading…</p>}
-        {isError && <p className="text-sm text-destructive">Bills could not be loaded.</p>}
+        {isPending && <p className="text-sm text-muted-foreground">{appTexts.common.loading}</p>}
+        {isError && <p className="text-sm text-destructive">{appTexts.loadErrors.bills}</p>}
         {data && data.bills.length === 0 && (
           <p className="text-sm text-muted-foreground">{t.bills.empty}</p>
         )}

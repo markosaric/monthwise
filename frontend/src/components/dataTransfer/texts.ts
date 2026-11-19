@@ -1,11 +1,17 @@
-/** Shortest password a new export file accepts (backup and restore Appendix 1). */
-export const minPasswordLength = 12
+import { localized } from '@/i18n/texts'
+import { dataTextsHr } from './texts.hr'
+import { maxImportFileMegabytes, minPasswordLength } from './limits'
 
-/** Largest export file an import accepts (backup and restore Appendix 3). */
-export const maxImportFileMegabytes = 10
+export { maxImportFileMegabytes, minPasswordLength }
+
+/**
+ * The word the API expects once the user has typed the confirmation word of their language
+ * (REPLACE or ZAMIJENI).
+ */
+export const apiConfirmationWord = 'REPLACE'
 
 /** Texts of the Data and backups section (docs/feature-requirements/backup-and-restore.md). */
-export const dataTexts = {
+const en = {
   section: 'Data and backups',
   description: 'Export all data to a file and import it again.',
   group: 'Data',
@@ -86,7 +92,7 @@ export const dataTexts = {
       SafetyCopy: 'Safety copy made',
       SafetyCopyRestore: 'Safety copy brought back',
     },
-    by: 'by',
+    byUser: (name: string) => `by ${name}`,
     newer: 'Newer',
     older: 'Older',
   },
@@ -101,3 +107,7 @@ export const dataTexts = {
   cancel: 'Cancel',
   confirmationWord: 'REPLACE',
 } as const
+
+export type DataTextsEn = typeof en
+
+export const dataTexts = localized(en, dataTextsHr)

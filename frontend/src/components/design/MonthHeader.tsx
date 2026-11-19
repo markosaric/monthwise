@@ -4,6 +4,7 @@ import { Link } from 'react-router'
 import { cashFlowTexts } from '@/components/cashflow/texts'
 import { Button } from '@/components/ui/button'
 import { addMonths, currentMonth, formatYearMonth } from '@/lib/dates'
+import { appTexts } from '@/components/common/texts'
 
 const t = cashFlowTexts
 
@@ -29,7 +30,7 @@ export function MonthHeader({
   const next = addMonths(month, 1)
   return (
     <header className="flex flex-wrap items-center gap-2">
-      <nav aria-label="Month" className="flex items-center gap-2">
+      <nav aria-label={appTexts.nav.month} className="flex items-center gap-2">
         <Link
           to={`${basePath}/${previous}`}
           aria-label={t.previousMonth}

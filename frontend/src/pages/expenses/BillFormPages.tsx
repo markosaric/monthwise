@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button'
 import { formatYearMonth, isYearMonth, todayIso } from '@/lib/dates'
 import { useReturnTo } from '@/lib/returnTo'
 import { PageHeader } from '@/pages/PageHeader'
+import { appTexts } from '@/components/common/texts'
 
 const t = expenseTexts
 
@@ -25,7 +26,7 @@ export function BillNewPage() {
   const { data: cards, isPending } = useCards('Default')
   const change = useChangeBill()
   if (!isYearMonth(yearMonth)) return <Navigate to="/month" replace />
-  if (isPending) return <p className="text-sm text-muted-foreground">Loading…</p>
+  if (isPending) return <p className="text-sm text-muted-foreground">{appTexts.common.loading}</p>
 
   return (
     <>
@@ -57,8 +58,8 @@ export function BillEditPage() {
   const change = useChangeBill()
   const [deleting, setDeleting] = useState(false)
 
-  if (isPending) return <p className="text-sm text-muted-foreground">Loading…</p>
-  if (isError) return <p className="text-sm text-destructive">This bill could not be loaded.</p>
+  if (isPending) return <p className="text-sm text-muted-foreground">{appTexts.common.loading}</p>
+  if (isError) return <p className="text-sm text-destructive">{appTexts.loadErrors.bill}</p>
 
   const notIssued = bill.state === 'NotIssued'
   const back = `/month/${bill.month}`

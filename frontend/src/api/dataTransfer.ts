@@ -3,6 +3,7 @@ import { useEffect, useRef } from 'react'
 import { api, type Schemas } from './client'
 import { useHealth } from './health'
 import { ApiError, unwrap } from './http'
+import { currentLanguage } from '@/i18n/language'
 
 export type DataOverview = Schemas['DataOverviewResponse']
 export type DataTransfer = Schemas['DataTransferResponse']
@@ -72,7 +73,7 @@ export function useExportData() {
       const response = await globalThis.fetch(url('/api/data/export'), {
         method: 'POST',
         credentials: 'same-origin',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'Accept-Language': currentLanguage() },
         body: JSON.stringify({ password }),
       })
       if (!response.ok) await throwProblem(response)
@@ -96,6 +97,7 @@ async function postForm<T>(path: string, form: FormData): Promise<T> {
   const response = await globalThis.fetch(url(path), {
     method: 'POST',
     credentials: 'same-origin',
+    headers: { 'Accept-Language': currentLanguage() },
     body: form,
   })
   if (!response.ok) await throwProblem(response)

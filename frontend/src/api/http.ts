@@ -1,3 +1,4 @@
+import { appTexts } from '@/components/common/texts'
 /** A failed API call. `fieldErrors` holds validation messages keyed by request field. */
 export class ApiError extends Error {
   readonly status: number
@@ -8,7 +9,7 @@ export class ApiError extends Error {
     title: string | null | undefined,
     fieldErrors?: Record<string, string[]>,
   ) {
-    super(title ?? 'Something went wrong. Please try again.')
+    super(title ?? appTexts.common.somethingWentWrongRetry)
     this.status = status
     this.fieldErrors = fieldErrors ?? {}
   }

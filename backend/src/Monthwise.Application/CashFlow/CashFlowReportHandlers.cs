@@ -2,6 +2,7 @@ using Monthwise.Application.CardPurchases;
 using Monthwise.Application.Cards;
 using Monthwise.Application.Expenses;
 using Monthwise.Application.Loans;
+using Monthwise.Application.Localization;
 using Monthwise.Application.SharedCosts;
 using Monthwise.Domain.CashFlow;
 using Monthwise.Domain.Common;
@@ -178,10 +179,10 @@ public sealed class GetMonthlyReportHandler(
     }
 
     /// <summary>The group name of bills paid later, which have no account yet.</summary>
-    public const string NoAccountYet = "No account yet";
+    public static string NoAccountYet => ServerTexts.Translate("No account yet");
 
     /// <summary>The name of the output category that groups all card payments.</summary>
-    public const string CardPayments = "Card payments";
+    public static string CardPayments => ServerTexts.Translate("Card payments");
 
     /// <summary>
     /// The month's outputs: loan payments, card payments (monthly bills and extra payments of revolving

@@ -10,6 +10,7 @@ import { formatDate } from '@/components/cards/format'
 import { Badge } from '@/components/ui/badge'
 import { formatCents } from '@/lib/money'
 import { expenseTexts } from './texts'
+import { appTexts } from '@/components/common/texts'
 
 const t = expenseTexts
 
@@ -46,8 +47,8 @@ export function ExpensesSection({ month }: { month: string }) {
       }
     >
       <div className="flex flex-col gap-3">
-        {isPending && <p className="text-sm text-muted-foreground">Loading…</p>}
-        {isError && <p className="text-sm text-destructive">Expenses could not be loaded.</p>}
+        {isPending && <p className="text-sm text-muted-foreground">{appTexts.common.loading}</p>}
+        {isError && <p className="text-sm text-destructive">{appTexts.loadErrors.expenses}</p>}
         {data && data.expenses.length === 0 && (
           <p className="text-sm text-muted-foreground">{t.expenses.empty}</p>
         )}

@@ -12,6 +12,7 @@ import { todayIso } from '@/lib/dates'
 import { useReturnTo } from '@/lib/returnTo'
 import { centsToEuroInput } from '@/lib/money'
 import { PageHeader } from '@/pages/PageHeader'
+import { appTexts } from '@/components/common/texts'
 
 const t = revolvingTexts.payment
 
@@ -26,8 +27,8 @@ export function ExtraPaymentNewPage() {
   const { data, isPending, isError } = useRevolvingCards()
   const create = useCreateExtraPayment()
 
-  if (isPending) return <p className="text-sm text-muted-foreground">Loading…</p>
-  if (isError) return <p className="text-sm text-destructive">Cards could not be loaded.</p>
+  if (isPending) return <p className="text-sm text-muted-foreground">{appTexts.common.loading}</p>
+  if (isError) return <p className="text-sm text-destructive">{appTexts.loadErrors.cards}</p>
 
   const cards = cardId
     ? data.cards.filter((c) => c.id === cardId)
@@ -72,10 +73,10 @@ export function ExtraPaymentEditPage() {
   const { data, isPending, isError } = useRevolvingCard(cardId)
   const update = useUpdateExtraPayment(paymentId!)
 
-  if (isPending) return <p className="text-sm text-muted-foreground">Loading…</p>
+  if (isPending) return <p className="text-sm text-muted-foreground">{appTexts.common.loading}</p>
   const payment = data?.extraPayments.find((p) => p.id === paymentId)
   if (isError || !payment)
-    return <p className="text-sm text-destructive">This payment could not be loaded.</p>
+    return <p className="text-sm text-destructive">{appTexts.loadErrors.payment}</p>
 
   return (
     <>

@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { PageHeader } from '@/pages/PageHeader'
+import { appTexts } from '@/components/common/texts'
 
 const t = sharedCostTexts
 
@@ -48,9 +49,8 @@ export function ParticipantEditPage() {
   const navigate = useNavigate()
   const { data: participant, isPending, isError } = useParticipant(id)
   const change = useChangeParticipant()
-  if (isPending) return <p className="text-sm text-muted-foreground">Loading…</p>
-  if (isError)
-    return <p className="text-sm text-destructive">This participant could not be loaded.</p>
+  if (isPending) return <p className="text-sm text-muted-foreground">{appTexts.common.loading}</p>
+  if (isError) return <p className="text-sm text-destructive">{appTexts.loadErrors.participant}</p>
   return (
     <>
       <PageHeader title={t.screen.editParticipant} description={participant.name} />

@@ -1,6 +1,7 @@
 import type * as React from 'react'
 import { Input } from '@/components/ui/input'
 import { dateInputToIso, formatDateInput, isoToDateInput } from '@/lib/dates'
+import { appTexts } from '@/components/common/texts'
 
 /**
  * A day typed as "DD.MM.YYYY", the same in every browser (design refresh Appendix 2). Only digits
@@ -21,7 +22,7 @@ export function DateInput({
       type="text"
       inputMode="numeric"
       autoComplete="off"
-      placeholder="DD.MM.YYYY"
+      placeholder={appTexts.common.datePlaceholder}
       value={isoToDateInput(value)}
       onChange={(event) => {
         const text = formatDateInput(event.target.value)

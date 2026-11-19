@@ -1,10 +1,12 @@
 import type { BalanceEntryKind, RecurrenceFrequency } from '@/api/cashFlow'
+import { localized } from '@/i18n/texts'
+import { cashFlowTextsHr } from './texts.hr'
 
 /**
- * Input cash flow labels and messages in one place, so they can be translated to Croatian later
+ * Input cash flow labels and messages in one place, in English and Croatian (croatian-language.md)
  * (requirements NFR-5).
  */
-export const cashFlowTexts = {
+const en = {
   income: 'Income',
   addInput: 'Add input',
   receivedOf: (received: number, all: number) => `${received} of ${all} received`,
@@ -26,6 +28,7 @@ export const cashFlowTexts = {
   fields: {
     payer: 'Payer',
     account: 'Account',
+    primaryAccount: (name: string) => `${name} (primary)`,
     category: 'Category',
     amount: 'Amount (€)',
     issueDate: 'Issue date (datum računa)',
@@ -104,6 +107,7 @@ export const cashFlowTexts = {
     description: 'Saved payers suggested when you add an input.',
     empty: 'No saved payers yet. Payers are saved when you add an input.',
     removeTitle: 'Remove this payer?',
+    removeNamedTitle: (name: string) => `Remove ${name}?`,
     removeDescription: 'It is no longer suggested. Inputs already recorded keep its name.',
     remove: 'Remove',
     rename: 'Rename',
@@ -155,6 +159,8 @@ export const cashFlowTexts = {
     months: 'Months',
     monthLine: (inputs: string, outputs: string) => `${inputs} in · ${outputs} out`,
     empty: 'No inputs or outputs in this period.',
+    tableMonth: 'Month',
+    tableDay: 'Day',
   },
   report: {
     title: 'Monthly cash flow report',
@@ -180,3 +186,7 @@ export const cashFlowTexts = {
     note: 'Starting balances and corrections change account balances but are not counted as income.',
   },
 }
+
+export type CashFlowTextsEn = typeof en
+
+export const cashFlowTexts = localized(en, cashFlowTextsHr)

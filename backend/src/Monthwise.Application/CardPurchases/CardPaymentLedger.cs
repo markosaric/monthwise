@@ -3,6 +3,7 @@ using Monthwise.Application.CashFlow;
 using Monthwise.Application.Common;
 using Monthwise.Application.Expenses;
 using Monthwise.Application.Loans;
+using Monthwise.Application.Localization;
 using Monthwise.Domain.CardPurchases;
 using Monthwise.Domain.Cards;
 using Monthwise.Domain.Common;
@@ -69,10 +70,10 @@ public sealed class CardPaymentBook
     public IEnumerable<ScheduledCardPayment> PaymentsBetween(DateOnly from, DateOnly to) =>
         Payments().Where(p => p.MonthDate >= from && p.MonthDate <= to);
 
-    public NamedReference CardReference(Guid id) => new(id, _cards.TryGetValue(id, out var card) ? card.Name : "Unknown");
+    public NamedReference CardReference(Guid id) => new(id, _cards.TryGetValue(id, out var card) ? card.Name : ServerTexts.Unknown);
 
     public NamedReference? Category(Guid? id) =>
-        id is { } categoryId ? new NamedReference(categoryId, _categories.TryGetValue(categoryId, out var c) ? c.Name : "Unknown") : null;
+        id is { } categoryId ? new NamedReference(categoryId, _categories.TryGetValue(categoryId, out var c) ? PredefinedNames.Display(categoryId, c.Name) : ServerTexts.Unknown) : null;
 
     public CardPaymentResponse ToResponse(ScheduledCardPayment payment)
     {
@@ -275,7 +276,7 @@ public sealed class CardPaymentLedger(
         IReadOnlyList<Card> cards, IReadOnlyList<ExpenseCategory> categories, IEnumerable<Bill> bills, IEnumerable<Expense> expenses)
     {
         var creditCards = cards.Where(PaidFromRules.IsCreditCard).Select(c => c.Id).ToHashSet();
-        var categoryNames = categories.ToDictionary(c => c.Id, c => c.Name);
+        var categoryNames = categories.ToDictionary(c => c.Id, c => PredefinedNames.Display(c.Id, c.Name));
         var fromBills = bills
             .Where(b => b.IsPaid && b.PaidFromId is { } id && creditCards.Contains(id))
             .Select(b => new CardChargeSource(

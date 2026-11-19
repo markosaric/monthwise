@@ -18,6 +18,7 @@ import { Button } from '@/components/ui/button'
 import { isYearMonth, monthOf, todayIso } from '@/lib/dates'
 import { useReturnTo } from '@/lib/returnTo'
 import { PageHeader } from '@/pages/PageHeader'
+import { appTexts } from '@/components/common/texts'
 
 const t = expenseTexts
 
@@ -35,7 +36,8 @@ export function ExpenseNewPage() {
   const { data: last, isPending: lastPending } = useLastExpensePaidFrom()
   const change = useChangeExpense()
   if (!isYearMonth(yearMonth)) return <Navigate to="/month" replace />
-  if (isPending || lastPending) return <p className="text-sm text-muted-foreground">Loading…</p>
+  if (isPending || lastPending)
+    return <p className="text-sm text-muted-foreground">{appTexts.common.loading}</p>
 
   const all = cards ?? []
   const lastId = last?.paidFrom?.id
@@ -88,8 +90,8 @@ export function ExpenseEditPage() {
   const change = useChangeExpense()
   const [deleting, setDeleting] = useState(false)
 
-  if (isPending) return <p className="text-sm text-muted-foreground">Loading…</p>
-  if (isError) return <p className="text-sm text-destructive">This expense could not be loaded.</p>
+  if (isPending) return <p className="text-sm text-muted-foreground">{appTexts.common.loading}</p>
+  if (isError) return <p className="text-sm text-destructive">{appTexts.loadErrors.expense}</p>
 
   const cash = expense.isCashWithdrawal
   const back = `/month/${monthOf(expense.date)}`

@@ -1,4 +1,5 @@
 using Monthwise.Application.Common;
+using Monthwise.Application.Localization;
 using Monthwise.Domain.CashFlow;
 using Monthwise.Domain.Common;
 
@@ -62,7 +63,7 @@ public sealed class InputCategoryHandler(IInputCategoryRepository categories, IU
     public async Task<IReadOnlyList<InputCategoryResponse>> ListAsync(bool includeHidden, CancellationToken cancellationToken) =>
         (await categories.ListAsync(cancellationToken))
             .Where(c => includeHidden || !c.IsHidden)
-            .OrderBy(c => c.Name, StringComparer.CurrentCultureIgnoreCase)
+            .OrderBy(c => PredefinedNames.Display(c.Id, c.Name), StringComparer.CurrentCultureIgnoreCase)
             .Select(ToResponse)
             .ToList();
 
@@ -73,7 +74,8 @@ public sealed class InputCategoryHandler(IInputCategoryRepository categories, IU
         {
             return Result.Failure<InputCategoryResponse>(created.Errors);
         }
-        if (await categories.NameInUseAsync(created.Value.Name, null, cancellationToken))
+        if (await categories.NameInUseAsync(created.Value.Name, null, cancellationToken)
+            || await NameClashesAsync(created.Value.Name, null, cancellationToken))
         {
             return Result.Failure<InputCategoryResponse>(CashFlowErrors.CategoryNameInUse);
         }
@@ -91,6 +93,7 @@ public sealed class InputCategoryHandler(IInputCategoryRepository categories, IU
                 return renamed;
             }
             return await categories.NameInUseAsync(category.Name, category.Id, cancellationToken)
+                || await NameClashesAsync(category.Name, category.Id, cancellationToken)
                 ? Result.Failure(CashFlowErrors.CategoryNameInUse)
                 : Result.Success();
         }, cancellationToken);
@@ -143,6 +146,11 @@ public sealed class InputCategoryHandler(IInputCategoryRepository categories, IU
         return Result.Success(ToResponse(category));
     }
 
+    /// <summary>Whether the name is another category's predefined name in Croatian (croatian-language.md).</summary>
+    private async Task<bool> NameClashesAsync(string name, Guid? exceptId, CancellationToken cancellationToken) =>
+        PredefinedNames.ClashesWithTranslation(
+            name, exceptId, (await categories.ListAsync(cancellationToken)).Select(c => (c.Id, c.Name)));
+
     private static InputCategoryResponse ToResponse(InputCategory category) =>
-        new(category.Id, category.Name, category.IsPredefined, category.IsHidden);
+        new(category.Id, PredefinedNames.Display(category.Id, category.Name), category.IsPredefined, category.IsHidden);
 }

@@ -30,6 +30,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { formatYearMonth } from '@/lib/dates'
 import { formatCents } from '@/lib/money'
 import { cn } from '@/lib/utils'
+import { appTexts } from '@/components/common/texts'
 
 const t = dashboardTexts
 
@@ -45,13 +46,13 @@ export function DashboardPage() {
     <div className="flex max-w-6xl flex-col gap-4">
       <header className="flex flex-wrap items-baseline justify-between gap-2">
         <h1 className="text-2xl font-bold tracking-tight">
-          {data ? formatYearMonth(data.month) : 'Dashboard'}
+          {data ? formatYearMonth(data.month) : appTexts.nav.dashboard}
         </h1>
         <span className="text-sm text-muted-foreground">{t.subtitle}</span>
       </header>
       <QuickActions month={data?.month} />
       <ExportReminder />
-      {isPending && <p className="text-sm text-muted-foreground">Loading…</p>}
+      {isPending && <p className="text-sm text-muted-foreground">{appTexts.common.loading}</p>}
       {isError && <p className="text-sm text-destructive">{t.loadError}</p>}
       {data && <DashboardContent data={data} />}
     </div>

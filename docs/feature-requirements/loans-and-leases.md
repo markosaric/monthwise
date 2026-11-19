@@ -320,3 +320,12 @@ contribution, as described in [shared-bills.md](shared-bills.md).
   not shown when no active loans exist. The list of single loans is on the Loans screen.
 - The expected end-of-month balance that loan payments lower is shown on the Cards screen, not the
   Dashboard.
+
+## Appendix 3: UI text in English and Croatian
+
+- **Date:** 2026-11-19
+- **Branch:** `feat/croatian-language`
+- **Changes:** NFR-5
+
+- **NFR-5 Language:** UI text in English and Croatian; the user chooses the language in Settings.
+  See [croatian-language.md](croatian-language.md).

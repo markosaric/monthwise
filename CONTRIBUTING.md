@@ -37,8 +37,12 @@ approved **before** the plan.
 - Documentation-only changes (a `docs/` branch, e.g. updating the user manual) need neither a
   requirements document nor a plan. They still go through review with staged changes, an approved
   commit message and a pull request.
-- A change the user can see also updates the [user manual](docs/user-manual/index.html) in the
-  same branch, kept short.
+- A change the user can see also updates the [user manual](docs/user-manual/index.html) and its
+  [Croatian version](docs/user-manual/hr/index.html) in the same branch, kept short.
+- Every app text is added in English and Croatian in the same branch: screen texts in the area's
+  `texts.ts` and `texts.hr.ts`, and messages the API makes up in `ServerTexts` (and a new
+  predefined category in `PredefinedNames`). Tests fail on a text in only one language
+  ([croatian-language.md](docs/feature-requirements/croatian-language.md) FR-9).
 
 ### Changing requirements
 

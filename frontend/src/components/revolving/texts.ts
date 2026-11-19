@@ -1,12 +1,14 @@
 import type { DebtEntryKind, RevolvingMovement } from '@/api/revolving'
+import { localized } from '@/i18n/texts'
+import { revolvingTextsHr } from './texts.hr'
 
 type MovementKind = RevolvingMovement['kind']
 
 /**
- * Revolving card labels and messages in one place, so they can be translated to Croatian later
+ * Revolving card labels and messages in one place, in English and Croatian (croatian-language.md)
  * (revolving NFR-5).
  */
-export const revolvingTexts = {
+const en = {
   section: 'Revolving cards',
   sectionDescription: 'Debt, limit and the next monthly bill of every revolving card.',
   debtFigure: 'Revolving debt',
@@ -189,3 +191,7 @@ export const revolvingTexts = {
   },
   quickAction: 'Pay revolving card',
 } as const
+
+export type RevolvingTextsEn = typeof en
+
+export const revolvingTexts = localized(en, revolvingTextsHr)

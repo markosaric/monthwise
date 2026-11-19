@@ -1,3 +1,4 @@
+using Monthwise.Application.Localization;
 using Monthwise.Domain.Cards;
 using Monthwise.Domain.Common;
 
@@ -64,7 +65,7 @@ internal sealed class CardMapping(
     }
 
     private CashFlow.NamedReference Reference(Guid id) =>
-        new(id, _cards.TryGetValue(id, out var card) ? card.Name : "Unknown");
+        new(id, _cards.TryGetValue(id, out var card) ? card.Name : ServerTexts.Unknown);
 
     private CardBillingResponse? Billing(Card card)
     {
@@ -74,7 +75,7 @@ internal sealed class CardMapping(
         }
         var account = _cards.TryGetValue(billing.PayingAccountId, out var payingAccount)
             ? new CardReference(payingAccount.Id, payingAccount.Name)
-            : new CardReference(billing.PayingAccountId, "Unknown");
+            : new CardReference(billing.PayingAccountId, ServerTexts.Unknown);
         var terms = card.BillingTerms
             .Select(t => new BillingTermsResponse(
                 t.FromMonth == CardBillingTerms.Beginning ? null : t.FromMonth.ToString(), t.StatementDay, t.PaymentDay))

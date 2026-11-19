@@ -284,3 +284,12 @@ and a purchase can be saved without a category.
 The expected end-of-month balance that card payments lower is shown in the **Accounts** part of the
 **Cards** screen, no longer on the Dashboard (see [design-refresh.md](design-refresh.md) FR-12).
 How it is calculated does not change.
+
+## Appendix 3: UI text in English and Croatian
+
+- **Date:** 2026-11-19
+- **Branch:** `feat/croatian-language`
+- **Changes:** NFR-5
+
+- **NFR-5 Language:** UI text in English and Croatian; the user chooses the language in Settings.
+  See [croatian-language.md](croatian-language.md).

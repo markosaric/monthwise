@@ -13,6 +13,7 @@
   h1 { font:700 2.2rem/1.2 Georgia, serif; margin:0 0 4px; }
   h2 { font:700 1.45rem/1.3 Georgia, serif; margin:48px 0 8px; padding-top:8px; border-top:1px solid var(--line); }
   .lead { color:var(--muted); margin:0 0 24px; }
+  .languages { margin:0 0 12px; font-size:.94rem; color:var(--muted); }
   nav.toc { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:16px 20px; }
   nav.toc ol { margin:0; padding-left:20px; columns:2; column-gap:32px; }
   nav.toc li { margin:0 0 4px; break-inside:avoid; }
@@ -37,6 +38,7 @@
 </head>
 <body>
 <main>
+<p class="languages"><strong>English</strong> · <a href="hr/index.html" hreflang="hr" lang="hr">Hrvatski</a></p>
 <h1>Monthwise user manual</h1>
 <p class="lead">A short guide to the home finance app. All screenshots show made-up data.</p>
 
@@ -135,9 +137,10 @@
 <figure><img src="images/shared-costs.jpg" alt="Shared costs with outstanding contributions per participant"><figcaption>Shared costs</figcaption></figure>
 
 <h2 id="settings">8. Settings</h2>
-<p>Lists the app uses everywhere: cards and accounts, payers, input categories, expense categories, loan categories and recurring bills. Add your own entries next to the starting ones. A category that is already in use cannot be deleted; hide it instead.</p>
+<p>Lists the app uses everywhere: cards and accounts, payers, input categories, expense categories, loan categories and recurring bills. Add your own entries next to the starting ones. A category that is already in use cannot be deleted; hide it instead. The starting categories are shown in the chosen language until you rename them; a name you type is always shown as you typed it.</p>
 <figure><img src="images/settings.jpg" alt="Settings overview"><figcaption>Settings</figcaption></figure>
 <p>Card numbers and IBANs are stored encrypted and shown only on request. Open an account and choose <span class="ui">Add correction</span> when its balance differs from your bank; corrections change the balance but do not count as income or output.</p>
+<p id="language"><strong>Language.</strong> Under <span class="ui">Language</span> you choose <em>English</em> or <em>Hrvatski</em> (Croatian). The choice is remembered on that device, and the page reloads in the chosen language. Until a language is chosen, Monthwise follows the browser's language. Amounts and dates look the same in both languages, and the language never changes any stored data.</p>
 <p>At the bottom, Settings shows the Monthwise version and the time zone it uses for "today" (see <a href="#install">Installing Monthwise</a>).</p>
 <p>The <span class="ui">Data and backups</span> tile, in the <em>Data</em> group, exports and imports all your data; see <a href="#data">Data and backups</a>.</p>
 
@@ -263,6 +266,7 @@ Remove-Item Env:PGPASSWORD
   <li>Type <code>REPLACE</code> and choose <span class="ui">Replace all data</span>. An import always replaces <em>all</em> data; it never adds the file to what is there.</li>
 </ol>
 <p>Right before an import Monthwise keeps a <strong>safety copy</strong> of the current data. If the import was a mistake, choose <span class="ui">Bring back</span> under <em>Safety copy</em>. If an import fails, nothing is changed. Files from older versions of Monthwise can be imported; a file from a newer version asks you to update Monthwise first. While an import runs, other screens wait a moment.</p>
+<p>A file exported in one language is the same as one exported in the other, and imports in both. In Croatian the word to type is <code>ZAMIJENI</code>.</p>
 <h3 id="data-reminder">Reminder and history</h3>
 <p>The Dashboard reminds you to export when you have not done so for 30 days. Under <em>Export reminder</em> you can turn it off or choose 7, 14, 30, 60 or 90 days. <span class="ui">Dismiss</span> hides it until the next interval passes without an export.</p>
 <p>The <em>History</em> lists every export, import and safety copy with its time, file and result, including failed attempts. An import does not change the history.</p>

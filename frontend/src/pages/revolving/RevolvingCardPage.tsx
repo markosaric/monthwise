@@ -34,6 +34,7 @@ import { addMonths, currentMonth } from '@/lib/dates'
 import { formatCents } from '@/lib/money'
 import { formatBasisPoints } from '@/lib/percent'
 import { PageHeader } from '@/pages/PageHeader'
+import { appTexts } from '@/components/common/texts'
 
 const t = revolvingTexts
 
@@ -50,7 +51,7 @@ export function RevolvingCardPage() {
     withEstimates ? addMonths(currentMonth(), 12) : undefined,
   )
 
-  if (isPending) return <p className="text-sm text-muted-foreground">Loading…</p>
+  if (isPending) return <p className="text-sm text-muted-foreground">{appTexts.common.loading}</p>
   if (isError) return <p className="text-sm text-destructive">{t.card.notFound}</p>
   return (
     <RevolvingCardView
@@ -291,7 +292,7 @@ function RevolvingCardView({
         </Card>
 
         <Link to="/cards" className="text-sm text-muted-foreground underline">
-          Back to cards
+          {appTexts.common.backToCards}
         </Link>
       </div>
 

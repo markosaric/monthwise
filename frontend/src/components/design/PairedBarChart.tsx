@@ -1,5 +1,6 @@
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { formatCents } from '@/lib/money'
+import { appTexts } from '@/components/common/texts'
 
 export interface BarSeries {
   key: string
@@ -68,7 +69,10 @@ export function PairedBarChart<Row extends { label: string }>({
           </BarChart>
         </ResponsiveContainer>
       </div>
-      <ul className="mt-2 flex flex-wrap gap-4 text-sm text-muted-foreground" aria-label="Legend">
+      <ul
+        className="mt-2 flex flex-wrap gap-4 text-sm text-muted-foreground"
+        aria-label={appTexts.common.legend}
+      >
         {series.map((s) => (
           <li key={s.key} className="flex items-center gap-2">
             <span className="size-3 rounded-sm" style={{ background: s.color }} aria-hidden />

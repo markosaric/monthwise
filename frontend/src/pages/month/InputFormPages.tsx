@@ -31,6 +31,7 @@ import { currentMonth, isYearMonth, monthOf, todayIso } from '@/lib/dates'
 import { formatCents } from '@/lib/money'
 import { useReturnTo } from '@/lib/returnTo'
 import { PageHeader } from '@/pages/PageHeader'
+import { appTexts } from '@/components/common/texts'
 
 const t = cashFlowTexts
 
@@ -47,7 +48,7 @@ export function InputNewPage() {
   const { data: cards, isPending } = useCards('Default')
   const createInput = useCreateInput()
 
-  if (isPending) return <p className="text-sm text-muted-foreground">Loading…</p>
+  if (isPending) return <p className="text-sm text-muted-foreground">{appTexts.common.loading}</p>
   const today = todayIso()
   const [issue, expected] =
     monthOf(today) === month ? [today, today] : [`${month}-01`, `${month}-10`]
@@ -76,8 +77,8 @@ export function InputNewPage() {
 export function InputEditPage() {
   const { id } = useParams()
   const { data: entry, isPending, isError } = useInput(id)
-  if (isPending) return <p className="text-sm text-muted-foreground">Loading…</p>
-  if (isError) return <p className="text-sm text-destructive">This input could not be loaded.</p>
+  if (isPending) return <p className="text-sm text-muted-foreground">{appTexts.common.loading}</p>
+  if (isError) return <p className="text-sm text-destructive">{appTexts.loadErrors.input}</p>
   return <EntryEditor entry={entry} entryRefValue={{ kind: 'input', id: entry.id! }} />
 }
 
@@ -86,10 +87,10 @@ export function OccurrenceEditPage() {
   const month = useMonthParam()
   const { id, date } = useParams()
   const { data, isPending, isError } = useMonthInputs(month)
-  if (isPending) return <p className="text-sm text-muted-foreground">Loading…</p>
+  if (isPending) return <p className="text-sm text-muted-foreground">{appTexts.common.loading}</p>
   const entry = data?.inputs.find((e) => e.recurringInputId === id && e.occurrenceDate === date)
   if (isError || !entry) {
-    return <p className="text-sm text-destructive">This occurrence could not be found.</p>
+    return <p className="text-sm text-destructive">{appTexts.loadErrors.occurrence}</p>
   }
   const ref: EntryRef =
     entry.id !== null
@@ -144,7 +145,7 @@ function EntryEditor({ entry, entryRefValue }: { entry: InputEntry; entryRefValu
         title={t.deleteTitle}
         description={`${entry.payer.name}, ${formatCents(entry.amountCents)}, ${formatDate(
           entry.receivedDate ?? entry.expectedDate,
-        )}.${recurring ? ' Only this occurrence is deleted.' : ''}`}
+        )}.${recurring ? ` ${appTexts.inputs.onlyThisOccurrence}` : ''}`}
         confirmLabel={t.actions.delete}
         destructive
         onConfirm={async () => {
@@ -167,9 +168,9 @@ export function RecurringInputEditPage() {
   const stop = useStopRecurringInput(id!)
   const [confirmStop, setConfirmStop] = useState(false)
 
-  if (isPending) return <p className="text-sm text-muted-foreground">Loading…</p>
+  if (isPending) return <p className="text-sm text-muted-foreground">{appTexts.common.loading}</p>
   if (isError) {
-    return <p className="text-sm text-destructive">This recurring input could not be loaded.</p>
+    return <p className="text-sm text-destructive">{appTexts.loadErrors.recurringInput}</p>
   }
 
   return (
@@ -178,7 +179,7 @@ export function RecurringInputEditPage() {
         title={t.editRecurring}
         description={`${recurring.payer.name} · ${t.frequencies[recurring.frequency ?? 'Monthly']}${
           recurring.isStopped && recurring.endDate
-            ? ` · ended ${formatDate(recurring.endDate)}`
+            ? ` · ${appTexts.inputs.ended(formatDate(recurring.endDate))}`
             : ''
         }`}
       />

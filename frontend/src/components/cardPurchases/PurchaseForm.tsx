@@ -18,6 +18,7 @@ import {
   type PurchaseFormValues,
 } from './purchaseFormModel'
 import { cardPurchaseTexts } from './texts'
+import { appTexts } from '@/components/common/texts'
 
 const t = cardPurchaseTexts
 
@@ -84,7 +85,7 @@ export function PurchaseForm({
       await onSubmit(toPurchaseRequest(revolving ? { ...values, inInstallments: false } : values))
     } catch (error) {
       if (!(error instanceof ApiError)) {
-        setFormError('Saving failed. Please try again.')
+        setFormError(appTexts.common.savingFailedRetry)
         return
       }
       let mapped = false
@@ -115,7 +116,7 @@ export function PurchaseForm({
                 setCardId(e.target.value)
               }}
             >
-              <option value="">Choose…</option>
+              <option value="">{appTexts.common.choose}</option>
               {cards.map((card) => (
                 <option key={card.id} value={card.id}>
                   {card.name}

@@ -22,6 +22,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { formatCents } from '@/lib/money'
 import { PageHeader } from '@/pages/PageHeader'
+import { appTexts } from '@/components/common/texts'
 
 const t = loanTexts
 
@@ -30,8 +31,8 @@ export function LoanDetailsPage() {
   const { id } = useParams()
   const { data: details, isPending, isError } = useLoan(id)
 
-  if (isPending) return <p className="text-sm text-muted-foreground">Loading…</p>
-  if (isError) return <p className="text-sm text-destructive">This loan could not be loaded.</p>
+  if (isPending) return <p className="text-sm text-muted-foreground">{appTexts.common.loading}</p>
+  if (isError) return <p className="text-sm text-destructive">{appTexts.loadErrors.loan}</p>
   return <LoanDetailsView details={details} />
 }
 

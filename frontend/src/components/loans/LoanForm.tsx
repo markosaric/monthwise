@@ -27,6 +27,7 @@ import {
   type LoanFormValues,
 } from './loanFormModel'
 import { loanTexts } from './texts'
+import { appTexts } from '@/components/common/texts'
 
 const t = loanTexts
 
@@ -111,7 +112,7 @@ export function LoanForm({
       await onSubmit(values)
     } catch (error) {
       if (!(error instanceof ApiError)) {
-        setFormError('Saving failed. Please try again.')
+        setFormError(appTexts.common.savingFailedRetry)
         return
       }
       let mapped = false
@@ -149,7 +150,7 @@ export function LoanForm({
               },
             })}
           >
-            <option value="">Choose…</option>
+            <option value="">{appTexts.common.choose}</option>
             {categoryOptions.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.name}
@@ -168,7 +169,7 @@ export function LoanForm({
             disabled={categoryId === ''}
             {...register('subcategoryId')}
           >
-            <option value="">Choose…</option>
+            <option value="">{appTexts.common.choose}</option>
             {subcategoryOptions.map((s) => (
               <option key={s.id} value={s.id}>
                 {s.name}
@@ -216,7 +217,7 @@ export function LoanForm({
               aria-invalid={!!errors.accountId}
               {...register('accountId')}
             >
-              <option value="">Choose…</option>
+              <option value="">{appTexts.common.choose}</option>
               {accounts.map((account) => (
                 <option key={account.id} value={account.id}>
                   {account.name}

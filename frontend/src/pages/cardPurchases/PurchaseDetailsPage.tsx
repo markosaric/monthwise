@@ -19,6 +19,7 @@ import { formatYearMonth } from '@/lib/dates'
 import { formatCents } from '@/lib/money'
 import { cn } from '@/lib/utils'
 import { PageHeader } from '@/pages/PageHeader'
+import { appTexts } from '@/components/common/texts'
 
 const t = cardPurchaseTexts
 
@@ -27,8 +28,8 @@ export function PurchaseDetailsPage() {
   const { id } = useParams()
   const { data, isPending, isError } = useCardPurchase(id)
 
-  if (isPending) return <p className="text-sm text-muted-foreground">Loading…</p>
-  if (isError) return <p className="text-sm text-destructive">This purchase could not be loaded.</p>
+  if (isPending) return <p className="text-sm text-muted-foreground">{appTexts.common.loading}</p>
+  if (isError) return <p className="text-sm text-destructive">{appTexts.loadErrors.purchase}</p>
   return <PurchaseDetailsView details={data} />
 }
 
@@ -112,7 +113,7 @@ function PurchaseDetailsView({ details }: { details: CardPurchaseDetails }) {
           </CardContent>
         </Card>
         <Link to={`/cards/${purchase.card.id}`} className="text-sm text-muted-foreground underline">
-          Back to {purchase.card.name}
+          {appTexts.common.backTo(purchase.card.name)}
         </Link>
       </div>
 

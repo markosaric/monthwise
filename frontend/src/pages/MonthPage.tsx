@@ -20,6 +20,11 @@ import { RevolvingMonthSection } from '@/components/revolving/RevolvingMonthSect
 import { Card, CardContent } from '@/components/ui/card'
 import { currentMonth, isYearMonth } from '@/lib/dates'
 import { formatCents } from '@/lib/money'
+import { appTexts } from '@/components/common/texts'
+import { cardPurchaseTexts } from '@/components/cardPurchases/texts'
+import { dashboardTexts as d } from '@/components/dashboard/texts'
+import { expenseTexts } from '@/components/expenses/texts'
+import { loanTexts } from '@/components/loans/texts'
 
 /** The Month screen; `/month` is the current month, `/month/yyyy-MM` another one (design refresh FR-15). */
 export function MonthPage() {
@@ -64,33 +69,33 @@ function MonthSummary({ month }: { month: string }) {
 
   return (
     <>
-      <StatGrid label="Key figures" five>
+      <StatGrid label={d.keyFigures} five>
         <StatCard
           icon={ArrowDownLeft}
           color={meaningColors.moneyIn}
-          label="Inputs"
-          detail={`${formatCents(inputs.receivedCents)} received`}
+          label={d.inputs}
+          detail={d.received(formatCents(inputs.receivedCents))}
           value={formatCents(inputs.totalCents)}
         />
         <StatCard
           icon={ArrowUpRight}
           color={meaningColors.moneyOut}
-          label="Outputs"
-          detail={`${formatCents(outputs.paidCents)} paid`}
+          label={d.outputs}
+          detail={d.paid(formatCents(outputs.paidCents))}
           value={formatCents(outputs.totalCents)}
         />
         <StatCard
           icon={Equal}
           color={meaningColors.highlight}
-          label="Month result"
+          label={d.monthResult}
           value={formatCents(report.monthResultCents)}
           problem={report.monthResultCents < 0}
         />
         <StatCard
           icon={overdue > 0 ? CircleAlert : Clock}
           color={overdue > 0 ? meaningColors.problem : meaningColors.expense}
-          label="Still to pay"
-          detail={overdue > 0 ? `${overdue} overdue` : undefined}
+          label={d.stillToPay}
+          detail={overdue > 0 ? d.overdueItems(overdue) : undefined}
           value={formatCents(outputs.expectedCents)}
           problem={overdue > 0}
         />
@@ -100,38 +105,38 @@ function MonthSummary({ month }: { month: string }) {
         <CardContent className="grid items-center gap-6 md:grid-cols-[1fr_auto]">
           <div className="flex flex-col gap-3">
             <Progress
-              label="Inputs received"
+              label={appTexts.month.inputsReceived}
               value={inputs.receivedCents}
               max={inputs.totalCents}
               color={meaningColors.moneyIn}
             />
             <Progress
-              label="Outputs paid"
+              label={appTexts.month.outputsPaid}
               value={outputs.paidCents}
               max={outputs.totalCents}
               color={meaningColors.moneyOut}
             />
           </div>
           <RingChart
-            label="This month's outputs by kind"
+            label={appTexts.month.outputsByKind}
             slices={[
               {
-                label: 'Bills',
+                label: expenseTexts.bills.title,
                 cents: bills?.totals.totalCents ?? 0,
                 color: meaningColors.moneyOut,
               },
               {
-                label: 'Expenses',
+                label: expenseTexts.expenses.title,
                 cents: expenses?.totals.fromAccountsCents ?? 0,
                 color: meaningColors.expense,
               },
               {
-                label: 'Loan payments',
+                label: loanTexts.expenses.title,
                 cents: loanPayments?.totals.totalCents ?? 0,
                 color: sectionColors.loans,
               },
               {
-                label: 'Card payments',
+                label: cardPurchaseTexts.monthTitle,
                 cents: (cardPayments?.totals.totalCents ?? 0) + (revolving?.totals.totalCents ?? 0),
                 color: sectionColors.cards,
               },
@@ -160,7 +165,7 @@ function Progress({
       <div className="flex items-center gap-3">
         <ProgressBar label={label} value={value} max={max} color={color} />
         <span className="shrink-0 text-xs whitespace-nowrap text-muted-foreground tabular-nums">
-          {formatCents(value)} of {formatCents(max)}
+          {appTexts.month.valueOf(formatCents(value), formatCents(max))}
         </span>
       </div>
     </div>

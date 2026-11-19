@@ -24,6 +24,7 @@ import {
 import { CardMonthInput } from './CardMonthInput'
 import { ListSelectWithAdd } from './ListSelectWithAdd'
 import { cardTexts } from './texts'
+import { appTexts } from '@/components/common/texts'
 
 const t = cardTexts
 const b = cardPurchaseTexts.billing
@@ -90,7 +91,7 @@ export function CardForm({
       await onSubmit(toCardRequest(values, editing))
     } catch (error) {
       if (!(error instanceof ApiError)) {
-        setFormError('Saving failed. Please try again.')
+        setFormError(appTexts.common.savingFailedRetry)
         return
       }
       let mapped = false
@@ -324,7 +325,7 @@ export function CardForm({
                 aria-invalid={!!errors.payingAccountId}
                 {...register('payingAccountId')}
               >
-                <option value="">Choose…</option>
+                <option value="">{appTexts.common.choose}</option>
                 {accountOptions.map((account) => (
                   <option key={account.id} value={account.id}>
                     {account.name}
@@ -465,7 +466,7 @@ export function CardForm({
               aria-invalid={!!errors.payingAccountId}
               {...register('payingAccountId')}
             >
-              <option value="">Choose…</option>
+              <option value="">{appTexts.common.choose}</option>
               {revolvingAccountOptions.map((account) => (
                 <option key={account.id} value={account.id}>
                   {account.name}

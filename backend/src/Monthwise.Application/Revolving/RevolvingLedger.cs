@@ -4,6 +4,7 @@ using Monthwise.Application.CashFlow;
 using Monthwise.Application.Common;
 using Monthwise.Application.Expenses;
 using Monthwise.Application.Loans;
+using Monthwise.Application.Localization;
 using Monthwise.Domain.CardPurchases;
 using Monthwise.Domain.Cards;
 using Monthwise.Domain.Common;
@@ -94,7 +95,7 @@ public sealed class RevolvingBook
     /// <summary>Revolving cards with debt: an ongoing transaction of the card (card settings FR-1).</summary>
     public IEnumerable<Guid> CardsWithDebt => _calculators.Values.Where(c => c.Debt.IsPositive).Select(c => c.Card.Id);
 
-    public NamedReference CardReference(Guid id) => new(id, _cards.TryGetValue(id, out var card) ? card.Name : "Unknown");
+    public NamedReference CardReference(Guid id) => new(id, _cards.TryGetValue(id, out var card) ? card.Name : ServerTexts.Unknown);
 
     public RevolvingBillResponse ToResponse(ScheduledRevolvingBill bill)
     {
@@ -211,7 +212,7 @@ public sealed class RevolvingBook
                 c.Charge.Date,
                 c.Description,
                 c.CategoryId is { } categoryId
-                    ? new NamedReference(categoryId, _categories.TryGetValue(categoryId, out var category) ? category.Name : "Unknown")
+                    ? new NamedReference(categoryId, _categories.TryGetValue(categoryId, out var category) ? PredefinedNames.Display(categoryId, category.Name) : ServerTexts.Unknown)
                     : null,
                 c.Charge.Amount.Cents))
             .ToList();
@@ -305,7 +306,7 @@ public sealed class RevolvingLedger(
         IEnumerable<CardPurchase> purchases)
     {
         var revolving = cards.Where(c => c.IsRevolving).Select(c => c.Id).ToHashSet();
-        var categoryNames = categories.ToDictionary(c => c.Id, c => c.Name);
+        var categoryNames = categories.ToDictionary(c => c.Id, c => PredefinedNames.Display(c.Id, c.Name));
         var fromBills = bills
             .Where(b => b.IsPaid && b.PaidFromId is { } id && revolving.Contains(id))
             .Select(b => new RevolvingChargeSource(

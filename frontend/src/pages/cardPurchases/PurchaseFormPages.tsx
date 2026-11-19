@@ -17,6 +17,7 @@ import { cardPurchaseTexts } from '@/components/cardPurchases/texts'
 import { todayIso } from '@/lib/dates'
 import { useReturnTo } from '@/lib/returnTo'
 import { PageHeader } from '@/pages/PageHeader'
+import { appTexts } from '@/components/common/texts'
 
 const t = cardPurchaseTexts
 
@@ -37,8 +38,8 @@ export function PurchaseNewPage() {
   const create = useCreateCardPurchase()
 
   if (isPending || revolving.isPending)
-    return <p className="text-sm text-muted-foreground">Loading…</p>
-  if (isError) return <p className="text-sm text-destructive">Cards could not be loaded.</p>
+    return <p className="text-sm text-muted-foreground">{appTexts.common.loading}</p>
+  if (isError) return <p className="text-sm text-destructive">{appTexts.loadErrors.cards}</p>
 
   const usable: PurchaseCardOption[] = [
     ...cards.filter((c) => c.canBeUsed && !c.needsBillingDetails),
@@ -79,8 +80,8 @@ export function PurchaseEditPage() {
   const { data: revolving } = useRevolvingCards()
   const update = useUpdateCardPurchase(id!)
 
-  if (isPending) return <p className="text-sm text-muted-foreground">Loading…</p>
-  if (isError) return <p className="text-sm text-destructive">This purchase could not be loaded.</p>
+  if (isPending) return <p className="text-sm text-muted-foreground">{appTexts.common.loading}</p>
+  if (isError) return <p className="text-sm text-destructive">{appTexts.loadErrors.purchase}</p>
 
   const { purchase } = details
   // The purchase's own card stays available even when it can no longer be used for new purchases.

@@ -24,6 +24,8 @@ import { IconTile } from '@/components/design/IconTile'
 import { expenseTexts } from '@/components/expenses/texts'
 import { loanTexts } from '@/components/loans/texts'
 import { PageHeader } from './PageHeader'
+import { appTexts } from '@/components/common/texts'
+import { LanguageSetting } from '@/components/common/LanguageSetting'
 
 interface Tile {
   to: string
@@ -34,8 +36,8 @@ interface Tile {
   count?: string
 }
 
-function counted(count: number | undefined, one: string, many: string): string | undefined {
-  return count === undefined ? undefined : `${count} ${count === 1 ? one : many}`
+function counted(count: number | undefined, text: (count: number) => string): string | undefined {
+  return count === undefined ? undefined : text(count)
 }
 
 /**
@@ -56,7 +58,7 @@ export function SettingsPage() {
 
   const groups: { title: string; tiles: Tile[] }[] = [
     {
-      title: 'Accounts',
+      title: appTexts.settings.groups.accounts,
       tiles: [
         {
           to: '/settings/cards',
@@ -64,12 +66,12 @@ export function SettingsPage() {
           color: sectionColors.cards,
           title: cardTexts.section,
           description: cardTexts.sectionDescription,
-          count: counted(cards?.length, 'card', 'cards'),
+          count: counted(cards?.length, appTexts.settings.counts.cards),
         },
       ],
     },
     {
-      title: 'Money in',
+      title: appTexts.settings.groups.moneyIn,
       tiles: [
         {
           to: '/settings/payers',
@@ -77,7 +79,7 @@ export function SettingsPage() {
           color: meaningColors.moneyIn,
           title: cashFlowTexts.payers.section,
           description: cashFlowTexts.payers.description,
-          count: counted(payers?.length, 'payer', 'payers'),
+          count: counted(payers?.length, appTexts.settings.counts.payers),
         },
         {
           to: '/settings/input-categories',
@@ -85,12 +87,12 @@ export function SettingsPage() {
           color: meaningColors.moneyIn,
           title: cashFlowTexts.categories.section,
           description: cashFlowTexts.categories.description,
-          count: counted(inputCategories?.length, 'category', 'categories'),
+          count: counted(inputCategories?.length, appTexts.settings.counts.categories),
         },
       ],
     },
     {
-      title: 'Money out',
+      title: appTexts.settings.groups.moneyOut,
       tiles: [
         {
           to: '/settings/expense-categories',
@@ -98,7 +100,7 @@ export function SettingsPage() {
           color: meaningColors.expense,
           title: expenseTexts.categories.section,
           description: expenseTexts.categories.description,
-          count: counted(expenseCategories?.length, 'category', 'categories'),
+          count: counted(expenseCategories?.length, appTexts.settings.counts.categories),
         },
         {
           to: '/settings/loan-categories',
@@ -106,18 +108,17 @@ export function SettingsPage() {
           color: sectionColors.loans,
           title: loanTexts.categories.section,
           description: loanTexts.categories.description,
-          count: counted(loanCategories?.length, 'category', 'categories'),
+          count: counted(loanCategories?.length, appTexts.settings.counts.categories),
         },
         {
           to: '/recurring-bills',
           icon: Repeat,
           color: sectionColors.month,
           title: expenseTexts.recurring.title,
-          description: 'Bills that arrive every month.',
+          description: appTexts.settings.recurringBillsDescription,
           count: counted(
             recurringBills?.filter((b) => b.isActive).length,
-            'active bill',
-            'active bills',
+            appTexts.settings.counts.activeBills,
           ),
         },
       ],
@@ -143,7 +144,7 @@ export function SettingsPage() {
 
   return (
     <div className="flex max-w-5xl flex-col gap-5">
-      <PageHeader title="Settings" flush />
+      <PageHeader title={appTexts.nav.settings} flush />
       {groups.map((group) => (
         <section key={group.title} aria-label={group.title} className="flex flex-col gap-2">
           <h2 className="font-sans text-xs font-semibold tracking-wider text-muted-foreground uppercase">
@@ -172,9 +173,10 @@ export function SettingsPage() {
           </ul>
         </section>
       ))}
+      <LanguageSetting />
       {health?.version && (
         <p className="text-xs text-muted-foreground">
-          Monthwise version {health.version} · time zone {health.timeZone}
+          {appTexts.settings.version(health.version, health.timeZone)}
         </p>
       )}
     </div>

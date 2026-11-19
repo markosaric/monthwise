@@ -1,3 +1,5 @@
+import { appTexts } from '@/components/common/texts'
+import { dateLocale } from '@/i18n/language'
 import { APP_LOCALE } from './money'
 
 /** A local calendar date as ISO "yyyy-MM-dd" (no time zone shift). */
@@ -45,10 +47,10 @@ export function lastDayOf(yearMonth: string): string {
   return `${yearMonth}-${String(new Date(year, month, 0).getDate()).padStart(2, '0')}`
 }
 
-/** "2026-10" → "October 2026". */
+/** "2026-10" → "October 2026", or "listopad 2026." in Croatian (croatian-language.md FR-5). */
 export function formatYearMonth(yearMonth: string, style: 'long' | 'short' = 'long'): string {
   const [year, month] = parts(yearMonth)
-  return new Intl.DateTimeFormat('en-GB', { month: style, year: 'numeric' }).format(
+  return new Intl.DateTimeFormat(dateLocale(), { month: style, year: 'numeric' }).format(
     new Date(year, month - 1, 1),
   )
 }
@@ -84,7 +86,7 @@ export function yearMonthToCardMonth(yearMonth: string): string {
 }
 
 /** The message for a date field that is filled in but is not a complete, existing date. */
-export const dateEntryMessage = 'Enter the date as DD.MM.YYYY, e.g. 16.11.2026.'
+export const dateEntryMessage = appTexts.common.dateEntry
 
 /**
  * Formats what was typed or pasted into a date field as "DD.MM.YYYY": keeps up to 8 digits and

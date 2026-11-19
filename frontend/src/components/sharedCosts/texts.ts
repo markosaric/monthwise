@@ -1,10 +1,12 @@
 import { formatCents } from '@/lib/money'
+import { localized } from '@/i18n/texts'
+import { sharedCostTextsHr } from './texts.hr'
 
 /**
- * Shared cost labels and messages in one place, so they can be translated to Croatian later (shared
+ * Shared cost labels and messages in one place, in English and Croatian (croatian-language.md) (shared
  * bills NFR-5).
  */
-export const sharedCostTexts = {
+const en = {
   share: {
     shared: 'Shared',
     sharedHint: 'Split into equal shares with one participant, who pays their part back.',
@@ -129,3 +131,7 @@ export const sharedCostTexts = {
     participantSharesInvalid: 'The participant pays at least one share and fewer than all of them.',
   },
 }
+
+export type SharedCostTextsEn = typeof en
+
+export const sharedCostTexts = localized(en, sharedCostTextsHr)

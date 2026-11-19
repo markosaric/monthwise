@@ -22,6 +22,7 @@ import { centsToEuroInput, formatCents, parseEuroInput } from '@/lib/money'
 import { onlyPrimaryAccountId, payingAccounts } from './loanFormModel'
 import { messageOf } from './messageOf'
 import { loanTexts } from './texts'
+import { appTexts } from '@/components/common/texts'
 
 const t = loanTexts
 
@@ -217,7 +218,7 @@ export function PaidDialog({
           value={chosenAccountId}
           onChange={(e) => setAccountId(e.target.value)}
         >
-          <option value="">Choose…</option>
+          <option value="">{appTexts.common.choose}</option>
           {options.map((account) => (
             <option key={account.id} value={account.id}>
               {account.name}
