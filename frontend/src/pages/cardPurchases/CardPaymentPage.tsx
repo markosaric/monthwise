@@ -9,6 +9,7 @@ import { formatYearMonth, isYearMonth } from '@/lib/dates'
 import { formatCents } from '@/lib/money'
 import { cn } from '@/lib/utils'
 import { PageHeader } from '@/pages/PageHeader'
+import { appTexts } from '@/components/common/texts'
 
 const t = cardPurchaseTexts
 
@@ -22,9 +23,8 @@ export function CardPaymentPage() {
   const { data, isPending, isError } = useCardPayment(cardId, valid ? month : undefined)
   if (!valid) return <Navigate to={`/cards/${cardId}`} replace />
 
-  if (isPending) return <p className="text-sm text-muted-foreground">Loading…</p>
-  if (isError)
-    return <p className="text-sm text-destructive">This card payment could not be loaded.</p>
+  if (isPending) return <p className="text-sm text-muted-foreground">{appTexts.common.loading}</p>
+  if (isError) return <p className="text-sm text-destructive">{appTexts.loadErrors.cardPayment}</p>
   return <CardPaymentView details={data} />
 }
 
@@ -92,7 +92,7 @@ function CardPaymentView({ details }: { details: CardPaymentDetails }) {
           </CardContent>
         </Card>
         <Link to={`/cards/${payment.cardId}`} className="text-sm text-muted-foreground underline">
-          Back to {payment.cardName}
+          {appTexts.common.backTo(payment.cardName)}
         </Link>
       </div>
     </>

@@ -9,9 +9,11 @@ Architecture decisions: [docs/decisions](docs/decisions/README.md). Working prac
 
 ## User manual
 
-A short guide to every screen, with screenshots of made-up data:
-[docs/user-manual/index.html](docs/user-manual/index.html). GitHub shows HTML files as source, so
-open the file in a browser from your clone (or download it with its `images/` folder).
+A short guide to every screen, with screenshots of made-up data, in English
+([docs/user-manual/index.html](docs/user-manual/index.html)) and Croatian
+([docs/user-manual/hr/index.html](docs/user-manual/hr/index.html)). GitHub shows HTML files as
+source, so open the file in a browser from your clone (or download it with its `images/` folder).
+The app itself is in English or Croatian, chosen in Settings.
 
 **Dashboard**: how the current month is going, what is overdue and what is coming up.
 
@@ -67,7 +69,7 @@ plan of the branch making the change links and repeats that appendix.
 | [feature-requirements/](docs/feature-requirements) | What a feature must do: attributes, functional and non-functional requirements, acceptance criteria; later changes as appendices | Before the plan, one per feature |
 | [plans/](docs/plans) | How a feature is built: scope, design, steps, tests; links its requirements ([template](docs/plans/_TEMPLATE.md)) | After the requirements, one per branch |
 | [decisions/](docs/decisions/README.md) | Architecture decision records (ADRs): one decision with its context and consequences | When a choice shapes the code base beyond one feature |
-| [user-manual/](docs/user-manual/index.html) | Short user manual of the app with screenshots (made-up data) | Updated when a screen changes noticeably |
+| [user-manual/](docs/user-manual/index.html) | Short user manual of the app with screenshots (made-up data), in English and in Croatian ([hr/](docs/user-manual/hr/index.html)) | Updated in both languages when a screen changes noticeably |
 
 ## Initial development setup
 

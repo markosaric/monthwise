@@ -1,5 +1,6 @@
 import type { FieldValues, Path, UseFormSetError } from 'react-hook-form'
 import { ApiError } from '@/api/cards'
+import { appTexts } from '@/components/common/texts'
 
 /**
  * Shows API validation errors next to their fields; returns the message for the form when none of
@@ -11,7 +12,7 @@ export function applyApiErrors<T extends FieldValues>(
   setError: UseFormSetError<T>,
   fieldMap: Record<string, keyof T> = {},
 ): string | null {
-  if (!(error instanceof ApiError)) return 'Saving failed. Please try again.'
+  if (!(error instanceof ApiError)) return appTexts.common.savingFailedRetry
   let mapped = false
   for (const [field, messages] of Object.entries(error.fieldErrors)) {
     const formField = (fieldMap[field] ?? field) as string

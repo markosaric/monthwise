@@ -1,10 +1,11 @@
 import type { BillState } from '@/api/expenses'
+import { localized } from '@/i18n/texts'
+import { expenseTextsHr } from './texts.hr'
 
 /**
- * Bill, expense and expense category labels and messages in one place, so they can be translated to
- * Croatian later (bills and expenses NFR-5).
+ * Bill, expense and expense category labels and messages in one place, in English and Croatian (croatian-language.md) (bills and expenses NFR-5).
  */
-export const expenseTexts = {
+const en = {
   bills: {
     title: 'Bills',
     empty: 'No bills this month yet.',
@@ -165,3 +166,7 @@ export const expenseTexts = {
     saved: 'Category saved.',
   },
 } as const
+
+export type ExpenseTextsEn = typeof en
+
+export const expenseTexts = localized(en, expenseTextsHr)

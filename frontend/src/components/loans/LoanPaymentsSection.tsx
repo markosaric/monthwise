@@ -7,6 +7,7 @@ import { formatCents } from '@/lib/money'
 import { cn } from '@/lib/utils'
 import { PaymentRow } from './PaymentRow'
 import { loanTexts } from './texts'
+import { appTexts } from '@/components/common/texts'
 
 const t = loanTexts.expenses
 
@@ -26,8 +27,8 @@ export function LoanPaymentsSection({ month }: { month: string }) {
       defaultOpen={!data || all === 0 || paid < all}
     >
       <div className="flex flex-col gap-3">
-        {isPending && <p className="text-sm text-muted-foreground">Loading…</p>}
-        {isError && <p className="text-sm text-destructive">Loan payments could not be loaded.</p>}
+        {isPending && <p className="text-sm text-muted-foreground">{appTexts.common.loading}</p>}
+        {isError && <p className="text-sm text-destructive">{appTexts.loadErrors.loanPayments}</p>}
         {data && data.payments.length === 0 && (
           <p className="text-sm text-muted-foreground">{t.empty}</p>
         )}

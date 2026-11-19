@@ -10,6 +10,7 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 import { sectionColors } from '@/components/design/colors'
+import { appTexts } from '@/components/common/texts'
 
 export interface NavItem {
   to: string
@@ -24,28 +25,28 @@ export interface NavItem {
 export const navItems: NavItem[] = [
   {
     to: '/',
-    label: 'Dashboard',
-    shortLabel: 'Home',
+    label: appTexts.nav.dashboard,
+    shortLabel: appTexts.nav.home,
     icon: LayoutDashboard,
     color: sectionColors.dashboard,
   },
-  { to: '/month', label: 'Month', icon: CalendarDays, color: sectionColors.month },
+  { to: '/month', label: appTexts.nav.month, icon: CalendarDays, color: sectionColors.month },
   {
     to: '/cash-flow',
-    label: 'Cash flow',
-    shortLabel: 'Cash',
+    label: appTexts.nav.cashFlow,
+    shortLabel: appTexts.nav.cashShort,
     icon: ChartColumn,
     color: sectionColors.cashflow,
   },
-  { to: '/cards', label: 'Cards', icon: CreditCard, color: sectionColors.cards },
-  { to: '/loans', label: 'Loans', icon: Landmark, color: sectionColors.loans },
+  { to: '/cards', label: appTexts.nav.cards, icon: CreditCard, color: sectionColors.cards },
+  { to: '/loans', label: appTexts.nav.loans, icon: Landmark, color: sectionColors.loans },
   {
     to: '/shared-costs',
-    label: 'Shared costs',
-    shortLabel: 'Shared',
+    label: appTexts.nav.sharedCosts,
+    shortLabel: appTexts.nav.sharedShort,
     icon: Users,
     color: sectionColors.shared,
   },
-  { to: '/savings', label: 'Savings', icon: PiggyBank, color: sectionColors.savings },
-  { to: '/settings', label: 'Settings', icon: Settings, color: sectionColors.settings },
+  { to: '/savings', label: appTexts.nav.savings, icon: PiggyBank, color: sectionColors.savings },
+  { to: '/settings', label: appTexts.nav.settings, icon: Settings, color: sectionColors.settings },
 ]

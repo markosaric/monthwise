@@ -15,6 +15,8 @@ import { sharedCostTexts } from '@/components/sharedCosts/texts'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { formatYearMonth, isYearMonth } from '@/lib/dates'
 import { formatCents } from '@/lib/money'
+import { appTexts } from '@/components/common/texts'
+import { dashboardTexts } from '@/components/dashboard/texts'
 
 const t = cashFlowTexts.report
 
@@ -31,8 +33,8 @@ export function MonthlyReportPage() {
         basePath="/cash-flow"
         title={`${t.title}: ${formatYearMonth(yearMonth)}`}
       />
-      {isPending && <p className="text-sm text-muted-foreground">Loading…</p>}
-      {isError && <p className="text-sm text-destructive">The report could not be loaded.</p>}
+      {isPending && <p className="text-sm text-muted-foreground">{appTexts.common.loading}</p>}
+      {isError && <p className="text-sm text-destructive">{appTexts.loadErrors.report}</p>}
       {report && <Report report={report} />}
     </div>
   )
@@ -43,7 +45,7 @@ function Report({ report }: { report: MonthlyReport }) {
   const outputs = report.outputs
   return (
     <div className="flex max-w-5xl flex-col gap-4">
-      <StatGrid label="Key figures">
+      <StatGrid label={appTexts.common.keyFigures}>
         <StatCard
           icon={ArrowDownLeft}
           color={meaningColors.moneyIn}
@@ -60,7 +62,7 @@ function Report({ report }: { report: MonthlyReport }) {
         <StatCard
           icon={ArrowUpRight}
           color={meaningColors.moneyOut}
-          label="Outputs"
+          label={cashFlowTexts.cashFlow.outputs}
           value={formatCents(outputs.totals.totalCents)}
           pill={
             <ChangePill
@@ -73,7 +75,7 @@ function Report({ report }: { report: MonthlyReport }) {
         <StatCard
           icon={Equal}
           color={sectionColors.cashflow}
-          label="Month result"
+          label={dashboardTexts.monthResult}
           value={formatCents(report.monthResultCents)}
           problem={report.monthResultCents < 0}
           pill={
@@ -88,11 +90,13 @@ function Report({ report }: { report: MonthlyReport }) {
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle className="text-base font-semibold">Inputs by category</CardTitle>
+            <CardTitle className="text-base font-semibold">
+              {appTexts.report.inputsByCategory}
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <RingChart
-              label="Inputs by category"
+              label={appTexts.report.inputsByCategory}
               slices={report.byCategory.map((g, i) => ({
                 label: g.name,
                 cents: g.totals.totalCents,
@@ -103,11 +107,11 @@ function Report({ report }: { report: MonthlyReport }) {
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle className="text-base font-semibold">Outputs by category</CardTitle>
+            <CardTitle className="text-base font-semibold">{t.outputsByCategory}</CardTitle>
           </CardHeader>
           <CardContent>
             <RingChart
-              label="Outputs by category"
+              label={t.outputsByCategory}
               slices={outputs.byCategory.map((g, i) => ({
                 label: g.name,
                 cents: g.totals.totalCents,

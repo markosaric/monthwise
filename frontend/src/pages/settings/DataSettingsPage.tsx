@@ -20,6 +20,7 @@ import { NativeSelect } from '@/components/ui/native-select'
 import { Switch } from '@/components/ui/switch'
 import { cn } from '@/lib/utils'
 import { PageHeader } from '@/pages/PageHeader'
+import { appTexts } from '@/components/common/texts'
 
 const cardClass =
   'flex flex-col gap-3 rounded-xl bg-card p-4 shadow-[0_2px_8px_rgb(20_24_40/0.04)] ring-1 ring-foreground/8'
@@ -37,10 +38,8 @@ export function DataSettingsPage() {
     <>
       <PageHeader title={t.section} description={t.description} />
       <div className="flex max-w-3xl flex-col gap-4">
-        {isPending && <p className="text-sm text-muted-foreground">Loading…</p>}
-        {isError && (
-          <p className="text-sm text-destructive">Data and backups could not be loaded.</p>
-        )}
+        {isPending && <p className="text-sm text-muted-foreground">{appTexts.common.loading}</p>}
+        {isError && <p className="text-sm text-destructive">{appTexts.loadErrors.data}</p>}
         {data && (
           <>
             <section aria-label={t.section} className={cardClass}>
@@ -131,7 +130,7 @@ function ReminderSetting({
       await update.mutateAsync({ enabled, intervalDays })
       toast.success(t.reminder.saved)
     } catch {
-      toast.error('Saving failed.')
+      toast.error(appTexts.common.savingFailed)
     }
   }
 
@@ -200,7 +199,7 @@ function History() {
                 item.fileName,
                 item.fileCreatedAt && `${t.dataFrom} ${formatDateTime(item.fileCreatedAt)}`,
                 `Monthwise ${item.release}`,
-                `${t.history.by} ${item.userName ?? '—'}`,
+                t.history.byUser(item.userName ?? '—'),
               ]
                 .filter(Boolean)
                 .join(' · ')}

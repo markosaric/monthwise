@@ -2,6 +2,7 @@ import { ChevronDown, type LucideIcon } from 'lucide-react'
 import { useId, useState, type ReactNode } from 'react'
 import { cn } from '@/lib/utils'
 import { IconTile } from './IconTile'
+import { appTexts } from '@/components/common/texts'
 
 /**
  * A part of a screen in its own card with a coloured left edge and icon (FR-15). The header shows
@@ -49,7 +50,7 @@ export function SectionCard({
             onClick={() => setToggled(!open)}
             aria-expanded={open}
             aria-controls={contentId}
-            aria-label={open ? `Collapse ${title}` : `Expand ${title}`}
+            aria-label={open ? appTexts.common.collapse(title) : appTexts.common.expand(title)}
             className="grid size-7 place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
           >
             <ChevronDown className={cn('size-4 transition-transform', !open && '-rotate-90')} />

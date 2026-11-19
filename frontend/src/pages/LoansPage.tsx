@@ -14,6 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { formatCents } from '@/lib/money'
 import { cn } from '@/lib/utils'
 import { PageHeader } from './PageHeader'
+import { appTexts } from '@/components/common/texts'
 
 const t = loanTexts
 const filters: LoanListFilter[] = ['Active', 'Closed']
@@ -36,7 +37,7 @@ export function LoansPage() {
         <PageHeader title={t.title} flush />
         <div
           role="group"
-          aria-label="Show"
+          aria-label={appTexts.common.show}
           className="ml-auto inline-flex rounded-lg border bg-card p-0.5"
         >
           {filters.map((f) => (
@@ -63,7 +64,7 @@ export function LoansPage() {
       </div>
 
       {active.length > 0 && (
-        <StatGrid label="Key figures">
+        <StatGrid label={appTexts.common.keyFigures}>
           <StatCard
             icon={Hash}
             color={sectionColors.loans}
@@ -92,8 +93,8 @@ export function LoansPage() {
         </StatGrid>
       )}
 
-      {isPending && <p className="text-sm text-muted-foreground">Loading…</p>}
-      {isError && <p className="text-sm text-destructive">Loans could not be loaded.</p>}
+      {isPending && <p className="text-sm text-muted-foreground">{appTexts.common.loading}</p>}
+      {isError && <p className="text-sm text-destructive">{appTexts.loadErrors.loans}</p>}
       {loans && loans.length === 0 && (
         <div className="flex flex-col items-start gap-3">
           <p className="text-sm text-muted-foreground">
@@ -204,7 +205,10 @@ function PaidAndRemaining({ loans }: { loans: Loan[] }) {
             )
           })}
         </ul>
-        <ul className="flex gap-4 text-sm text-muted-foreground" aria-label="Legend">
+        <ul
+          className="flex gap-4 text-sm text-muted-foreground"
+          aria-label={appTexts.common.legend}
+        >
           <li className="flex items-center gap-2">
             <span
               className="size-3 rounded-sm"

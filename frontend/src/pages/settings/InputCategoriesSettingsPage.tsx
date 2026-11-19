@@ -13,12 +13,13 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { PageHeader } from '@/pages/PageHeader'
+import { appTexts } from '@/components/common/texts'
 
 const t = cashFlowTexts.categories
 
 function messageOf(error: unknown): string {
   if (error instanceof ApiError) return Object.values(error.fieldErrors)[0]?.[0] ?? error.message
-  return 'Saving failed.'
+  return appTexts.common.savingFailed
 }
 
 /** Settings → Input categories: add, rename, hide, show and delete unused ones (FR-6). */
@@ -60,8 +61,8 @@ export function InputCategoriesSettingsPage() {
           {error && <p className="text-sm text-destructive">{error}</p>}
         </form>
         <p className="text-xs text-muted-foreground">{t.usedHint}</p>
-        {isPending && <p className="text-sm text-muted-foreground">Loading…</p>}
-        {isError && <p className="text-sm text-destructive">Categories could not be loaded.</p>}
+        {isPending && <p className="text-sm text-muted-foreground">{appTexts.common.loading}</p>}
+        {isError && <p className="text-sm text-destructive">{appTexts.loadErrors.categories}</p>}
         <div className="flex flex-col gap-2">
           {categories?.map((category) => (
             <CategoryRow key={category.id} category={category} />

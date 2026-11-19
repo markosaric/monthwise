@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Link } from 'react-router'
 import { tint } from './colors'
 import { useLongPress } from './useLongPress'
+import { appTexts } from '@/components/common/texts'
 
 /** How long the pointer must rest on a quick action before its label appears (FR-14). */
 export const QUICK_ACTION_LABEL_DELAY_MS = 1000
@@ -57,7 +58,7 @@ export function QuickActionButton({
 export function QuickActionRow({ children }: { children: React.ReactNode }) {
   return (
     <Tooltip.Provider delayDuration={QUICK_ACTION_LABEL_DELAY_MS}>
-      <nav aria-label="Quick actions" className="flex gap-3 overflow-x-auto pb-1">
+      <nav aria-label={appTexts.common.quickActions} className="flex gap-3 overflow-x-auto pb-1">
         {children}
       </nav>
     </Tooltip.Provider>

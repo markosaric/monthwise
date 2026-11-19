@@ -21,6 +21,7 @@ import { ContributionGroup } from '@/components/sharedCosts/ContributionGroup'
 import { formatCents } from '@/lib/money'
 import { cn } from '@/lib/utils'
 import { cashFlowTexts } from './texts'
+import { appTexts } from '@/components/common/texts'
 
 const t = cashFlowTexts
 
@@ -51,8 +52,8 @@ export function IncomeSection({ month }: { month: string }) {
       }
     >
       <div className="flex flex-col gap-3">
-        {isPending && <p className="text-sm text-muted-foreground">Loading…</p>}
-        {isError && <p className="text-sm text-destructive">Inputs could not be loaded.</p>}
+        {isPending && <p className="text-sm text-muted-foreground">{appTexts.common.loading}</p>}
+        {isError && <p className="text-sm text-destructive">{appTexts.loadErrors.inputs}</p>}
         {data && data.inputs.length === 0 && (
           <p className="text-sm text-muted-foreground">{t.emptyMonth}</p>
         )}
@@ -112,7 +113,7 @@ function InputRow({ month, entry }: { month: string; entry: InputEntry }) {
     try {
       await setReceived.mutateAsync({ ref: entryRef(entry), received })
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Saving failed.')
+      toast.error(error instanceof Error ? error.message : appTexts.common.savingFailed)
     }
   }
 

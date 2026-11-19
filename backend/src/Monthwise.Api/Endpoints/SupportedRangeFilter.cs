@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Concurrent;
 using System.Reflection;
 using System.Text.Json;
+using Monthwise.Application.Localization;
 using Monthwise.Domain.Common;
 
 namespace Monthwise.Api.Endpoints;
@@ -54,7 +55,7 @@ internal static class SupportedRangeFilter
             case DateOnly date:
                 if (!SupportedRange.Contains(date))
                 {
-                    errors[field] = [SupportedRange.DateMessage];
+                    errors[field] = [ServerTexts.Translate(SupportedRange.DateMessage)];
                 }
                 return;
             case string:

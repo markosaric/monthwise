@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils'
 import { useMenuCollapsed } from './menuState'
 import { navItems } from './navigation'
 import { SystemStatusAlert } from './SystemStatusAlert'
+import { appTexts } from '@/components/common/texts'
 
 /**
  * Collapsible left menu with coloured icons on desktop and tablet, bottom navigation on phones
@@ -43,13 +44,13 @@ export function AppLayout() {
             {!collapsed && (
               <span className="font-heading text-lg font-bold tracking-tight">Monthwise</span>
             )}
-            <MenuTooltip label={collapsed ? 'Expand menu' : undefined}>
+            <MenuTooltip label={collapsed ? appTexts.layout.expandMenu : undefined}>
               <button
                 type="button"
                 onClick={toggle}
                 aria-expanded={!collapsed}
                 aria-controls="main-menu"
-                aria-label={collapsed ? 'Expand menu' : 'Collapse menu'}
+                aria-label={collapsed ? appTexts.layout.expandMenu : appTexts.layout.collapseMenu}
                 className={cn(
                   'grid size-8 shrink-0 place-items-center rounded-md border text-muted-foreground hover:bg-muted hover:text-foreground',
                   !collapsed && 'ml-auto',
@@ -64,7 +65,11 @@ export function AppLayout() {
             </MenuTooltip>
           </div>
 
-          <nav id="main-menu" aria-label="Main" className="flex flex-col gap-0.5 px-2.5">
+          <nav
+            id="main-menu"
+            aria-label={appTexts.layout.mainMenu}
+            className="flex flex-col gap-0.5 px-2.5"
+          >
             {navItems.map(({ to, label, icon: Icon, color }) => (
               <MenuTooltip key={to} label={collapsed ? label : undefined}>
                 <NavLink
@@ -120,7 +125,7 @@ export function AppLayout() {
         <div className="fixed inset-x-0 bottom-0 z-40 md:hidden">
           <SystemStatusAlert variant="bar" />
           <nav
-            aria-label="Main mobile"
+            aria-label={appTexts.layout.mobileMenu}
             className="grid grid-cols-8 border-t bg-card pb-[env(safe-area-inset-bottom)]"
           >
             {navItems.map(({ to, label, shortLabel, icon: Icon, color }) => (

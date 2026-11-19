@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { cardTexts } from './texts'
+import { appTexts } from '@/components/common/texts'
 
 /**
  * Confirmation for block, unblock, expire and archive. Names the card in the title, warns when the
@@ -55,7 +56,7 @@ export function CardActionDialog({
       setReason('')
       onOpenChange(false)
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Something went wrong.')
+      setError(e instanceof Error ? e.message : appTexts.common.somethingWentWrong)
     } finally {
       setBusy(false)
     }

@@ -18,6 +18,7 @@ import {
   type InputFormValues,
 } from './inputFormModel'
 import { cashFlowTexts } from './texts'
+import { appTexts } from '@/components/common/texts'
 
 const t = cashFlowTexts
 
@@ -79,7 +80,7 @@ export function InputForm({
       await onSubmit(values)
     } catch (error) {
       if (!(error instanceof ApiError)) {
-        setFormError('Saving failed. Please try again.')
+        setFormError(appTexts.common.savingFailedRetry)
         return
       }
       let mapped = false
@@ -125,11 +126,12 @@ export function InputForm({
           error={errors.accountId?.message}
         >
           <NativeSelect id="accountId" aria-invalid={!!errors.accountId} {...register('accountId')}>
-            <option value="">Choose…</option>
+            <option value="">{appTexts.common.choose}</option>
             {accounts.map((account) => (
               <option key={account.id} value={account.id}>
-                {account.name}
-                {'isPrimary' in account && account.isPrimary ? ' (primary)' : ''}
+                {'isPrimary' in account && account.isPrimary
+                  ? t.fields.primaryAccount(account.name)
+                  : account.name}
               </option>
             ))}
           </NativeSelect>
@@ -140,7 +142,7 @@ export function InputForm({
             aria-invalid={!!errors.categoryId}
             {...register('categoryId')}
           >
-            <option value="">Choose…</option>
+            <option value="">{appTexts.common.choose}</option>
             {categoryOptions.map((category) => (
               <option key={category.id} value={category.id}>
                 {category.name}

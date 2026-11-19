@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { PageHeader } from '@/pages/PageHeader'
+import { appTexts } from '@/components/common/texts'
 
 const t = loanTexts.categories
 
@@ -76,8 +77,8 @@ export function LoanCategoriesSettingsPage() {
           {error && <p className="text-sm text-destructive">{error}</p>}
         </form>
         <p className="text-xs text-muted-foreground">{t.usedHint}</p>
-        {isPending && <p className="text-sm text-muted-foreground">Loading…</p>}
-        {isError && <p className="text-sm text-destructive">Categories could not be loaded.</p>}
+        {isPending && <p className="text-sm text-muted-foreground">{appTexts.common.loading}</p>}
+        {isError && <p className="text-sm text-destructive">{appTexts.loadErrors.categories}</p>}
         <div className="flex flex-col gap-3">
           {categories?.map((category) => (
             <CategoryCard key={category.id} category={category} />

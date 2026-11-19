@@ -22,6 +22,7 @@ import { Card, CardAction, CardContent, CardHeader, CardTitle } from '@/componen
 import { currentMonth } from '@/lib/dates'
 import { formatCents } from '@/lib/money'
 import { PageHeader } from './PageHeader'
+import { appTexts } from '@/components/common/texts'
 
 const t = cardPurchaseTexts
 
@@ -50,31 +51,31 @@ export function CardsPage() {
   return (
     <div className="flex max-w-6xl flex-col gap-4">
       <PageHeader title={t.screen} flush />
-      <StatGrid label="Key figures" five={hasRevolving}>
+      <StatGrid label={appTexts.common.keyFigures} five={hasRevolving}>
         <StatCard
           icon={Wallet}
           color={sectionColors.cards}
-          label="Current balance"
+          label={appTexts.cardsScreen.currentBalance}
           value={formatCents(current)}
           problem={current < 0}
         />
         <StatCard
           icon={CalendarClock}
           color={sectionColors.cards}
-          label="Expected at end of month"
+          label={appTexts.cardsScreen.expectedBalance}
           value={formatCents(expected)}
           muted
         />
         <StatCard
           icon={CreditCard}
           color={meaningColors.moneyOut}
-          label="Card payments this month"
+          label={appTexts.cardsScreen.cardPaymentsThisMonth}
           value={formatCents(payments?.totals.totalCents ?? 0)}
         />
         <StatCard
           icon={Hourglass}
           color={meaningColors.expense}
-          label="Installments left"
+          label={appTexts.cardsScreen.installmentsLeft}
           value={formatCents(installmentsLeft)}
         />
         {hasRevolving && (
@@ -97,22 +98,26 @@ export function CardsPage() {
           <Card>
             <CardHeader>
               <CardTitle className="text-base font-semibold">
-                Current and expected balance
+                {appTexts.cardsScreen.balanceChartTitle}
               </CardTitle>
             </CardHeader>
             <CardContent>
               <PairedBarChart
-                label="Current and expected end-of-month balance per account"
+                label={appTexts.cardsScreen.balanceChart}
                 rows={balances.map((b) => ({
                   label: listed.find((c) => c.id === b.accountId)?.name ?? '',
                   current: b.currentBalanceCents,
                   expected: b.expectedBalanceCents,
                 }))}
                 series={[
-                  { key: 'current', label: 'Current', color: sectionColors.cards },
+                  {
+                    key: 'current',
+                    label: appTexts.cardsScreen.current,
+                    color: sectionColors.cards,
+                  },
                   {
                     key: 'expected',
-                    label: 'Expected at end of month',
+                    label: appTexts.cardsScreen.expectedBalance,
                     color: tint(sectionColors.cards, 40),
                   },
                 ]}
@@ -126,7 +131,9 @@ export function CardsPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base font-semibold">Cards with installments</CardTitle>
+          <CardTitle className="text-base font-semibold">
+            {appTexts.cardsScreen.installmentCards}
+          </CardTitle>
           <CardAction className="flex flex-wrap gap-2">
             <Button asChild size="sm" variant="ghost">
               <Link to="/settings/cards">{t.manageCards}</Link>
@@ -139,8 +146,8 @@ export function CardsPage() {
           </CardAction>
         </CardHeader>
         <CardContent className="flex flex-col gap-2">
-          {isPending && <p className="text-sm text-muted-foreground">Loading…</p>}
-          {isError && <p className="text-sm text-destructive">Cards could not be loaded.</p>}
+          {isPending && <p className="text-sm text-muted-foreground">{appTexts.common.loading}</p>}
+          {isError && <p className="text-sm text-destructive">{appTexts.loadErrors.cards}</p>}
           {cards?.length === 0 && (
             <div className="flex flex-col items-start gap-3 rounded-lg border border-dashed p-4">
               <p className="text-sm text-muted-foreground">{t.noCards}</p>

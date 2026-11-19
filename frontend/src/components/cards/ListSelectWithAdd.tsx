@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { NativeSelect } from '@/components/ui/native-select'
 import { cardTexts } from './texts'
+import { appTexts } from '@/components/common/texts'
 
 const addNewValue = '__add__'
 
@@ -36,7 +37,9 @@ export function ListSelectWithAdd({
       setName('')
     } catch (e) {
       setError(
-        e instanceof ApiError ? (e.fieldErrors.name?.[0] ?? e.message) : 'Could not add the entry.',
+        e instanceof ApiError
+          ? (e.fieldErrors.name?.[0] ?? e.message)
+          : appTexts.common.couldNotAdd,
       )
     }
   }
@@ -49,13 +52,15 @@ export function ListSelectWithAdd({
             id={id}
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder={kind === 'banks' ? 'New bank' : 'New issuer'}
+            placeholder={
+              kind === 'banks' ? appTexts.cardsScreen.newBank : appTexts.cardsScreen.newIssuer
+            }
             maxLength={50}
             aria-invalid={error !== null}
             autoFocus
           />
           <Button type="button" onClick={add} disabled={name.trim() === '' || addEntry.isPending}>
-            Add
+            {appTexts.common.add}
           </Button>
           <Button type="button" variant="ghost" onClick={() => setAdding(false)}>
             {cardTexts.actions.cancel}
@@ -79,7 +84,7 @@ export function ListSelectWithAdd({
         }
       }}
     >
-      <option value="">Choose…</option>
+      <option value="">{appTexts.common.choose}</option>
       {entries.map((entry) => (
         <option key={entry.id} value={entry.id}>
           {entry.name}

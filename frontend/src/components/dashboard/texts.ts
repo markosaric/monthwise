@@ -1,5 +1,7 @@
+import { localized } from '@/i18n/texts'
+import { dashboardTextsHr } from './texts.hr'
 /** Texts of the Dashboard (design refresh FR-9 to FR-11, FR-14). */
-export const dashboardTexts = {
+const en = {
   subtitle: 'How is this month going?',
   quickActions: {
     addIncome: 'Add income',
@@ -61,3 +63,7 @@ export const dashboardTexts = {
   },
   loadError: 'The Dashboard could not be loaded.',
 }
+
+export type DashboardTextsEn = typeof en
+
+export const dashboardTexts = localized(en, dashboardTextsHr)

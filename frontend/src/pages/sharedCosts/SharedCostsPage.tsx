@@ -30,6 +30,7 @@ import { Switch } from '@/components/ui/switch'
 import { currentMonth, formatYearMonth, isYearMonth } from '@/lib/dates'
 import { formatCents } from '@/lib/money'
 import { cn } from '@/lib/utils'
+import { appTexts } from '@/components/common/texts'
 
 const t = sharedCostTexts.screen
 
@@ -64,8 +65,8 @@ export function SharedCostsPage() {
  */
 function Overview({ month }: { month: string }) {
   const { data, isPending, isError } = useSharedCosts(month)
-  if (isPending) return <p className="text-sm text-muted-foreground">Loading…</p>
-  if (isError) return <p className="text-sm text-destructive">Shared costs could not be loaded.</p>
+  if (isPending) return <p className="text-sm text-muted-foreground">{appTexts.common.loading}</p>
+  if (isError) return <p className="text-sm text-destructive">{appTexts.loadErrors.sharedCosts}</p>
   if (data.participants.length === 0)
     return <p className="text-sm text-muted-foreground">{t.noParticipants}</p>
 
@@ -76,7 +77,7 @@ function Overview({ month }: { month: string }) {
 
   return (
     <>
-      <StatGrid label="Key figures">
+      <StatGrid label={appTexts.common.keyFigures}>
         <StatCard
           icon={HandCoins}
           color={sectionColors.shared}
@@ -240,7 +241,7 @@ function ReceivedAndOutstanding({ participants }: { participants: ParticipantSha
           )
         })}
       </ul>
-      <ul className="flex gap-4 text-xs text-muted-foreground" aria-label="Legend">
+      <ul className="flex gap-4 text-xs text-muted-foreground" aria-label={appTexts.common.legend}>
         <li className="flex items-center gap-2">
           <span
             className="size-3 rounded-sm"
@@ -368,7 +369,7 @@ function ParticipantsCard() {
           <Switch id="show-archived" checked={showArchived} onCheckedChange={setShowArchived} />
           <Label htmlFor="show-archived">{t.showArchived}</Label>
         </div>
-        {isPending && <p className="text-sm text-muted-foreground">Loading…</p>}
+        {isPending && <p className="text-sm text-muted-foreground">{appTexts.common.loading}</p>}
         {!isPending && data.length === 0 && (
           <p className="text-sm text-muted-foreground">{t.noParticipants}</p>
         )}

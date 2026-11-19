@@ -6,6 +6,8 @@ import { SectionCard } from '@/components/design/SectionCard'
 import { formatCents } from '@/lib/money'
 import { CardPaymentRow } from './CardPaymentRow'
 import { cardPurchaseTexts } from './texts'
+import { appTexts } from '@/components/common/texts'
+import { expenseTexts } from '@/components/expenses/texts'
 
 const t = cardPurchaseTexts
 
@@ -23,13 +25,13 @@ export function CardPaymentsSection({ month }: { month: string }) {
       icon={CreditCard}
       color={sectionColors.cards}
       title={t.monthTitle}
-      status={data && all > 0 ? `${paid} of ${all} paid` : undefined}
+      status={data && all > 0 ? expenseTexts.bills.paidOf(paid, all) : undefined}
       total={data ? formatCents(data.totals.totalCents) : undefined}
       defaultOpen={!data || all === 0 || paid < all}
     >
       <div className="flex flex-col gap-3">
-        {isPending && <p className="text-sm text-muted-foreground">Loading…</p>}
-        {isError && <p className="text-sm text-destructive">Card payments could not be loaded.</p>}
+        {isPending && <p className="text-sm text-muted-foreground">{appTexts.common.loading}</p>}
+        {isError && <p className="text-sm text-destructive">{appTexts.loadErrors.cardPayments}</p>}
         {data && data.payments.length === 0 && (
           <p className="text-sm text-muted-foreground">{t.monthEmpty}</p>
         )}

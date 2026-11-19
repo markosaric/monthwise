@@ -36,6 +36,7 @@ import { shareErrorFields } from '@/components/sharedCosts/shareModel'
 import { sharedCostTexts } from '@/components/sharedCosts/texts'
 import { formatCents, parseEuroInput } from '@/lib/money'
 import { PageHeader } from '@/pages/PageHeader'
+import { appTexts } from '@/components/common/texts'
 
 const t = expenseTexts
 
@@ -57,9 +58,9 @@ export function RecurringBillsPage() {
             <Label htmlFor="show-stopped">{t.recurring.showStopped}</Label>
           </div>
         </div>
-        {isPending && <p className="text-sm text-muted-foreground">Loading…</p>}
+        {isPending && <p className="text-sm text-muted-foreground">{appTexts.common.loading}</p>}
         {isError && (
-          <p className="text-sm text-destructive">Recurring bills could not be loaded.</p>
+          <p className="text-sm text-destructive">{appTexts.loadErrors.recurringBills}</p>
         )}
         {bills?.length === 0 && (
           <p className="text-sm text-muted-foreground">{t.recurring.empty}</p>
@@ -178,9 +179,9 @@ export function RecurringBillEditPage() {
   const { data: bill, isPending, isError } = useRecurringBill(id)
   const change = useChangeRecurringBill()
 
-  if (isPending) return <p className="text-sm text-muted-foreground">Loading…</p>
+  if (isPending) return <p className="text-sm text-muted-foreground">{appTexts.common.loading}</p>
   if (isError)
-    return <p className="text-sm text-destructive">This recurring bill could not be loaded.</p>
+    return <p className="text-sm text-destructive">{appTexts.loadErrors.recurringBill}</p>
 
   return (
     <>

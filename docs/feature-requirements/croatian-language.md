@@ -25,7 +25,7 @@ chosen language. English stays available and works as before.
 | Language | English or Croatian (*hrvatski*). |
 | App text | Every text the app itself writes: menu, page titles, buttons, field labels, hints, tooltips, empty states, confirmations, validation and error messages, toasts, chart labels and legends, month and day names, and descriptions the app makes up (e.g. "Card payments", "Car lease, residual value"). |
 | User text | Everything the user typed: names of cards, payers, participants, loans, bills and categories they added, descriptions and notes. |
-| Predefined name | A name the app ships with and the user cannot rename, e.g. the input category "Salary", the expense category "Electricity", the loan subcategory "Mortgage". |
+| Predefined name | A name the app ships with, e.g. the input category "Salary", the expense category "Electricity", the loan subcategory "Mortgage". The user can rename most of them (not Cash withdrawal); a renamed one is user text from then on. |
 | Proper name | A predefined name that is the same in every language: card issuers (Visa, Mastercard, …) and banks (ZaBa, PBZ, …). |
 
 ## 3. Functional requirements
@@ -59,7 +59,7 @@ chosen language. English stays available and works as before.
   dashboard.
 - Proper names (card issuers, banks) are not translated.
 - User text is never translated and is shown exactly as typed. A category the user added keeps its
-  name in both languages.
+  name in both languages, and so does a predefined one the user renamed.
 - A name the user types is checked for duplicates against the predefined names in **both**
   languages, so the user cannot add "Plaća" next to the predefined "Salary".
 

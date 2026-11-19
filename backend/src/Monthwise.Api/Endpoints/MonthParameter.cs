@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Http.HttpResults;
+using Monthwise.Application.Localization;
 using Monthwise.Domain.Common;
 
 namespace Monthwise.Api.Endpoints;
@@ -18,6 +19,6 @@ internal static class MonthParameter
     public static ValidationProblem Invalid(string field, string? value) =>
         TypedResults.ValidationProblem(new Dictionary<string, string[]>
         {
-            [field] = [YearMonth.TryParse(value, out _) ? SupportedRange.MonthMessage : FormatMessage],
+            [field] = [ServerTexts.Translate(YearMonth.TryParse(value, out _) ? SupportedRange.MonthMessage : FormatMessage)],
         });
 }

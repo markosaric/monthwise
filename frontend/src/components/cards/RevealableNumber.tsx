@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { revealCardNumber, type SensitiveNumberKind } from '@/api/cards'
 import { Button } from '@/components/ui/button'
 import { cardTexts } from './texts'
+import { appTexts } from '@/components/common/texts'
 
 /**
  * A masked number with its own Reveal button (FR-3). The full value is fetched only on request
@@ -44,7 +45,7 @@ export function RevealableNumber({
           {cardTexts.actions.hide}
         </Button>
       )}
-      {failed && <span className="text-xs text-destructive">Could not load the number.</span>}
+      {failed && <span className="text-xs text-destructive">{appTexts.loadErrors.number}</span>}
     </span>
   )
 }

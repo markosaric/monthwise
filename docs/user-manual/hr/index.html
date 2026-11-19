@@ -1,0 +1,280 @@
+<!doctype html>
+<html lang="hr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Monthwise – korisnički priručnik</title>
+<style>
+  :root { --bg:#f5f6fa; --card:#fff; --text:#1a1a1f; --muted:#5d6170; --line:#e3e5ec; --accent:#6d4aff; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#16171c; --card:#1f2128; --text:#ececf1; --muted:#a3a6b3; --line:#30333d; --accent:#a48bff; } }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font:16px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, sans-serif; }
+  main { max-width:920px; margin:0 auto; padding:32px 16px 64px; }
+  h1 { font:700 2.2rem/1.2 Georgia, serif; margin:0 0 4px; }
+  h2 { font:700 1.45rem/1.3 Georgia, serif; margin:48px 0 8px; padding-top:8px; border-top:1px solid var(--line); }
+  .lead { color:var(--muted); margin:0 0 24px; }
+  .languages { margin:0 0 12px; font-size:.94rem; color:var(--muted); }
+  nav.toc { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:16px 20px; }
+  nav.toc ol { margin:0; padding-left:20px; columns:2; column-gap:32px; }
+  nav.toc li { margin:0 0 4px; break-inside:avoid; }
+  a { color:var(--accent); }
+  figure { margin:16px 0 8px; }
+  figure img { width:100%; height:auto; display:block; border:1px solid var(--line); border-radius:12px; box-shadow:0 4px 18px rgba(0,0,0,.06); }
+  figure.phone img { max-width:320px; margin:0 auto; }
+  figcaption { color:var(--muted); font-size:.875rem; margin-top:6px; text-align:center; }
+  ul, ol { padding-left:22px; }
+  li { margin:4px 0; }
+  .tip { background:var(--card); border-left:4px solid var(--accent); border-radius:8px; padding:10px 14px; margin:16px 0; }
+  kbd, .ui { font-weight:600; }
+  h3 { font:700 1.1rem/1.3 Georgia, serif; margin:28px 0 6px; }
+  code { font:.9em ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; background:var(--card); border:1px solid var(--line); border-radius:5px; padding:1px 5px; overflow-wrap:anywhere; }
+  table { width:100%; border-collapse:collapse; margin:12px 0; font-size:.94rem; }
+  th, td { text-align:left; vertical-align:top; padding:6px 8px; border-bottom:1px solid var(--line); }
+  .table-wrap { overflow-x:auto; }
+  pre { margin:8px 0 14px; overflow-x:auto; }
+  pre code { display:block; padding:10px 12px; overflow-wrap:normal; white-space:pre; }
+  @media (max-width:600px) { nav.toc ol { columns:1; } h1 { font-size:1.8rem; } }
+</style>
+</head>
+<body>
+<main>
+<p class="languages"><a href="../index.html" hreflang="en" lang="en">English</a> · <strong>Hrvatski</strong></p>
+<h1>Monthwise – korisnički priručnik</h1>
+<p class="lead">Kratki vodič kroz aplikaciju za kućne financije. Sve snimke zaslona prikazuju izmišljene podatke.</p>
+
+<nav class="toc" aria-label="Sadržaj">
+<ol>
+  <li><a href="#start">Prvi koraci</a></li>
+  <li><a href="#dashboard">Pregled</a></li>
+  <li><a href="#month">Mjesec</a></li>
+  <li><a href="#cashflow">Novčani tok</a></li>
+  <li><a href="#cards">Kartice, rate i revolving kartice</a></li>
+  <li><a href="#loans">Krediti i leasing</a></li>
+  <li><a href="#shared">Zajednički troškovi</a></li>
+  <li><a href="#settings">Postavke</a></li>
+  <li><a href="#phone">Na mobitelu</a></li>
+  <li><a href="#install">Instalacija Monthwisea</a></li>
+  <li><a href="#data">Podaci i sigurnosne kopije</a></li>
+</ol>
+</nav>
+
+<h2 id="start">1. Prvi koraci</h2>
+<p>Izbornikom s lijeve strane prelazite s jednog zaslona na drugi. Gumb pokraj logotipa sažima izbornik na ikone. Aplikaciju jednom postavite ovim redom:</p>
+<ol>
+  <li><span class="ui">Postavke → Kartice i računi</span>: dodajte bankovne račune i platne kartice. Glavni račun označite kao <em>Tekući račun</em> i upišite mu početno stanje kako bi se stanja slagala s bankom. Za revolving karticu upišite i njezine uvjete i trenutačni dug (vidi <a href="#revolving">Revolving kartice</a>).</li>
+  <li><span class="ui">Postavke → Ponavljajući računi</span>: dodajte račune koji stižu svaki mjesec (struja, internet, pričuva…). Iznos, dan računa i dan dospijeća nisu obavezni: upišite ih za račun koji je uvijek isti, npr. članarinu za teretanu, a ostavite ih praznima kad se mijenjaju svaki mjesec.</li>
+  <li><span class="ui">Krediti</span>: jednom dodajte kredite i leasinge; njihove se mjesečne rate zatim pojavljuju same.</li>
+  <li><span class="ui">Mjesec → Dodaj uplatu</span>: dodajte plaću kao uplatu koja se <em>ponavlja</em>, pa se pojavljuje svaki mjesec.</li>
+</ol>
+<p>Iznosi su u eurima. Sve što Monthwise može izračunati (rate, otplate kredita, plaćanja kartica, račune revolving kartica, doprinose) izračunava za vas, a vi to samo označite.</p>
+<ul>
+  <li><strong>Upisivanje iznosa</strong>: <code>1.234,56</code>, <code>1234,56</code> i <code>1234.56</code> jednako vrijede. <code>1.234</code> se ne prihvaća jer može značiti tisuću ili jedan euro: upišite <code>1234</code> ili <code>1,23</code>.</li>
+  <li><strong>Pločice na vrhu zaslona</strong> prikazuju samo ikonu i broj. Što broj znači vidite kad pokazivačem prijeđete preko ikone, kad do nje dođete tipkom Tab ili kad je na mobitelu dulje pritisnete.</li>
+  <li><strong>Datumi</strong> idu od siječnja 2000. do prosinca 2100.</li>
+  <li><strong>Jedna osoba odjednom.</strong> Monthwise je napravljen za jednu osobu koja vodi kućni budžet. Ako se isti podatak mijenja u dvije kartice preglednika ili na dva uređaja odjednom, vrijedi zadnje spremanje.</li>
+  <li><strong>Kad nešto pođe po zlu</strong>: ako se zaslon ne može prikazati, kratka poruka nudi ponovno učitavanje ili povratak na Pregled; izbornik i dalje radi. Crveni okvir <em>Problem sustava</em> na dnu izbornika (na mobitelu traka iznad donjeg izbornika) znači da aplikacija ne može doći do svojeg poslužitelja ili baze podataka.</li>
+  <li>Zaslon <span class="ui">Štednja</span> još nije izrađen.</li>
+</ul>
+
+<h2 id="dashboard">2. Pregled</h2>
+<p>Početni zaslon odgovara na pitanje „kako ide ovaj mjesec?”.</p>
+<figure><img src="../images/hr/dashboard.jpg" alt="Pregled s uplatama, isplatama, rezultatom mjeseca, upozorenjem o zakašnjelim plaćanjima i grafikonima"><figcaption>Pregled</figcaption></figure>
+<ul>
+  <li><strong>Gumbi za brzo dodavanje</strong> ispod naslova: dodajte prihod, račun, trošak, podizanje gotovine ili kupnju karticom, ili platite revolving karticu.</li>
+  <li><strong>Pet pločica</strong>: uplate (i koliko je primljeno), isplate (i koliko je plaćeno), rezultat mjeseca, što je preostalo za platiti i <strong>Ukupno stanje</strong>: koliko će biti na tekućim računima na kraju mjeseca kad se sve primi i plati. S više tekućih računa to je njihov zbroj; otvorite ga da vidite svaki račun na zaslonu Kartice.</li>
+  <li><strong>Crvena traka</strong>: pojavljuje se samo kad nešto kasni. Otvorite zaslon Mjesec da to platite.</li>
+  <li><strong>Uskoro</strong>: plaćanja i uplate koji dospijevaju u sljedećih 7 dana.</li>
+  <li><strong>Novčani tok</strong>: grafikon uplata i isplata u zadnjih šest mjeseci; otvorite ga za zaslon Novčani tok. Male pločice ispod Uskoro vode na kredite, kartice, zajedničke troškove i ponavljajuće račune.</li>
+</ul>
+
+<h2 id="month">3. Mjesec</h2>
+<p>Radni zaslon: sve što u jednom mjesecu dolazi i odlazi. Strelicama pokraj naslova prelazite s mjeseca na mjesec.</p>
+<figure><img src="../images/hr/month.jpg" alt="Zaslon Mjesec s prihodima, računima, troškovima, ratama kredita i plaćanjima kartica"><figcaption>Mjesec: prihodi, računi, troškovi, rate kredita i plaćanja kartica</figcaption></figure>
+<ul>
+  <li><strong>Pločice</strong> na vrhu prikazuju istih pet brojeva za mjesec koji gledate. Za prošli mjesec Ukupno stanje je ono što je bilo na tekućim računima na njegovu kraju; za ovaj i buduće mjesece to je ono što će biti na njima kad se sve plati.</li>
+  <li><strong>Označite kružić</strong> ispred retka da ga označite kao <em>Primljeno</em> ili <em>Plaćeno</em>. Redci koji kasne označeni su crveno.</li>
+  <li><strong>Prihodi</strong>: <span class="ui">Dodaj uplatu</span> za plaću i ostale uplate. Doprinosi osoba s kojima dijelite troškove grupirani su pod njihovim imenom.</li>
+  <li><strong>Računi</strong>: <span class="ui">Dodaj ponavljajuće račune</span> izrađuje račune ovog mjeseca iz popisa ponavljajućih računa. Ponavljajući račun s iznosom, danom računa i danom dospijeća stiže kako se očekuje; ostali stižu kao <em>Nije izdan</em> s onim što se zna, a ostatak upišete kad račun stigne. <span class="ui">Dodaj račun</span> dodaje jednokratni račun; uključite <em>Ponavlja se</em> u njegovu obrascu da ga dodate i u ponavljajuće račune, pa se vraća sljedećih mjeseci.</li>
+  <li><strong>Troškovi</strong>: jednokratna potrošnja, npr. namirnice. <span class="ui">Podizanje gotovine</span> bilježi gotovinu podignutu s računa.</li>
+  <li><strong>Rate kredita</strong>, <strong>plaćanja kartica</strong> i računi revolving kartica popunjavaju se sami iz vaših kredita, kupnji karticama i revolving kartica.</li>
+  <li>Strelica u retku otvara pojedinosti, gdje redak možete urediti ili obrisati.</li>
+</ul>
+<figure><img src="../images/hr/new-input.jpg" alt="Obrazac za dodavanje uplate"><figcaption>Dodavanje uplate. Za plaću i druge redovite prihode uključite <em>Ponavlja se</em>.</figcaption></figure>
+<p class="tip">Račun ili trošak plaćen kreditnom ili charge karticom ne skida se odmah s računa: ulazi u sljedeće plaćanje te kartice. Plaćen revolving karticom, povećava dug te kartice.</p>
+
+<h2 id="cashflow">4. Novčani tok</h2>
+<p>Prikazuje uplate i isplate kroz vrijeme: <span class="ui">Ovaj mjesec</span> (dan po dan), <span class="ui">Zadnjih 12 mjeseci</span> ili <span class="ui">Ova godina</span>. <span class="ui">Filtri</span> sužavaju prikaz po uplatitelju, računu ili kategoriji, a <span class="ui">Prikaži kao tablicu</span> prikazuje brojeve. Klik na mjesec na popisu otvara njegov mjesečni izvještaj, s početnim stanjima i ispravcima tog mjeseca.</p>
+<figure><img src="../images/hr/cash-flow.jpg" alt="Grafikon novčanog toka za tekući mjesec"><figcaption>Novčani tok</figcaption></figure>
+
+<h2 id="cards">5. Kartice, rate i revolving kartice</h2>
+<p>Zaslon <span class="ui">Kartice</span> prikazuje stanje svakog računa sada i na kraju mjeseca, svaku karticu koja omogućuje rate te vaše revolving kartice.</p>
+<figure><img src="../images/hr/cards.jpg" alt="Zaslon Kartice sa stanjima računa i karticama s ratama"><figcaption>Kartice</figcaption></figure>
+<ul>
+  <li><span class="ui">Dodaj kupnju</span>: odaberite karticu, iznos i datum. Uključite <em>Na mjesečne rate</em> i upišite broj rata; Monthwise raspoređuje iznos po plaćanjima kartice.</li>
+  <li>Otvorite karticu da vidite njezina nadolazeća plaćanja po mjesecima i kupnje s onim što je još preostalo za naplatu.</li>
+  <li>Plaćanje kartice označava se kao plaćeno na zaslonu Mjesec ili na samoj kartici.</li>
+</ul>
+<figure><img src="../images/hr/card-installments.jpg" alt="Pojedinosti kartice s mjesečnim plaćanjima"><figcaption>Jedna kartica: datum obračuna i dospijeća, nadolazeća plaćanja kartice, kupnje</figcaption></figure>
+<h3 id="revolving">Revolving kartice</h3>
+<p>Revolving kartica ima dug umjesto plaćanja kartice. Dodajte je u <span class="ui">Postavke → Kartice i računi</span> s vrstom <em>Revolving kartica</em>, najvećim dopuštenim dugom i uvjetima: minimalna uplata (postotak i najmanji iznos), kamatna stopa, dan računa, dan dospijeća i račun plaćanja. <em>Početni dug</em> upišite iz zadnjeg izvoda banke.</p>
+<ul>
+  <li>Računi, troškovi i kupnje plaćeni njome povećavaju dug; ne skidaju se s računa. Ne omogućuje rate.</li>
+  <li>Svaki mjesec s dugom donosi <strong>račun</strong> za minimalnu uplatu, s dodanom kamatom. Pojavljuje se na zaslonu Mjesec i plaća se kao rata kredita: sam na dan dospijeća kad je kartica <em>Povezana s računom plaćanja</em>, inače kad ga označite. Možete platiti i više od minimuma.</li>
+  <li><span class="ui">Plati revolving karticu</span> (i na Pregledu) bilježi <strong>dodatnu uplatu</strong> u bilo kojem trenutku; <span class="ui">Plati cijeli dug</span> upisuje cijeli iznos. Ona smanjuje sljedeći račun.</li>
+  <li>Otvorite karticu da vidite dug, preostali limit, račune, terećenja i uplate. <span class="ui">Ispravi dug</span> postavlja dug na iznos koji pokazuje banka; <span class="ui">Ispravi</span> na računu postavlja njegovu minimalnu uplatu i kamatu na iznose banke.</li>
+  <li>Kartica s dugom ne može se arhivirati. Kad banka izda novu karticu, staru označite kao isteklu i navedite novu kao zamjensku, pa se dug prenosi na nju.</li>
+</ul>
+
+<h2 id="loans">6. Krediti i leasing</h2>
+<p>Svi bankovni krediti i leasinzi s mjesečnom ratom, napretkom otplate i onim što je preostalo za otplatiti. <span class="ui">Dodaj kredit</span> traži zajmodavca, početni mjesec, dan plaćanja, mjesečni iznos i broj rata (a za leasing i ostatak vrijednosti).</p>
+<figure><img src="../images/hr/loans.jpg" alt="Pregled kredita i leasinga"><figcaption>Krediti i leasing</figcaption></figure>
+<p>Otvorite kredit da vidite svaku ratu. <span class="ui">Dodaj promjenu rate</span> bilježi novi mjesečni iznos ili dan plaćanja od zadanog mjeseca (npr. nakon promjene kamate). <span class="ui">Zatvori kredit</span> završava kredit otplaćen prije roka.</p>
+<figure><img src="../images/hr/loan-details.jpg" alt="Pojedinosti kredita s ratama"><figcaption>Jedan kredit s ratama</figcaption></figure>
+<p class="tip">Rate koje se plaćaju <em>trajnim nalogom</em> same se označavaju kao plaćene na svoj datum. Rate koje se plaćaju po <em>računu</em> čekaju da ih označite.</p>
+
+<h2 id="shared">7. Zajednički troškovi</h2>
+<p>Za troškove koje dijelite s nekim (partnerom ili cimerom). Dodajte osobu pomoću <span class="ui">Dodaj sudionika</span>, a zatim joj odredite udio na ponavljajućem računu ili kreditu. Monthwise svaki mjesec izračunava koliko vam ta osoba duguje i prikazuje to ovdje i kao očekivanu uplatu na zaslonu Mjesec. Doprinos označite kad primite novac.</p>
+<figure><img src="../images/hr/shared-costs.jpg" alt="Zajednički troškovi s otvorenim doprinosima po sudioniku"><figcaption>Zajednički troškovi</figcaption></figure>
+
+<h2 id="settings">8. Postavke</h2>
+<p>Popisi koje aplikacija svugdje koristi: kartice i računi, uplatitelji, kategorije uplata, kategorije troškova, kategorije kredita i ponavljajući računi. Uz početne unose dodajte i svoje. Kategorija koja se već koristi ne može se obrisati; umjesto toga je sakrijte. Unaprijed zadane kategorije prikazuju se na odabranom jeziku dok ih ne preimenujete; naziv koji sami upišete uvijek se prikazuje onako kako ste ga upisali.</p>
+<figure><img src="../images/hr/settings.jpg" alt="Pregled postavki"><figcaption>Postavke</figcaption></figure>
+<p>Brojevi kartica i IBAN-ovi spremaju se šifrirani i prikazuju se samo na zahtjev. Otvorite račun i odaberite <span class="ui">Dodaj ispravak</span> kad se njegovo stanje razlikuje od stanja u banci; ispravci mijenjaju stanje, ali se ne računaju kao uplata ni isplata.</p>
+<p id="language"><strong>Jezik.</strong> Pod <span class="ui">Jezik</span> birate <em>English</em> ili <em>Hrvatski</em>. Izbor se pamti na tom uređaju, a stranica se ponovno učita na odabranom jeziku. Dok jezik nije odabran, Monthwise slijedi jezik preglednika. Iznosi i datumi izgledaju jednako na oba jezika, a jezik ne mijenja nijedan spremljeni podatak.</p>
+<p>Na dnu Postavki prikazani su verzija Monthwisea i vremenska zona koju koristi za „danas” (vidi <a href="#install">Instalacija Monthwisea</a>).</p>
+<p>Pločica <span class="ui">Podaci i sigurnosne kopije</span>, u skupini <em>Podaci</em>, izvozi i uvozi sve vaše podatke; vidi <a href="#data">Podaci i sigurnosne kopije</a>.</p>
+
+<h2 id="phone">9. Na mobitelu</h2>
+<p>Monthwise radi i u pregledniku na mobitelu. Izbornik se premješta u traku na dnu zaslona; sve ostalo radi jednako.</p>
+<figure class="phone"><img src="../images/hr/mobile-dashboard.jpg" alt="Pregled na mobitelu"><figcaption>Pregled na mobitelu</figcaption></figure>
+<h2 id="install">10. Instalacija Monthwisea</h2>
+<p>Monthwise radi na jedan od tri načina. Sva tri koriste istu verziju aplikacije, a podaci se mogu premjestiti s jednog na drugi.</p>
+<div class="table-wrap"><table>
+<tr><th>Način</th><th>Najbolje za</th><th>Trošak</th></tr>
+<tr><td><a href="#install-docker">Docker jednim klikom</a></td><td>Početak na Macu ili Windows računalu; isti paket poslije radi i na računalu koje je stalno uključeno</td><td>0 €</td></tr>
+<tr><td><a href="#install-native">Usluga u pozadini bez Dockera</a></td><td>Mac ili Windows računalo bez Dockera; pokreće se sama kad se prijavite</td><td>0 €</td></tr>
+<tr><td><a href="#install-azure">Azure</a></td><td>Pristup Monthwiseu s bilo kojeg mjesta preko HTTPS-a, kad postoji prijava</td><td>oko 15–20 € mjesečno nakon besplatne prve godine</td></tr>
+</table></div>
+<p>Da Monthwise premjestite s jednog načina na drugi, izvezite podatke na starom i uvezite ih na novom (vidi <a href="#data">Podaci i sigurnosne kopije</a>).</p>
+<p>Svaki način treba <a href="https://cli.github.com/">GitHub CLI</a>, jer je repozitorij Monthwisea privatan. Jednom se prijavite naredbom <code>gh auth login</code>, a zatim mu dopustite preuzimanje slike aplikacije naredbom <code>gh auth refresh --scopes read:packages</code>.</p>
+<p><strong>Vremenska zona.</strong> Monthwise određuje što je „danas” i koji je tekući mjesec u vremenskoj zoni kućanstva, <code>Europe/Zagreb</code> ako je ne promijenite, bez obzira na vremensku zonu u kojoj radi vaše računalo ili Azure. Za drugu zonu navedite IANA naziv vremenske zone, npr. <code>Europe/Vienna</code>: na Dockeru i usluzi u pozadini dodajte <code>"Household": { "TimeZone": "Europe/Vienna" }</code> u <em>settings.json</em> u mapi postavki i ponovno pokrenite Monthwise; na Azureu postavite varijablu okruženja <code>Household__TimeZone</code> aplikacije spremnika. Nepoznat naziv sprječava pokretanje Monthwisea, a zapisnik navodi koja je postavka pogrešna.</p>
+<div class="tip"><strong>Vaše tajne.</strong> Pri prvom pokretanju Monthwise izrađuje lozinku baze podataka i dva ključa za šifriranje brojeva kartica i IBAN-ova te prikazuje mapu u kojoj se nalaze. Datoteke iz te mape odmah kopirajte u upravitelj lozinki. Bez njih se spremljeni brojevi kartica i IBAN-ovi više nikad ne mogu pročitati, npr. na novom računalu. Monthwise nikad ne izrađuje nove ključeve za bazu podataka koja već postoji.</div>
+
+<h3 id="install-docker">Docker jednim klikom</h3>
+<ol>
+  <li>Instalirajte <a href="https://www.docker.com/products/docker-desktop/">Docker Desktop</a> (Mac ili Windows) ili <a href="https://orbstack.dev/">OrbStack</a> (Mac, lakši). Oba su besplatna za osobnu upotrebu.</li>
+  <li>Preuzmite paket: <code>gh release download --repo markosaric/monthwise --pattern "monthwise-docker-*.zip"</code> i raspakirajte ga u mapu koju čuvate, npr. <em>Documents/Monthwise</em>.</li>
+  <li><strong>Mac:</strong> dvaput kliknite <code>Monthwise.command</code>. Prvi put macOS može tražiti dopuštenje: kliknite desnom tipkom, odaberite <span class="ui">Open</span> i potvrdite. Povucite ga u Dock da ostane ondje.<br><strong>Windows:</strong> dvaput kliknite <code>Monthwise.cmd</code> i prikvačite ga na programsku traku ili izbornik Start.</li>
+  <li>Monthwise se pokreće, čeka da bude spreman i otvara <code>http://localhost:8080</code>. U Safariju <span class="ui">File → Add to Dock</span> (u Edgeu ili Chromeu <span class="ui">Install app</span>) daje mu vlastitu ikonu i prozor.</li>
+</ol>
+<p>Nakon prvog pokretanja Monthwise se sam vraća kad god se pokrene Docker. Ostale naredbe pokrećete u mapi paketa (<code>./monthwise.sh</code> na Macu, <code>.\monthwise.ps1</code> u PowerShellu na Windowsima):</p>
+<div class="table-wrap"><table>
+<tr><th>Naredba</th><th>Što radi</th></tr>
+<tr><td><code>stop</code></td><td>Zaustavlja Monthwise. Podaci ostaju.</td></tr>
+<tr><td><code>update</code> (ili <code>update 1.2.0</code>)</td><td>Preuzima najnoviju (ili zadanu) verziju i ponovno pokreće aplikaciju sa svim podacima. Najprije sprema <a href="#install-update-backups">kopiju za ažuriranje</a> i vraća se na prethodnu verziju ako se nova ne pokrene. Monthwise zatim ostaje na toj verziji do sljedećeg ažuriranja; nova instalacija pokreće verziju paketa koji ste preuzeli.</td></tr>
+<tr><td><code>status</code> / <code>logs</code></td><td>Prikazuje radi li i koju verziju ima, ili zadnje retke zapisnika.</td></tr>
+<tr><td><code>network on</code> / <code>network off</code></td><td>Dopušta ili zaustavlja veze s drugih uređaja, npr. s mobitela preko Tailscalea. Zadano je isključeno.</td></tr>
+<tr><td><code>remove</code> (<code>remove --data</code> na Macu, <code>remove -Data</code> na Windowsima)</td><td>Uklanja Monthwise iz Dockera i zadržava podatke, osim ako zatražite i uklanjanje podataka i upišete <code>DELETE</code>.</td></tr>
+</table></div>
+<p><strong>Gdje se što nalazi.</strong> Podaci su u Docker volumenu <code>monthwise-pgdata</code>. Tajne i postavke su u <em>~/Library/Application Support/Monthwise/docker</em> na Macu i u <em>%LOCALAPPDATA%\Monthwise\docker</em> na Windowsima. Tu mapu može otvoriti samo vaš korisnički račun.</p>
+
+<h3 id="install-native">Usluga u pozadini bez Dockera</h3>
+<p>Monthwise i njegova vlastita baza PostgreSQL rade u pozadini bez Dockera i pokreću se kad se prijavite. Baza sluša na priključku 5442, pa se nikad ne sukobljava s razvojnom bazom.</p>
+<ol>
+  <li><strong>Mac:</strong> instalirajte <a href="https://brew.sh">Homebrew</a>, zatim <code>gh release download --repo markosaric/monthwise --pattern monthwise-native-macos.sh</code> i pokrenite <code>bash monthwise-native-macos.sh install</code>. Skripta pomoću Homebrewa instalira PostgreSQL 17.</li>
+  <li><strong>Windows:</strong> <code>gh release download --repo markosaric/monthwise --pattern monthwise-native-windows.ps1</code>, a zatim u PowerShellu pokrenite <code>powershell -ExecutionPolicy Bypass -File .\monthwise-native-windows.ps1 install</code>. PostgreSQL dolazi s izdanjem; administratorska prava nisu potrebna.</li>
+  <li>Otvorite <code>http://localhost:8080</code> i dodajte ga u Dock ili na programsku traku kao gore.</li>
+</ol>
+<p>Instalacijski program kopira svoju skriptu u mapu Monthwisea: <em>~/Library/Application Support/Monthwise/native/monthwise.sh</em> na Macu, <em>%LOCALAPPDATA%\Monthwise\native\monthwise.ps1</em> na Windowsima. Prima <code>start</code>, <code>stop</code>, <code>update</code>, <code>status</code>, <code>logs</code> i <code>network on|off</code> kao i Docker naredbe, te <code>uninstall</code>. Kao i Docker naredba, <code>update</code> najprije sprema <a href="#install-update-backups">kopiju za ažuriranje</a>, a ako se nova verzija ne pokrene, sam vraća podatke i prethodnu verziju. <code>uninstall</code> zadržava podatke, tajne i zapisnike osim ako dodate <code>--data</code> (Mac) ili <code>-Data</code> (Windows) i upišete <code>DELETE</code>.</p>
+<p><strong>Gdje se što nalazi</strong>, u istoj mapi <em>native</em>: <em>pgdata</em> (baza podataka), <em>config/secrets</em> (tajne), <em>config/settings.json</em> (postavke) i <em>logs</em> (jedna datoteka zapisnika po danu, čuva se zadnjih 14 dana).</p>
+
+<h3 id="install-update-backups">Kopije za ažuriranje</h3>
+<p>Prije svakog ažuriranja na Dockeru ili usluzi u pozadini, <code>update</code> sprema potpunu kopiju baze podataka, <strong>kopiju za ažuriranje</strong>. Ako se ta kopija ne može izraditi, ništa se ne ažurira. Naziv datoteke sadrži datum, vrijeme i verziju iz koje je izrađena, npr. <code>monthwise-20261112-101530-1.2.0.dump</code>. Čuvaju se zadnje tri, a može ih otvoriti samo vaš korisnički račun:</p>
+<div class="table-wrap"><table>
+<tr><th>Instalacija</th><th>Mapa</th></tr>
+<tr><td>Docker na Macu</td><td><em>~/Library/Application Support/Monthwise/docker-update-backups</em></td></tr>
+<tr><td>Docker na Windowsima</td><td><em>%LOCALAPPDATA%\Monthwise\docker-update-backups</em></td></tr>
+<tr><td>Usluga u pozadini</td><td><em>update-backups</em> u mapi <em>native</em></td></tr>
+</table></div>
+<p>Ostaju kad uklonite ili deinstalirate Monthwise, a nestaju samo s njegovim podacima (<code>--data</code> / <code>-Data</code>).</p>
+<p>Ako nova verzija ne može ažurirati bazu podataka ili se ne pokrene, <code>update</code> vraća podatke iz kopije za ažuriranje i pokreće verziju koja je radila prije. Podaci su tada točno onakvi kakvi su bili prije ažuriranja; poruka navodi kopiju za ažuriranje i zapisnik. Monthwise sam nikad ne poništava napola izvršeno ažuriranje korak po korak, jer bi to moglo ukloniti podatke.</p>
+
+<h3 id="install-restore-backup">Ručno vraćanje kopije za ažuriranje</h3>
+<p>Potrebno je samo kad <code>update</code> javi da ni vraćanje podataka nije uspjelo. Monthwise je tada zaustavljen, a baza je ostala onakva kakvu ju je ostavilo neuspjelo ažuriranje. Vratite kopiju za ažuriranje koju navodi poruka, a zatim ažurirajte na verziju iz naziva datoteke (onu koja je radila prije):</p>
+<p><strong>Docker</strong>, u mapi paketa (<code>./monthwise.sh</code> na Macu, <code>.\monthwise.ps1</code> na Windowsima):</p>
+<pre><code>docker stop monthwise-app-1
+docker cp "&lt;kopija za ažuriranje&gt;" monthwise-db-1:/tmp/restore.dump
+docker exec monthwise-db-1 dropdb -U monthwise --force monthwise
+docker exec monthwise-db-1 createdb -U monthwise monthwise
+docker exec monthwise-db-1 pg_restore -U monthwise -d monthwise --no-owner /tmp/restore.dump
+./monthwise.sh update &lt;verzija iz naziva datoteke&gt;</code></pre>
+<p><strong>Usluga u pozadini na Macu</strong>, u Terminalu:</p>
+<pre><code>cd ~/Library/Application\ Support/Monthwise/native
+export PGPASSWORD="$(cat config/secrets/postgres_password)" PG="$(brew --prefix postgresql@17)/bin"
+"$PG/dropdb" -h 127.0.0.1 -p 5442 -U monthwise --force monthwise
+"$PG/createdb" -h 127.0.0.1 -p 5442 -U monthwise monthwise
+"$PG/pg_restore" -h 127.0.0.1 -p 5442 -U monthwise -d monthwise --no-owner "&lt;kopija za ažuriranje&gt;"
+unset PGPASSWORD
+./monthwise.sh update &lt;verzija iz naziva datoteke&gt;</code></pre>
+<p><strong>Usluga u pozadini na Windowsima</strong>, u PowerShellu:</p>
+<pre><code>cd $env:LOCALAPPDATA\Monthwise\native
+$env:PGPASSWORD = Get-Content config\secrets\postgres_password -Raw
+.\pgsql\bin\dropdb.exe -h 127.0.0.1 -p 5442 -U monthwise --force monthwise
+.\pgsql\bin\createdb.exe -h 127.0.0.1 -p 5442 -U monthwise monthwise
+.\pgsql\bin\pg_restore.exe -h 127.0.0.1 -p 5442 -U monthwise -d monthwise --no-owner "&lt;kopija za ažuriranje&gt;"
+Remove-Item Env:PGPASSWORD
+.\monthwise.ps1 update &lt;verzija iz naziva datoteke&gt;</code></pre>
+<p>Ako naziv datoteke sadrži <code>unknown</code>, upotrijebite verziju koju ste imali prije neuspjelog ažuriranja. <code>update</code> na kraju sprema novu kopiju za ažuriranje vraćenih podataka i pokreće tu verziju.</p>
+
+<h3 id="install-azure">Azure</h3>
+<div class="tip">Azure daje Monthwiseu javnu HTTPS adresu. Upotrebljavajte ga tek kad postoji prijava.</div>
+<p>Jedna skripta postavlja sve u EU regiji (zadano West Europe), u grupi resursa <em>rg-monthwise</em>:</p>
+<div class="table-wrap"><table>
+<tr><th>Resurs</th><th>Čemu služi</th><th>Očekivani trošak mjesečno</th></tr>
+<tr><td>Container App (smanjuje se na nulu)</td><td>Pokreće Monthwise. Kad se ne koristi, zaustavlja se, pa prva stranica nakon mirnog razdoblja treba nekoliko sekundi.</td><td>0 € unutar mjesečne besplatne kvote</td></tr>
+<tr><td>PostgreSQL Flexible Server, Burstable B1ms</td><td>Baza podataka, sa 7 dana automatskih sigurnosnih kopija</td><td>0 € prvih 12 mjeseci na novom računu, zatim oko 13–15 € plus pohrana</td></tr>
+<tr><td>Virtualna mreža i privatna DNS zona</td><td>Privatna mreža Monthwisea: baza nema javnu adresu i dostupna je samo iz nje</td><td>oko 0,50 €</td></tr>
+<tr><td>Container Apps posao <em>caj-monthwise-db-setup</em></td><td>Radi nekoliko sekundi pri svakoj objavi i postavlja vlastitu prijavu Monthwisea u bazu</td><td>0 € unutar mjesečne besplatne kvote</td></tr>
+<tr><td>Key Vault</td><td>Lozinke baze podataka i ključevi za šifriranje</td><td>nekoliko centi</td></tr>
+<tr><td>Log Analytics</td><td>Zapisnik, čuva se 30 dana</td><td>0 € pri kućnoj upotrebi</td></tr>
+<tr><td>Upozorenje o proračunu</td><td>Šalje e-poruku na 80 % proračuna (zadano 25) i kad se predviđa da će mjesec prijeći proračun</td><td>0 €</td></tr>
+</table></div>
+<p>Azure s plaćanjem po potrošnji nema čvrstu gornju granicu troška; upozorenje o proračunu izrađuje se pri prvoj objavi, pa ste upozoreni na vrijeme.</p>
+<ol>
+  <li>Izradite GitHub token samo s ovlašću <em>read:packages</em> (GitHub → Settings → Developer settings → Personal access tokens), kako bi Azure mogao preuzeti sliku aplikacije.</li>
+  <li>U <a href="https://shell.azure.com">Azure Cloud Shellu</a> (Bash), ili bilo gdje s prijavljenim Azure CLI-jem, preuzmite mapu <em>deploy/azure</em> iz repozitorija i pokrenite:<br>
+  <code>GHCR_USERNAME=&lt;vaš GitHub korisnik&gt; GHCR_TOKEN=&lt;token&gt; BUDGET_EMAIL=&lt;vaša e-adresa&gt; ./deploy.sh 1.2.0</code></li>
+  <li>Skripta ispisuje adresu Monthwisea i, prvi put, kako kopirati ključeve za šifriranje iz Key Vaulta u upravitelj lozinki.</li>
+</ol>
+<p>Za ažuriranje pokrenite istu naredbu s novom verzijom. Podaci i tajne ostaju. Zapisnik vidite naredbom <code>az containerapp logs show -g rg-monthwise -n ca-monthwise</code>.</p>
+<p>Baza podataka je privatna: prima veze samo iz vlastite mreže Monthwisea u Azureu, ne s interneta, od drugih korisnika Azurea ni iz alata za baze podataka na vašem računalu. Monthwise se prijavljuje vlastitom prijavom, <em>monthwise_app</em>, koja može koristiti samo podatke Monthwisea. Lozinka administratora poslužitelja (<em>postgres-password</em> u Key Vaultu) nikad se ne daje Monthwiseu; treba vam samo za održavanje iznutra mreže.</p>
+<p>Instalacija postavljena prije nego što je baza postala privatna ne može se premjestiti na mjestu. <code>deploy.sh</code> tada ništa ne mijenja i ispisuje korake: izvezite podatke u Postavkama, objavite u novu grupu resursa (<code>MONTHWISE_RESOURCE_GROUP=rg-monthwise-2</code> ispred iste naredbe), ondje uvezite datoteku, provjerite je i obrišite staru grupu resursa.</p>
+<p>Na Azureu vlastite automatske sigurnosne kopije baze zamjenjuju kopije za ažuriranje. Ako nova verzija ne može ažurirati bazu podataka, prestaje raditi na bazi, a <code>deploy.sh</code> ispisuje vrijeme neposredno prije objave i naredbu za vraćanje baze na to vrijeme (vidi <a href="#data-azure">Vlastite sigurnosne kopije Azurea</a>).</p>
+
+<h2 id="data">11. Podaci i sigurnosne kopije</h2>
+<p><span class="ui">Postavke → Podaci i sigurnosne kopije</span> sprema sve vaše podatke u jednu datoteku na vašem uređaju i vraća ih iz takve datoteke. Na vrhu odjeljka piše kad ste zadnji put izvezli i uvezli podatke.</p>
+<h3 id="data-export">Izvoz</h3>
+<ol>
+  <li>Odaberite <span class="ui">Izvezi podatke</span> i dvaput upišite lozinku datoteke (najmanje 12 znakova).</li>
+  <li>Datoteka se preuzima, a naziv joj je npr. <code>monthwise-export-2026-10-31-0815.monthwise</code>.</li>
+</ol>
+<div class="tip"><strong>Čuvajte datoteku i njezinu lozinku.</strong> Datoteka sadrži sve vaše financijske podatke, uključujući pune brojeve kartica i IBAN-ove, a ništa se u njoj ne može pročitati bez lozinke. Monthwise ne čuva lozinku: spremite je u upravitelj lozinki. Datoteku čija je lozinka izgubljena nitko ne može uvesti.</div>
+<h3 id="data-import">Uvoz</h3>
+<ol>
+  <li>Odaberite <span class="ui">Uvezi podatke</span>, izaberite datoteku izvoza, upišite njezinu lozinku, a zatim <span class="ui">Provjeri datoteku</span>. Još se ništa ne mijenja. Datoteka izvoza može imati najviše 10 MB; veća datoteka se odbija.</li>
+  <li>Monthwise prikazuje kad je datoteka izrađena i koliko kartica, kredita, uplata, kupnji karticama, računa i troškova sadrži, uz ono što je sada u Monthwiseu.</li>
+  <li>Upišite <code>ZAMIJENI</code> i odaberite <span class="ui">Zamijeni sve podatke</span>. Uvoz uvijek zamjenjuje <em>sve</em> podatke; nikad ne dodaje datoteku onome što već postoji.</li>
+</ol>
+<p>Neposredno prije uvoza Monthwise čuva <strong>sigurnosnu kopiju</strong> trenutačnih podataka. Ako je uvoz bio pogreška, odaberite <span class="ui">Vrati</span> pod <em>Sigurnosna kopija</em>. Ako uvoz ne uspije, ništa se ne mijenja. Datoteke iz starijih verzija Monthwisea mogu se uvesti; za datoteku iz novije verzije najprije treba ažurirati Monthwise. Dok uvoz traje, ostali zasloni kratko čekaju.</p>
+<p>Datoteka izvezena na jednom jeziku jednaka je onoj izvezenoj na drugom i uvozi se na oba jezika.</p>
+<h3 id="data-reminder">Podsjetnik i povijest</h3>
+<p>Pregled vas podsjeća na izvoz kad ga niste napravili 30 dana. Pod <em>Podsjetnik na izvoz</em> možete ga isključiti ili odabrati 7, 14, 30, 60 ili 90 dana. <span class="ui">Zatvori</span> ga skriva dok ne prođe sljedeće razdoblje bez izvoza.</p>
+<p><em>Povijest</em> navodi svaki izvoz, uvoz i sigurnosnu kopiju s vremenom, datotekom i ishodom, uključujući neuspjele pokušaje. Uvoz ne mijenja povijest.</p>
+<h3 id="data-move">Premještanje Monthwisea</h3>
+<p>Za prelazak na drugo računalo ili s Dockera na uslugu u pozadini ili Azure: izvezite podatke na staroj instalaciji, instalirajte novu i ondje uvezite datoteku. Datoteka radi iako nova instalacija ima vlastite ključeve za šifriranje.</p>
+<h3 id="data-azure">Vlastite sigurnosne kopije Azurea</h3>
+<p>Na Azureu baza podataka čuva i 7 dana automatskih sigurnosnih kopija. U Azure portalu otvorite PostgreSQL poslužitelj u <em>rg-monthwise</em> i odaberite <span class="ui">Restore</span> da izradite kopiju baze kakva je bila u ranijem trenutku, u istoj virtualnoj mreži i privatnoj DNS zoni, a zatim na nju usmjerite Monthwise. Upotrebljavajte to kao drugu sigurnosnu mrežu; vaše datoteke izvoza ostaju glavna sigurnosna kopija.</p>
+
+</main>
+</body>
+</html>

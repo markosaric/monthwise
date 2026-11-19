@@ -14,6 +14,7 @@ import { formatDayShort, formatYearMonth, monthOf } from '@/lib/dates'
 import { formatCents } from '@/lib/money'
 import { cn } from '@/lib/utils'
 import { cashFlowTexts } from './texts'
+import { appTexts } from '@/components/common/texts'
 
 const t = cashFlowTexts.cashFlow
 const compactEur = new Intl.NumberFormat('de-DE', {
@@ -68,7 +69,10 @@ const series = [
  */
 export function ChartLegend() {
   return (
-    <ul className="flex flex-wrap gap-4 text-sm text-muted-foreground" aria-label="Legend">
+    <ul
+      className="flex flex-wrap gap-4 text-sm text-muted-foreground"
+      aria-label={appTexts.common.legend}
+    >
       {series.map((s) => (
         <li key={s.key} className="flex items-center gap-2">
           <span className="size-3 rounded-sm" style={{ background: s.color }} aria-hidden />
@@ -193,7 +197,9 @@ export function CashFlowTable({ chart }: { chart: ChartData }) {
     <table className="w-full text-sm">
       <thead>
         <tr className="border-b text-left text-muted-foreground">
-          <th className="py-2 font-normal">{chart.granularity === 'Month' ? 'Month' : 'Day'}</th>
+          <th className="py-2 font-normal">
+            {chart.granularity === 'Month' ? t.tableMonth : t.tableDay}
+          </th>
           {series.map((s) => (
             <th key={s.key} className="py-2 text-right font-normal">
               {s.label}

@@ -1,6 +1,7 @@
 import { TriangleAlert } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useSystemProblem } from './systemProblem'
+import { appTexts } from '@/components/common/texts'
 
 /**
  * System status, shown only on a problem (FR-8): a red box at the bottom of the left menu (a red
@@ -38,7 +39,7 @@ export function SystemStatusAlert({
     >
       <TriangleAlert className="mt-0.5 size-4 shrink-0" aria-hidden />
       <span className={cn(collapsed && 'sr-only')}>
-        <strong className="block font-semibold">System problem</strong>
+        <strong className="block font-semibold">{appTexts.layout.systemProblem}</strong>
         {problem}
       </span>
     </div>

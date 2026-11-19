@@ -18,6 +18,7 @@ import {
 import { loanTexts } from '@/components/loans/texts'
 import { currentMonth } from '@/lib/dates'
 import { PageHeader } from '@/pages/PageHeader'
+import { appTexts } from '@/components/common/texts'
 
 const t = loanTexts
 
@@ -27,7 +28,7 @@ export function LoanNewPage() {
   const { data: cards, isPending } = useCards('Default')
   const createLoan = useCreateLoan()
 
-  if (isPending) return <p className="text-sm text-muted-foreground">Loading…</p>
+  if (isPending) return <p className="text-sm text-muted-foreground">{appTexts.common.loading}</p>
   const accounts = standingOrderAccounts(cards ?? [])
 
   return (
@@ -57,8 +58,8 @@ export function LoanEditPage() {
   const { data: categories, isPending: categoriesPending } = useLoanCategories(true)
 
   if (isPending || categoriesPending)
-    return <p className="text-sm text-muted-foreground">Loading…</p>
-  if (isError) return <p className="text-sm text-destructive">This loan could not be loaded.</p>
+    return <p className="text-sm text-muted-foreground">{appTexts.common.loading}</p>
+  if (isError) return <p className="text-sm text-destructive">{appTexts.loadErrors.loan}</p>
   const allows =
     categories?.find((c) => c.id === details.loan.category.id)?.allowsResidualValue ?? false
   return <LoanEditor details={details} allowsResidualValue={allows} />

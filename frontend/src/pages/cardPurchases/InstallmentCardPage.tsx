@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { formatCents } from '@/lib/money'
 import { PageHeader } from '@/pages/PageHeader'
+import { appTexts } from '@/components/common/texts'
 
 const t = cardPurchaseTexts
 
@@ -23,8 +24,8 @@ export function InstallmentCardPage() {
   const { cardId } = useParams()
   const { data: card, isPending, isError } = useInstallmentCard(cardId)
 
-  if (isPending) return <p className="text-sm text-muted-foreground">Loading…</p>
-  if (isError) return <p className="text-sm text-destructive">This card could not be loaded.</p>
+  if (isPending) return <p className="text-sm text-muted-foreground">{appTexts.common.loading}</p>
+  if (isError) return <p className="text-sm text-destructive">{appTexts.loadErrors.card}</p>
   return <InstallmentCardView card={card} />
 }
 
@@ -109,7 +110,7 @@ function InstallmentCardView({ card }: { card: InstallmentCard }) {
           </CardContent>
         </Card>
         <Link to="/cards" className="text-sm text-muted-foreground underline">
-          Back to {t.screen.toLowerCase()}
+          {appTexts.common.backToCards}
         </Link>
       </div>
     </>

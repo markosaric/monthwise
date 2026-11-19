@@ -1,6 +1,7 @@
 using Monthwise.Application.Cards;
 using Monthwise.Application.CashFlow;
 using Monthwise.Application.Common;
+using Monthwise.Application.Localization;
 using Monthwise.Application.SharedCosts;
 using Monthwise.Domain.Cards;
 using Monthwise.Domain.Common;
@@ -62,14 +63,14 @@ public sealed class LoanBook
     public Guid CategoryOf(Guid loanId) => _loans[loanId].CategoryId;
 
     public NamedReference Category(Guid id) =>
-        new(id, _categories.TryGetValue(id, out var category) ? category.Name : "Unknown");
+        new(id, _categories.TryGetValue(id, out var category) ? PredefinedNames.Display(id, category.Name) : ServerTexts.Unknown);
 
     public NamedReference Subcategory(Guid id) =>
-        new(id, _subcategories.TryGetValue(id, out var subcategory) ? subcategory.Name : "Unknown");
+        new(id, _subcategories.TryGetValue(id, out var subcategory) ? PredefinedNames.Display(id, subcategory.Name) : ServerTexts.Unknown);
 
-    public NamedReference Lender(Guid id) => new(id, _lenders.TryGetValue(id, out var name) ? name : "Unknown");
+    public NamedReference Lender(Guid id) => new(id, _lenders.TryGetValue(id, out var name) ? name : ServerTexts.Unknown);
 
-    public NamedReference Account(Guid id) => new(id, _accounts.TryGetValue(id, out var card) ? card.Name : "Unknown");
+    public NamedReference Account(Guid id) => new(id, _accounts.TryGetValue(id, out var card) ? card.Name : ServerTexts.Unknown);
 
     public NamedReference LoanReference(Guid loanId) => new(loanId, _loans[loanId].Name);
 

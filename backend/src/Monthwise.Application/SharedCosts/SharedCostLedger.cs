@@ -3,6 +3,7 @@ using Monthwise.Application.CashFlow;
 using Monthwise.Application.Common;
 using Monthwise.Application.Expenses;
 using Monthwise.Application.Loans;
+using Monthwise.Application.Localization;
 using Monthwise.Domain.Cards;
 using Monthwise.Domain.CashFlow;
 using Monthwise.Domain.Common;
@@ -67,7 +68,7 @@ public sealed class SharedCostBook
     public IEnumerable<CashFlowInput> Orphans => _stored.Where(s => !_costs.ContainsKey(s.Key)).Select(s => s.Value);
 
     public NamedReference Participant(Guid id) =>
-        new(id, _participants.TryGetValue(id, out var participant) ? participant.Name : "Unknown");
+        new(id, _participants.TryGetValue(id, out var participant) ? participant.Name : ServerTexts.Unknown);
 
     public ShareResponse? ToResponse(CostShare? share) =>
         share is null
@@ -77,7 +78,7 @@ public sealed class SharedCostBook
                 share.Shares,
                 share.ParticipantShares,
                 share.Percentage,
-                share.ContributionAccountId is { } id ? new NamedReference(id, _accounts.GetValueOrDefault(id, "Unknown")) : null);
+                share.ContributionAccountId is { } id ? new NamedReference(id, _accounts.GetValueOrDefault(id, ServerTexts.Unknown)) : null);
 
     /// <summary>The calculated contribution of <paramref name="cost"/> as input details; without an account the account id is empty.</summary>
     public static InputDetails DetailsOf(SharedCost cost)
@@ -139,7 +140,7 @@ public sealed class SharedCostBook
             stored is null && cost.Contribution.AccountId is null,
             !(stored?.IsReceived ?? false) && (stored?.ExpectedDate ?? cost.Contribution.ExpectedDate) < Today,
             (stored?.AccountId ?? cost.Contribution.AccountId) is { } accountId
-                ? new NamedReference(accountId, _accounts.GetValueOrDefault(accountId, "Unknown"))
+                ? new NamedReference(accountId, _accounts.GetValueOrDefault(accountId, ServerTexts.Unknown))
                 : null);
     }
 
@@ -214,7 +215,7 @@ public sealed class SharedCostLedger(
     {
         ArgumentNullException.ThrowIfNull(payment);
         return payment.Kind == LoanPaymentKind.Residual
-            ? $"{loanName}, residual value"
+            ? ServerTexts.Translate($"{loanName}, residual value")
             : $"{loanName} {payment.Number}/{payment.Total}";
     }
 }

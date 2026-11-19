@@ -5,6 +5,7 @@ import { CardSummary } from '@/components/cards/CardSummary'
 import { cardTexts } from '@/components/cards/texts'
 import { Button } from '@/components/ui/button'
 import { PageHeader } from '@/pages/PageHeader'
+import { appTexts } from '@/components/common/texts'
 
 const filters: CardListFilter[] = ['Default', 'Expired', 'Archived']
 
@@ -18,7 +19,7 @@ export function CardsSettingsPage() {
       <PageHeader title={cardTexts.section} description={cardTexts.sectionDescription} />
       <div className="flex max-w-2xl flex-col gap-4">
         <div className="flex flex-wrap items-center gap-2">
-          <div role="group" aria-label="Show" className="flex gap-1">
+          <div role="group" aria-label={appTexts.common.show} className="flex gap-1">
             {filters.map((value) => (
               <Button
                 key={value}
@@ -36,8 +37,8 @@ export function CardsSettingsPage() {
           </Button>
         </div>
 
-        {isPending && <p className="text-sm text-muted-foreground">Loading…</p>}
-        {isError && <p className="text-sm text-destructive">Cards could not be loaded.</p>}
+        {isPending && <p className="text-sm text-muted-foreground">{appTexts.common.loading}</p>}
+        {isError && <p className="text-sm text-destructive">{appTexts.loadErrors.cards}</p>}
         {cards?.length === 0 && (
           <div className="flex flex-col items-start gap-3 rounded-lg border border-dashed p-4">
             <p className="text-sm text-muted-foreground">

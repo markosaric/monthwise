@@ -1,10 +1,12 @@
 import type { CardStatus, CardType } from '@/api/cards'
+import { localized } from '@/i18n/texts'
+import { cardTextsHr } from './texts.hr'
 
 /**
- * Card labels and messages in one place, so they can be translated to Croatian later
+ * Card labels and messages in one place, in English and Croatian (croatian-language.md)
  * (requirements NFR-5).
  */
-export const cardTexts = {
+const en = {
   section: 'Cards and accounts',
   sectionDescription: 'Payment cards and bank accounts, their validity and limits.',
   addCard: 'Add card',
@@ -103,3 +105,7 @@ export const cardTexts = {
   expired: 'Card marked as expired.',
   archived: 'Card archived.',
 } as const
+
+export type CardTextsEn = typeof en
+
+export const cardTexts = localized(en, cardTextsHr)

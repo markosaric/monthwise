@@ -1,5 +1,6 @@
 using Monthwise.Application.CashFlow;
 using Monthwise.Application.Common;
+using Monthwise.Application.Localization;
 using Monthwise.Domain.Common;
 using Monthwise.Domain.Loans;
 
@@ -17,7 +18,7 @@ public sealed class LoanCategoryHandler(
         var bySubcategory = (await subcategories.ListAsync(cancellationToken)).ToLookup(s => s.CategoryId);
         return (await categories.ListAsync(cancellationToken))
             .Where(c => includeHidden || !c.IsHidden)
-            .OrderBy(c => c.Name, StringComparer.CurrentCultureIgnoreCase)
+            .OrderBy(c => PredefinedNames.Display(c.Id, c.Name), StringComparer.CurrentCultureIgnoreCase)
             .Select(c => ToResponse(c, bySubcategory[c.Id].Where(s => includeHidden || !s.IsHidden)))
             .ToList();
     }
@@ -30,7 +31,8 @@ public sealed class LoanCategoryHandler(
         {
             return Result.Failure<LoanCategoryResponse>(created.Errors);
         }
-        if (await categories.NameInUseAsync(created.Value.Name, null, cancellationToken))
+        if (await categories.NameInUseAsync(created.Value.Name, null, cancellationToken)
+            || await CategoryNameClashesAsync(created.Value.Name, null, cancellationToken))
         {
             return Result.Failure<LoanCategoryResponse>(LoanErrors.CategoryNameInUse);
         }
@@ -50,7 +52,8 @@ public sealed class LoanCategoryHandler(
             {
                 return renamed;
             }
-            if (await categories.NameInUseAsync(category.Name, category.Id, cancellationToken))
+            if (await categories.NameInUseAsync(category.Name, category.Id, cancellationToken)
+                || await CategoryNameClashesAsync(category.Name, category.Id, cancellationToken))
             {
                 return Result.Failure(LoanErrors.CategoryNameInUse);
             }
@@ -106,7 +109,8 @@ public sealed class LoanCategoryHandler(
         {
             return Result.Failure<LoanSubcategoryResponse>(created.Errors);
         }
-        if (await subcategories.NameInUseAsync(categoryId, created.Value.Name, null, cancellationToken))
+        if (await subcategories.NameInUseAsync(categoryId, created.Value.Name, null, cancellationToken)
+            || await SubcategoryNameClashesAsync(categoryId, created.Value.Name, null, cancellationToken))
         {
             return Result.Failure<LoanSubcategoryResponse>(LoanErrors.SubcategoryNameInUse);
         }
@@ -124,6 +128,7 @@ public sealed class LoanCategoryHandler(
                 return renamed;
             }
             return await subcategories.NameInUseAsync(subcategory.CategoryId, subcategory.Name, subcategory.Id, cancellationToken)
+                || await SubcategoryNameClashesAsync(subcategory.CategoryId, subcategory.Name, subcategory.Id, cancellationToken)
                 ? Result.Failure(LoanErrors.SubcategoryNameInUse)
                 : Result.Success();
         }, cancellationToken);
@@ -193,15 +198,28 @@ public sealed class LoanCategoryHandler(
         return Result.Success(ToResponse(subcategory));
     }
 
+    /// <summary>Whether the name is another category's predefined name in Croatian (croatian-language.md).</summary>
+    private async Task<bool> CategoryNameClashesAsync(string name, Guid? exceptId, CancellationToken cancellationToken) =>
+        PredefinedNames.ClashesWithTranslation(
+            name, exceptId, (await categories.ListAsync(cancellationToken)).Select(c => (c.Id, c.Name)));
+
+    /// <summary>Whether the name is a predefined subcategory's Croatian name in the same category.</summary>
+    private async Task<bool> SubcategoryNameClashesAsync(
+        Guid categoryId, string name, Guid? exceptId, CancellationToken cancellationToken) =>
+        PredefinedNames.ClashesWithTranslation(
+            name,
+            exceptId,
+            (await subcategories.ListAsync(cancellationToken)).Where(s => s.CategoryId == categoryId).Select(s => (s.Id, s.Name)));
+
     private static LoanCategoryResponse ToResponse(LoanCategory category, IEnumerable<LoanSubcategory> own) =>
         new(
             category.Id,
-            category.Name,
+            PredefinedNames.Display(category.Id, category.Name),
             category.AllowsResidualValue,
             category.IsPredefined,
             category.IsHidden,
-            own.OrderBy(s => s.Name, StringComparer.CurrentCultureIgnoreCase).Select(ToResponse).ToList());
+            own.OrderBy(s => PredefinedNames.Display(s.Id, s.Name), StringComparer.CurrentCultureIgnoreCase).Select(ToResponse).ToList());
 
     private static LoanSubcategoryResponse ToResponse(LoanSubcategory subcategory) =>
-        new(subcategory.Id, subcategory.CategoryId, subcategory.Name, subcategory.IsPredefined, subcategory.IsHidden);
+        new(subcategory.Id, subcategory.CategoryId, PredefinedNames.Display(subcategory.Id, subcategory.Name), subcategory.IsPredefined, subcategory.IsHidden);
 }

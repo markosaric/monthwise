@@ -1,3 +1,4 @@
+using Monthwise.Application.Localization;
 using Monthwise.Infrastructure.Persistence;
 
 namespace Monthwise.Api.Hosting;
@@ -15,7 +16,7 @@ internal static class MigrationGate
                 && !context.Request.Path.StartsWithSegments("/api/health", StringComparison.OrdinalIgnoreCase))
             {
                 await TypedResults.Problem(
-                        title: "The database could not be brought up to date. See the log for details.",
+                        title: ServerTexts.Translate("The database could not be brought up to date. See the log for details."),
                         statusCode: StatusCodes.Status503ServiceUnavailable)
                     .ExecuteAsync(context);
                 return;

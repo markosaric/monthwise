@@ -1,10 +1,12 @@
 import type { CardPaymentLineKind } from '@/api/cardPurchases'
+import { localized } from '@/i18n/texts'
+import { cardPurchaseTextsHr } from './texts.hr'
 
 /**
- * Card purchase labels and messages in one place, so they can be translated to Croatian later
+ * Card purchase labels and messages in one place, in English and Croatian (croatian-language.md)
  * (installments NFR-5).
  */
-export const cardPurchaseTexts = {
+const en = {
   screen: 'Cards',
   screenDescription: 'Card purchases, installments and the card payment of every month.',
   noCards:
@@ -149,3 +151,7 @@ export const cardPurchaseTexts = {
     needsAccount: 'Choose an account',
   },
 } as const
+
+export type CardPurchaseTextsEn = typeof en
+
+export const cardPurchaseTexts = localized(en, cardPurchaseTextsHr)
