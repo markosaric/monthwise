@@ -87,8 +87,8 @@ chosen language. English stays available and works as before.
 
 **FR-8 User manual**
 - The user manual is available in English and Croatian, with the same content.
-- The help link in the app opens the manual in the chosen language, and each manual links to the
-  other language.
+- Each manual links to the other language at its top, and the README links both. The app itself
+  has no help link (an in-app help link would be a feature of its own).
 - The Croatian manual's text is in Croatian; its screenshots show the app in Croatian.
 
 **FR-9 New texts**
@@ -133,7 +133,7 @@ chosen language. English stays available and works as before.
 7. Amounts and numeric dates look identical in both languages; month names follow the language.
 8. A backup exported in English imports in Croatian with no difference, and the other way round.
 9. An automatic check fails when an app text exists in only one language.
-10. The help link opens the manual in the chosen language.
+10. Each manual links to the other language, and the README links both manuals.
 11. Long Croatian texts are not cut off on a phone.
 
 ## 7. Changes to earlier requirements
