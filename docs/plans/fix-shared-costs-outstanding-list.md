@@ -1,7 +1,7 @@
 # Plan: Outstanding contributions without status chips
 
 - **Branch:** `fix/shared-costs-outstanding-list`
-- **Status:** In progress
+- **Status:** Done
 - **Date:** 2026-11-19
 - **Requirements:** [shared-bills.md, Appendix 2](../feature-requirements/shared-bills.md#appendix-2-outstanding-contributions-without-status-chips),
   [design-refresh.md, Appendix 6](../feature-requirements/design-refresh.md#appendix-6-outstanding-contributions-without-status-chips)

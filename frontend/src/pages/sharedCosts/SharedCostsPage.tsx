@@ -117,6 +117,7 @@ function Overview({ month }: { month: string }) {
               empty={t.nothingOutstanding}
               contributions={outstanding}
               showParticipant={participants.length > 1}
+              showStatus={false}
             />
             <ReceivedAndOutstanding participants={participants} />
           </CardContent>
@@ -268,12 +269,15 @@ function ContributionList({
   empty,
   contributions,
   showParticipant = false,
+  showStatus = true,
   hideTitle = false,
 }: {
   title: string
   empty: string
   contributions: Contribution[]
   showParticipant?: boolean
+  /** Whether each line shows its Expected, Overdue or Received chip (shared bills Appendix 2). */
+  showStatus?: boolean
   hideTitle?: boolean
 }) {
   return (
@@ -286,6 +290,7 @@ function ContributionList({
             key={`${c.billId ?? `${c.loanId}-${c.month}-${c.paymentKind}`}`}
             contribution={c}
             showParticipant={showParticipant}
+            showStatus={showStatus}
           />
         ))}
       </ul>
@@ -296,9 +301,11 @@ function ContributionList({
 function ContributionLine({
   contribution,
   showParticipant,
+  showStatus,
 }: {
   contribution: Contribution
   showParticipant: boolean
+  showStatus: boolean
 }) {
   const change = useChangeContribution()
 
@@ -333,14 +340,15 @@ function ContributionLine({
             ? sharedCostTexts.contribution.receivedOn(formatDate(contribution.receivedDate))
             : sharedCostTexts.contribution.expectedOn(formatDate(contribution.expectedDate))}
         </span>
-        {contribution.isOverdue ? (
-          <StatusChip status="overdue" label={t.overdue} />
-        ) : (
-          <StatusChip
-            status={contribution.isReceived ? 'done' : 'expected'}
-            label={contribution.isReceived ? t.tickReceived : t.expected}
-          />
-        )}
+        {showStatus &&
+          (contribution.isOverdue ? (
+            <StatusChip status="overdue" label={t.overdue} />
+          ) : (
+            <StatusChip
+              status={contribution.isReceived ? 'done' : 'expected'}
+              label={contribution.isReceived ? t.tickReceived : t.expected}
+            />
+          ))}
         {contribution.needsAccount && (
           <Badge variant="destructive">{sharedCostTexts.contribution.needsAccount}</Badge>
         )}

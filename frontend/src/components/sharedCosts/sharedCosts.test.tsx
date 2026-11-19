@@ -251,7 +251,7 @@ describe('Contributions grouped by contributor', () => {
 })
 
 describe('The Shared costs screen', () => {
-  it('shows what a participant shares and their outstanding contributions, overdue ones marked', async () => {
+  it('shows what a participant shares and their outstanding contributions without status chips', async () => {
     stubApi({
       'GET /api/participants': () => json([ana]),
       'GET /api/shared-costs': () =>
@@ -278,7 +278,9 @@ describe('The Shared costs screen', () => {
     }).parentElement!
     expect(within(outstanding).getByText('Electricity, apartment')).toBeInTheDocument()
     expect(within(outstanding).queryByText('Internet')).not.toBeInTheDocument()
-    expect(within(outstanding).getByText(t.screen.overdue)).toBeInTheDocument()
+    // No Expected or Overdue chips in the outstanding list (shared bills Appendix 2).
+    expect(within(outstanding).queryByText(t.screen.overdue)).not.toBeInTheDocument()
+    expect(within(outstanding).queryByText(t.screen.expected)).not.toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Ana' })).toHaveAttribute(
       'href',
       '/shared-costs/participants/ana/edit',
@@ -294,5 +296,10 @@ describe('The Shared costs screen', () => {
       screen.getByRole('progressbar', { name: `Ana: ${t.screen.monthReceived}` }),
     ).toHaveAttribute('aria-valuenow', '2125')
     expect(screen.getByText(t.screen.receivedAndOutstanding)).toBeInTheDocument()
+
+    // The month's contributions in the participant card keep their chips.
+    const monthList = screen.getByText(`${t.screen.monthContributions} (2)`).closest('details')!
+    expect(within(monthList).getByText(t.screen.overdue)).toBeInTheDocument()
+    expect(within(monthList).getByText(t.screen.tickReceived)).toBeInTheDocument()
   })
 })
