@@ -321,3 +321,12 @@ digits for the month, a slash and two digits for the year, **`MM/YY`** (e.g. `02
 **Why:** the fields used the browser's built-in month picker, which Safari does not support. In
 production (Safari) both fields were plain empty text boxes with no hint of the expected format,
 so a card could not be added reliably. `MM/YY` is also how the dates are printed on the card.
+
+## Appendix 5: UI text in English and Croatian
+
+- **Date:** 2026-11-19
+- **Branch:** `feat/croatian-language`
+- **Changes:** NFR-5
+
+- **NFR-5 Language:** UI text in English and Croatian; the user chooses the language in Settings.
+  See [croatian-language.md](croatian-language.md).

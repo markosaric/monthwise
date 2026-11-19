@@ -364,3 +364,12 @@ These replace acceptance criteria 3, 4 and 5 where they differ:
    it again to that bill's month, and adds it to the following months.
 5. A bill added from a recurring bill shows Recurring as ticked and cannot be unticked in the bill
    form.
+
+## Appendix 3: UI text in English and Croatian
+
+- **Date:** 2026-11-19
+- **Branch:** `feat/croatian-language`
+- **Changes:** NFR-5
+
+- **NFR-5 Language:** UI text in English and Croatian; the user chooses the language in Settings.
+  See [croatian-language.md](croatian-language.md).

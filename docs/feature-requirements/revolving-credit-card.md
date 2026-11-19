@@ -282,3 +282,12 @@ did not lower the debt.
 **FR-4 Estimated bills**
 - Estimated future bills use the same daily interest, assuming only the minimum payment is paid on
   each due date and no new charges are made.
+
+## Appendix 2: UI text in English and Croatian
+
+- **Date:** 2026-11-19
+- **Branch:** `feat/croatian-language`
+- **Changes:** NFR-5
+
+- **NFR-5 Language:** UI text in English and Croatian; the user chooses the language in Settings.
+  See [croatian-language.md](croatian-language.md).

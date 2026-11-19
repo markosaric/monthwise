@@ -207,3 +207,12 @@ participant pays. The app then:
    contributions, with overdue ones highlighted.
 10. Account balances, the cash flow chart and the monthly report count the full cost as an output
     and contributions as inputs; the monthly report also shows the own part.
+
+## Appendix 1: UI text in English and Croatian
+
+- **Date:** 2026-11-19
+- **Branch:** `feat/croatian-language`
+- **Changes:** NFR-5
+
+- **NFR-5 Language:** UI text in English and Croatian; the user chooses the language in Settings.
+  See [croatian-language.md](croatian-language.md).

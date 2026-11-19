@@ -296,3 +296,12 @@ Acceptance criteria:
 2. Editing or deleting a balance entry of an archived account is refused, and the entry is
    unchanged afterwards.
 3. Balance entries of active, blocked and expired accounts can still be edited and deleted.
+
+## Appendix 4: UI text in English and Croatian
+
+- **Date:** 2026-11-19
+- **Branch:** `feat/croatian-language`
+- **Changes:** NFR-5
+
+- **NFR-5 Language:** UI text in English and Croatian; the user chooses the language in Settings.
+  See [croatian-language.md](croatian-language.md).
