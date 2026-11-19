@@ -216,3 +216,27 @@ participant pays. The app then:
 
 - **NFR-5 Language:** UI text in English and Croatian; the user chooses the language in Settings.
   See [croatian-language.md](croatian-language.md).
+
+## Appendix 2: Outstanding contributions without status chips
+
+- **Date:** 2026-11-19
+- **Branch:** `fix/shared-costs-outstanding-list`
+- **Changes:** FR-8, acceptance criterion 9
+
+The Outstanding contributions list on the Shared costs screen marked every line with a status
+chip, *Expected* or *Overdue*. Every line in that list is outstanding, so the chips repeat what the
+list title already says and make the list busy. The list shows only what the user needs there:
+what is outstanding and, next to it, what was received this month.
+
+- **FR-8, outstanding contributions:** the list shows the outstanding contributions in total (all
+  months), oldest first, each with its cost, expected date and amount and the one-tap check box to
+  tick it as received. A line no longer shows an *Expected* or *Overdue* chip, and overdue ones are
+  no longer highlighted in the list.
+- The **Overdue** key figure above the list is unchanged and still shows the overdue total (red
+  when above zero).
+- The contributions of the month in a participant's card keep their chips (*Expected*, *Overdue*,
+  *Received*), because that list mixes received and outstanding contributions.
+
+**Acceptance criterion 9** becomes: the Shared costs screen shows each participant's shared
+costs, parts, received and outstanding contributions; the Outstanding contributions list shows no
+*Expected* or *Overdue* chips.
