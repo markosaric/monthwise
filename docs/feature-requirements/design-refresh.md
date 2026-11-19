@@ -585,3 +585,14 @@ wanted the whole Dashboard to fit in two rows on a desktop screen.
 
 - **NFR-5 Language:** UI text in English and Croatian; the user chooses the language in Settings.
   See [croatian-language.md](croatian-language.md).
+
+## Appendix 6: Outstanding contributions without status chips
+
+- **Date:** 2026-11-19
+- **Branch:** `fix/shared-costs-outstanding-list`
+- **Changes:** FR-19 (Outstanding contributions)
+
+- **FR-19, Outstanding contributions:** a list with due date and amount and a one-tap check button
+  to mark a contribution received. Lines show no *Expected* or *Overdue* chip and overdue ones are
+  not shown in red; the Overdue key figure stays. See
+  [shared-bills.md, Appendix 2](shared-bills.md#appendix-2-outstanding-contributions-without-status-chips).
