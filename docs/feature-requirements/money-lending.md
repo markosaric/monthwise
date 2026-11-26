@@ -29,7 +29,7 @@ account and when, and when it is expected back. In the cash flow:
 | Term | Meaning |
 |---|---|
 | Lending | Money the user lends to a borrower once, to be returned later (Croatian: *posudba*). |
-| Borrower | The person the money is lent to (Croatian: *dužnik*). Not a user of the app. |
+| Borrower | The person the money is lent to (Croatian: *dužnik*). Not a user of the app. A borrower is a **payer** from the payers list (FR-6). |
 | Lend date | The date the money left the user's account (Croatian: *datum posudbe*). |
 | Expected return date | The date by which the borrower is expected to return the money (Croatian: *očekivani datum povrata*). |
 | Repayment | An amount the borrower returns (Croatian: *povrat*). A lending can be returned in one or several repayments (FR-4). |
@@ -44,7 +44,7 @@ account and when, and when it is expected back. In the cash flow:
 
 | # | Attribute | Required | Description and rules |
 |---|---|---|---|
-| L1 | Borrower | Yes | Typed freely, or picked from the saved borrowers suggested while typing (FR-6). Maximum 50 characters. |
+| L1 | Borrower | Yes | Typed freely, or picked from the saved payers suggested while typing (FR-6). Maximum 100 characters, as for payers. |
 | L2 | Amount | Yes | Amount lent, in EUR, exact to the cent, greater than zero. |
 | L3 | Lend date | Yes | The date the money left the account. Prefilled with today. |
 | L4 | From account | Yes | The account the money left. Any account that is not blocked, expired or archived. Prefilled only when exactly one account is primary (as in [input-cash-flow.md](input-cash-flow.md) FR-4). Not a credit card. |
@@ -110,10 +110,14 @@ General rules:
   **Overdue** and is highlighted wherever it is listed.
 
 **FR-6 Borrowers**
-- While typing the borrower, the user gets suggestions from the saved borrowers.
-- A newly typed borrower is saved to the list automatically when the lending is saved.
-- Borrowers are their own list: they are not the participants of Shared costs
-  ([shared-bills.md](shared-bills.md) FR-1) and not payers of inputs.
+- Borrowers come from the same list as the **payers** of inputs (see
+  [input-cash-flow.md](input-cash-flow.md) FR-5). While typing the borrower, the user gets
+  suggestions from the saved payers.
+- A newly typed borrower is saved to the payers list automatically when the lending is saved, and
+  is then also suggested as a payer of inputs.
+- Borrowers are renamed and removed in the **Payers** section in Settings, like any payer. Renaming
+  a payer also renames it on its lendings. Removing a payer from the list does not change lendings
+  already recorded with it.
 - The user can see, per borrower, the total lent, returned and outstanding.
 
 ### 4.2 Cash flow
@@ -131,8 +135,8 @@ General rules:
 - While a lending is not returned, its outstanding amount is an **expected input** of the
   lending's *From account* in the month of the expected return date. It counts in that account's
   expected end-of-month balance when the expected return date is in the current month.
-- Repayments are not payments from a payer: they are not counted in the input categories, and the
-  borrower is not added to the payers list.
+- Repayments are shown with the borrower as payer, but they are not counted in the input
+  categories: they are counted in their own **Lending** group (FR-9, FR-10).
 
 **FR-9 Month screen**
 - The **Month** screen shows the month's lendings and repayments in their own **Lending** list,
@@ -154,7 +158,7 @@ General rules:
   amount highlighted, and opens the Lending screen when selected.
 
 **FR-12 Backup and restore**
-- Lendings, repayments and borrowers are part of the household data that is exported and imported
+- Lendings and repayments are part of the household data that is exported and imported
   (see [backup-and-restore.md](backup-and-restore.md) FR-2).
 
 ## 5. Non-functional requirements
@@ -201,8 +205,9 @@ General rules:
    in the expected end-of-month balance of the *From account*.
 8. The Month screen, the Cash flow dashboard and the monthly report show lent amounts as outputs and
    repayments as inputs in their own Lending group, and the month result includes them.
-9. Typing a borrower suggests saved borrowers; a new borrower is saved automatically.
+9. Typing a borrower suggests saved payers; a new borrower is saved to the payers list
+   automatically and can be renamed or removed in Settings, Payers.
 10. Editing or deleting a lending or a repayment updates the list, totals, balances, chart and
     report.
-11. An export followed by an import brings back all lendings, repayments and borrowers.
+11. An export followed by an import brings back all lendings and repayments.
 12. All new texts are shown in Croatian when Croatian is chosen.
