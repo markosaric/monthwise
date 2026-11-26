@@ -103,6 +103,7 @@ const en = {
     cardPurchases: 'Card purchases',
     bills: 'Bills',
     expenses: 'Expenses',
+    lendings: 'Lendings',
   },
   cancel: 'Cancel',
   confirmationWord: 'REPLACE',

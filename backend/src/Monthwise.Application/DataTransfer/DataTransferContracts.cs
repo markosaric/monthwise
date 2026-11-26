@@ -4,7 +4,7 @@ using Monthwise.Domain.DataTransfer;
 namespace Monthwise.Application.DataTransfer;
 
 /// <summary>How much household data there is, shown before an import (backup and restore FR-2, FR-4).</summary>
-public sealed record DataSummaryResponse(int Cards, int Loans, int Inputs, int CardPurchases, int Bills, int Expenses);
+public sealed record DataSummaryResponse(int Cards, int Loans, int Inputs, int CardPurchases, int Bills, int Expenses, int Lendings = 0);
 
 /// <summary>One line of the data and backups history (FR-9).</summary>
 public sealed record DataTransferResponse(

@@ -20,10 +20,12 @@ import {
 } from '@/api/cashFlow'
 import { useCards } from '@/api/cards'
 import { useExpenseCategories } from '@/api/expenses'
+import { useBorrowerTotals } from '@/api/lending'
 import { useLoanCategories } from '@/api/loans'
 import { CashFlowChart, CashFlowTable, ChartLegend } from '@/components/cashflow/CashFlowChart'
 import { cashFlowTexts } from '@/components/cashflow/texts'
 import { meaningColors, sectionColors } from '@/components/design/colors'
+import { lendingTexts } from '@/components/lending/texts'
 import { StatCard, StatGrid } from '@/components/design/StatCard'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -71,6 +73,7 @@ export function CashFlowPage() {
   const [loanCategoryId, setLoanCategoryId] = useState('')
   const [cardId, setCardId] = useState('')
   const [expenseCategoryId, setExpenseCategoryId] = useState('')
+  const [borrowerId, setBorrowerId] = useState('')
   const [asTable, setAsTable] = useState(false)
   const { data: cards = [] } = useCards('Default')
   const { data: payers = [] } = usePayers()
@@ -78,6 +81,7 @@ export function CashFlowPage() {
   const { data: loanCategories = [] } = useLoanCategories(true)
   const { data: installmentCards = [] } = useInstallmentCards()
   const { data: expenseCategories = [] } = useExpenseCategories(true)
+  const { data: borrowers = [] } = useBorrowerTotals()
   const {
     data: chart,
     isPending,
@@ -90,6 +94,7 @@ export function CashFlowPage() {
     loanCategoryId,
     cardId,
     expenseCategoryId,
+    borrowerId,
   })
 
   const filters: FilterDef[] = [
@@ -140,6 +145,14 @@ export function CashFlowPage() {
       onChange: setExpenseCategoryId,
       all: t.allExpenseCategories,
       options: expenseCategories,
+    },
+    {
+      id: 'borrower',
+      label: lendingTexts.chart.borrower,
+      value: borrowerId,
+      onChange: setBorrowerId,
+      all: lendingTexts.chart.allBorrowers,
+      options: borrowers.map((b) => ({ id: b.payerId, name: b.name })),
     },
   ]
   const active = filters.filter((f) => f.value !== '')

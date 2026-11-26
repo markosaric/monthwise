@@ -7,6 +7,9 @@ public enum DashboardItemKind
     LoanPayment,
     CardPayment,
     Input,
+
+    /// <summary>Lent money expected back (money lending FR-8).</summary>
+    Lending,
 }
 
 /// <summary>
@@ -22,7 +25,8 @@ public sealed record DashboardStillToPayResponse(long TotalCents, int Count, lon
 public sealed record DashboardItemResponse(DashboardItemKind Kind, string Name, DateOnly Date, long AmountCents);
 
 /// <summary>The month's outputs split by kind; together they are the month's outputs total.</summary>
-public sealed record DashboardOutputsByKindResponse(long BillsCents, long ExpensesCents, long LoanPaymentsCents, long CardPaymentsCents);
+public sealed record DashboardOutputsByKindResponse(
+    long BillsCents, long ExpensesCents, long LoanPaymentsCents, long CardPaymentsCents, long LendingCents);
 
 /// <summary>Inputs and outputs of one month for the 6-month chart.</summary>
 public sealed record DashboardMonthResponse(string Month, long InputsCents, long OutputsCents);
@@ -35,6 +39,12 @@ public sealed record DashboardCardPaymentsResponse(long MonthTotalCents, int Cou
 
 /// <summary>The Shared costs small card: outstanding contributions and how many participants owe something.</summary>
 public sealed record DashboardSharedCostsResponse(long OutstandingCents, int ParticipantsOwing, bool HasOverdue);
+
+/// <summary>
+/// The Lending small card (money lending FR-11): what borrowers still owe, the overdue part of it, and how
+/// many lendings are not returned yet. Null on the Dashboard when nothing is outstanding.
+/// </summary>
+public sealed record DashboardLendingResponse(long OutstandingCents, long OverdueCents, int OpenCount, bool HasOverdue);
 
 /// <summary>The Recurring bills small card: active recurring bills and this month's bills not issued yet.</summary>
 public sealed record DashboardRecurringBillsResponse(int ActiveCount, int NotIssuedThisMonth);
@@ -59,4 +69,5 @@ public sealed record DashboardResponse(
     DashboardLoansResponse? Loans,
     DashboardCardPaymentsResponse? CardPayments,
     DashboardSharedCostsResponse? SharedCosts,
-    DashboardRecurringBillsResponse? RecurringBills);
+    DashboardRecurringBillsResponse? RecurringBills,
+    DashboardLendingResponse? Lending);

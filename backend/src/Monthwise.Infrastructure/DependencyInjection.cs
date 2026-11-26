@@ -7,6 +7,7 @@ using Monthwise.Application.CashFlow;
 using Monthwise.Application.Common;
 using Monthwise.Application.DataTransfer;
 using Monthwise.Application.Expenses;
+using Monthwise.Application.Lendings;
 using Monthwise.Application.Loans;
 using Monthwise.Application.Revolving;
 using Monthwise.Application.SharedCosts;
@@ -57,6 +58,7 @@ public static class DependencyInjection
         services.AddScoped<IRecurringBillRepository, RecurringBillRepository>();
         services.AddScoped<IBillRepository, BillRepository>();
         services.AddScoped<IExpenseRepository, ExpenseRepository>();
+        services.AddScoped<ILendingRepository, LendingRepository>();
         services.AddScoped<IParticipantRepository, ParticipantRepository>();
         services.AddScoped<IDebtEntryRepository, DebtEntryRepository>();
         services.AddScoped<IExtraPaymentRepository, ExtraPaymentRepository>();

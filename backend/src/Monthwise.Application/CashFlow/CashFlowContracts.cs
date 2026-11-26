@@ -190,7 +190,8 @@ public sealed record ReportOutputsResponse(
 /// <summary>
 /// The monthly cash flow report (FR-13, Appendix 1). <see cref="MonthResultCents"/> is all inputs
 /// minus all outputs; the previous-month figures allow the comparison. <see cref="SharedCosts"/> sums
-/// the month's shared bills and loan payments and their contributions (shared bills FR-9).
+/// the month's shared bills and loan payments and their contributions (shared bills FR-9); <see cref="Lending"/>
+/// the month's lending by borrower, null when there is none (money lending FR-10).
 /// </summary>
 public sealed record MonthlyReportResponse(
     string Month,
@@ -205,4 +206,5 @@ public sealed record MonthlyReportResponse(
     long MonthResultCents,
     long PreviousMonthOutputsCents,
     long PreviousMonthResultCents,
-    ReportSharedCostsResponse? SharedCosts = null);
+    ReportSharedCostsResponse? SharedCosts = null,
+    Lendings.ReportLendingResponse? Lending = null);

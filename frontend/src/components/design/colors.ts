@@ -10,6 +10,7 @@ export const sectionColors = {
   cards: 'var(--section-cards)',
   loans: 'var(--section-loans)',
   shared: 'var(--section-shared)',
+  lending: 'var(--section-lending)',
   savings: 'var(--section-savings)',
   settings: 'var(--section-settings)',
 } as const

@@ -31,7 +31,9 @@ public sealed class GetDashboardHandler(
     LoanLedger loanLedger,
     CardPaymentLedger cardPaymentLedger,
     ExpenseLedger expenseLedger,
-    Revolving.RevolvingLedger revolvingLedger)
+    Revolving.RevolvingLedger revolvingLedger,
+    Lendings.GetLendingsHandler lendings,
+    Lendings.LendingLedger lendingLedger)
 {
     /// <summary>How many days Coming up looks ahead, today included.</summary>
     public const int ComingUpDays = 7;
@@ -81,7 +83,8 @@ public sealed class GetDashboardHandler(
             await LoansAsync(cancellationToken),
             await CardPaymentsAsync(monthCardPayments, cancellationToken),
             await SharedCostsAsync(month, cancellationToken),
-            await RecurringBillsAsync(monthBills, cancellationToken));
+            await RecurringBillsAsync(monthBills, cancellationToken),
+            await LendingAsync(cancellationToken));
     }
 
     /// <summary>
@@ -133,6 +136,11 @@ public sealed class GetDashboardHandler(
                     i.ExpectedDate,
                     i.AmountCents)));
         }
+        // Lent money expected back (money lending FR-8).
+        var lendingBook = await lendingLedger.LoadAsync(cancellationToken);
+        items.AddRange(lendingBook.InputsBetween(today, last)
+            .Where(i => !i.IsReceived)
+            .Select(i => new DashboardItemResponse(DashboardItemKind.Lending, lendingBook.Borrower(i.PayerId).Name, i.Date, i.Amount.Cents)));
         return items
             .Where(i => i.Date >= today && i.Date <= last)
             .OrderBy(i => i.Date)
@@ -142,20 +150,22 @@ public sealed class GetDashboardHandler(
             .ToList();
     }
 
-    /// <summary>The month's outputs as the monthly report counts them, split into bills, expenses, loan and card payments.</summary>
+    /// <summary>The month's outputs as the monthly report counts them, split into bills, expenses, loan and card payments and money lent.</summary>
     private async Task<DashboardOutputsByKindResponse> OutputsByKindAsync(YearMonth month, CancellationToken cancellationToken)
     {
         var expenseBook = await expenseLedger.LoadAsync(cancellationToken);
         var loanBook = await loanLedger.LoadAsync(cancellationToken);
         var cardBook = await cardPaymentLedger.LoadAsync(cancellationToken);
         var revolvingBook = await revolvingLedger.LoadAsync(cancellationToken, month);
+        var lendingBook = await lendingLedger.LoadAsync(cancellationToken);
         bool InMonth(DateOnly date) => date >= month.FirstDay && date <= month.LastDay;
         return new DashboardOutputsByKindResponse(
             Money.Sum(expenseBook.BillOutputs().Where(o => InMonth(o.Date)).Select(o => o.Amount)).Cents,
             Money.Sum(expenseBook.ExpenseOutputs().Where(o => InMonth(o.Date)).Select(o => o.Amount)).Cents,
             Money.Sum(loanBook.PaymentsBetween(month.FirstDay, month.LastDay).Select(p => p.Amount)).Cents,
             (Money.Sum(cardBook.PaymentsBetween(month.FirstDay, month.LastDay).Select(p => p.Amount))
-                + Money.Sum(revolvingBook.OutputsBetween(month.FirstDay, month.LastDay).Select(o => o.Amount))).Cents);
+                + Money.Sum(revolvingBook.OutputsBetween(month.FirstDay, month.LastDay).Select(o => o.Amount))).Cents,
+            Money.Sum(lendingBook.OutputsBetween(month.FirstDay, month.LastDay).Select(o => o.Amount)).Cents);
     }
 
     /// <summary>Inputs and outputs (received or paid and expected) of this month and the five before it.</summary>
@@ -207,6 +217,18 @@ public sealed class GetDashboardHandler(
     {
         var active = (await recurringBills.ListAsync(false, cancellationToken)).Count(r => r.IsActive);
         return active == 0 ? null : new DashboardRecurringBillsResponse(active, monthBills.NotIssuedCount);
+    }
+
+    private async Task<DashboardLendingResponse?> LendingAsync(CancellationToken cancellationToken)
+    {
+        var open = await lendings.HandleAsync(Lendings.LendingFilter.Open, cancellationToken);
+        return open.OutstandingCents == 0
+            ? null
+            : new DashboardLendingResponse(
+                open.OutstandingCents,
+                open.OverdueCents,
+                open.Lendings.Count,
+                open.Lendings.Any(l => l.State == Domain.Lendings.LendingState.Overdue));
     }
 
     private sealed record UnpaidItem(DashboardItemResponse Item, bool IsOverdue);

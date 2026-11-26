@@ -94,6 +94,7 @@ export const dataTextsHr: Translation<DataTextsEn> = {
     cardPurchases: 'Kupnje karticama',
     bills: 'Računi',
     expenses: 'Troškovi',
+    lendings: 'Posudbe',
   },
   cancel: 'Odustani',
   confirmationWord: 'ZAMIJENI',

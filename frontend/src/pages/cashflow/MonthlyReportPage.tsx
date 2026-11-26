@@ -2,6 +2,7 @@ import { ArrowDownLeft, ArrowUpRight, Equal } from 'lucide-react'
 import { Link, Navigate, useParams } from 'react-router'
 import { useMonthlyReport, type InputTotals, type MonthlyReport } from '@/api/cashFlow'
 import type { LoanPaymentTotals } from '@/api/loans'
+import type { ReportLending } from '@/api/lending'
 import type { ReportSharedCosts } from '@/api/sharedCosts'
 import { formatDate } from '@/components/cards/format'
 import { cashFlowTexts } from '@/components/cashflow/texts'
@@ -11,6 +12,7 @@ import { categoryColor, meaningColors, sectionColors } from '@/components/design
 import { MonthHeader } from '@/components/design/MonthHeader'
 import { RingChart } from '@/components/design/RingChart'
 import { StatCard, StatGrid } from '@/components/design/StatCard'
+import { lendingTexts } from '@/components/lending/texts'
 import { sharedCostTexts } from '@/components/sharedCosts/texts'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { formatYearMonth, isYearMonth } from '@/lib/dates'
@@ -202,6 +204,7 @@ function Report({ report }: { report: MonthlyReport }) {
       {report.sharedCosts && report.sharedCosts.totalCents > 0 && (
         <SharedCostsCard shared={report.sharedCosts} />
       )}
+      {report.lending && <LendingReportCard lending={report.lending} />}
 
       <CollapsibleCard title={t.balanceEntries}>
         <div className="flex flex-col gap-2 text-sm">
@@ -382,6 +385,56 @@ function SharedCostsCard({ shared }: { shared: ReportSharedCosts }) {
             </div>
           ))}
         </dl>
+      </CardContent>
+    </Card>
+  )
+}
+
+/** The month's lending: lent, returned and expected back, in total and per borrower (money lending FR-10). */
+function LendingReportCard({ lending }: { lending: ReportLending }) {
+  const l = lendingTexts
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>{l.report.title}</CardTitle>
+      </CardHeader>
+      <CardContent className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead className="text-left text-muted-foreground">
+            <tr>
+              <th className="py-1 pr-3 font-medium">{l.report.borrower}</th>
+              <th className="py-1 pr-3 text-right font-medium">{l.month.totals.lent}</th>
+              <th className="py-1 pr-3 text-right font-medium">{l.month.totals.returned}</th>
+              <th className="py-1 text-right font-medium">{l.month.totals.expectedBack}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {lending.byBorrower.map((b) => (
+              <tr key={b.payerId} className="border-t">
+                <td className="py-1.5 pr-3">{b.name}</td>
+                <td className="py-1.5 pr-3 text-right tabular-nums">{formatCents(b.lentCents)}</td>
+                <td className="py-1.5 pr-3 text-right tabular-nums">
+                  {formatCents(b.returnedCents)}
+                </td>
+                <td className="py-1.5 text-right tabular-nums">
+                  {formatCents(b.expectedBackCents)}
+                </td>
+              </tr>
+            ))}
+            <tr className="border-t font-medium">
+              <td className="py-1.5 pr-3">{l.report.total}</td>
+              <td className="py-1.5 pr-3 text-right tabular-nums">
+                {formatCents(lending.lentCents)}
+              </td>
+              <td className="py-1.5 pr-3 text-right tabular-nums">
+                {formatCents(lending.returnedCents)}
+              </td>
+              <td className="py-1.5 text-right tabular-nums">
+                {formatCents(lending.expectedBackCents)}
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </CardContent>
     </Card>
   )

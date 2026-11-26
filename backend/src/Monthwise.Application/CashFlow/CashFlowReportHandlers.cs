@@ -13,10 +13,22 @@ namespace Monthwise.Application.CashFlow;
 /// Filters of the cash flow chart (FR-12, Appendix 1). The account applies to inputs and outputs;
 /// payer and category to inputs only. The loan category shows only the payments of those loans, the
 /// card only that card's card payments (installments FR-8), and the expense category only the bills
-/// and expenses of that category (bills and expenses FR-10).
+/// and expenses of that category (bills and expenses FR-10). The borrower shows only the lending with that
+/// borrower (money lending FR-10); lending is left out when any other filter but the account is set.
 /// </summary>
 public sealed record ChartFilter(
-    Guid? AccountId, Guid? PayerId, Guid? CategoryId, Guid? LoanCategoryId = null, Guid? CardId = null, Guid? ExpenseCategoryId = null);
+    Guid? AccountId,
+    Guid? PayerId,
+    Guid? CategoryId,
+    Guid? LoanCategoryId = null,
+    Guid? CardId = null,
+    Guid? ExpenseCategoryId = null,
+    Guid? BorrowerId = null)
+{
+    /// <summary>Whether a filter other than the account and the borrower is set, which leaves lending out.</summary>
+    public bool FiltersOtherThanLending =>
+        PayerId is not null || CategoryId is not null || LoanCategoryId is not null || CardId is not null || ExpenseCategoryId is not null;
+}
 
 /// <summary>
 /// Received and expected inputs, and paid and expected outputs (loan and card payments, bills and
@@ -27,7 +39,8 @@ public sealed class GetCashFlowChartHandler(
     LoanLedger loanLedger,
     CardPaymentLedger cardPaymentLedger,
     ExpenseLedger expenseLedger,
-    Revolving.RevolvingLedger revolvingLedger)
+    Revolving.RevolvingLedger revolvingLedger,
+    Lendings.LendingLedger lendingLedger)
 {
     /// <summary>Longest period the chart accepts.</summary>
     public const int MaxYears = 10;
@@ -45,49 +58,68 @@ public sealed class GetCashFlowChartHandler(
             return Result.Failure<CashFlowChartResponse>(new DomainError("chart.period.tooLong", $"Choose a period of at most {MaxYears} years.", "to"));
         }
 
-        var entries = (await ledger.EntriesAsync(from, to, cancellationToken))
+        var onlyLending = filter.BorrowerId is not null;
+        var entries = (onlyLending ? [] : await ledger.EntriesAsync(from, to, cancellationToken))
             .Where(e => filter.AccountId is null || e.Details.AccountId == filter.AccountId)
             .Where(e => filter.PayerId is null || e.Details.PayerId == filter.PayerId)
             .Where(e => filter.CategoryId is null || e.Details.CategoryId == filter.CategoryId)
-            .ToLookup(e => BucketStart(e.MonthDate, granularity));
+            .Select(e => new ChartInput(e.MonthDate, e.IsReceived, e.Details.Amount))
+            .ToList();
+        // Lending: repayments and amounts expected back are inputs, money lent an output (money lending FR-10).
+        var lendingBook = await lendingLedger.LoadAsync(cancellationToken);
+        var lendingIncluded = !filter.FiltersOtherThanLending;
+        if (lendingIncluded)
+        {
+            entries.AddRange(lendingBook.InputsBetween(from, to)
+                .Where(i => filter.AccountId is null || i.AccountId == filter.AccountId)
+                .Where(i => filter.BorrowerId is null || i.PayerId == filter.BorrowerId)
+                .Select(i => new ChartInput(i.Date, i.IsReceived, i.Amount)));
+        }
+        var inputs = entries.ToLookup(e => BucketStart(e.Date, granularity));
         var book = await loanLedger.LoadAsync(cancellationToken);
-        IEnumerable<ChartOutput> loanPayments = filter.CardId is not null || filter.ExpenseCategoryId is not null
+        IEnumerable<ChartOutput> loanPayments = onlyLending || filter.CardId is not null || filter.ExpenseCategoryId is not null
             ? []
             : book.PaymentsBetween(from, to)
                 .Where(p => filter.AccountId is null || p.AccountId == filter.AccountId)
                 .Where(p => filter.LoanCategoryId is null || book.CategoryOf(p.LoanId) == filter.LoanCategoryId)
                 .Select(p => new ChartOutput(p.MonthDate, p.IsPaid, p.Amount));
-        IEnumerable<ChartOutput> cardPayments = filter.LoanCategoryId is not null || filter.ExpenseCategoryId is not null
+        IEnumerable<ChartOutput> cardPayments = onlyLending || filter.LoanCategoryId is not null || filter.ExpenseCategoryId is not null
             ? []
             : (await cardPaymentLedger.LoadAsync(cancellationToken)).PaymentsBetween(from, to)
                 .Where(p => filter.AccountId is null || p.AccountId == filter.AccountId)
                 .Where(p => filter.CardId is null || p.CardId == filter.CardId)
                 .Select(p => new ChartOutput(p.MonthDate, p.IsPaid, p.Amount));
         // Monthly bills and extra payments of revolving cards count like card payments (revolving FR-11).
-        IEnumerable<ChartOutput> revolving = filter.LoanCategoryId is not null || filter.ExpenseCategoryId is not null
+        IEnumerable<ChartOutput> revolving = onlyLending || filter.LoanCategoryId is not null || filter.ExpenseCategoryId is not null
             ? []
             : (await revolvingLedger.LoadAsync(cancellationToken, YearMonth.FromDate(to))).OutputsBetween(from, to)
                 .Where(o => filter.AccountId is null || o.AccountId == filter.AccountId)
                 .Where(o => filter.CardId is null || o.CardId == filter.CardId)
                 .Select(o => new ChartOutput(o.Date, o.IsPaid, o.Amount));
-        IEnumerable<ChartOutput> billsAndExpenses = filter.LoanCategoryId is not null || filter.CardId is not null
+        IEnumerable<ChartOutput> billsAndExpenses = onlyLending || filter.LoanCategoryId is not null || filter.CardId is not null
             ? []
             : (await expenseLedger.LoadAsync(cancellationToken)).OutputsBetween(from, to)
                 .Where(o => filter.AccountId is null || o.AccountId == filter.AccountId)
                 .Where(o => filter.ExpenseCategoryId is null || o.CategoryId == filter.ExpenseCategoryId)
                 .Select(o => new ChartOutput(o.Date, o.IsPaid, o.Amount));
-        var payments = loanPayments.Concat(cardPayments).Concat(revolving).Concat(billsAndExpenses)
+        IEnumerable<ChartOutput> lent = !lendingIncluded
+            ? []
+            : lendingBook.OutputsBetween(from, to)
+                .Where(o => filter.AccountId is null || o.AccountId == filter.AccountId)
+                .Where(o => filter.BorrowerId is null || o.PayerId == filter.BorrowerId)
+                .Select(o => new ChartOutput(o.Date, true, o.Amount));
+        var payments = loanPayments.Concat(cardPayments).Concat(revolving).Concat(billsAndExpenses).Concat(lent)
             .ToLookup(p => BucketStart(p.Date, granularity));
 
         var buckets = new List<ChartBucketResponse>();
         for (var start = BucketStart(from, granularity); start <= to; start = granularity == ChartGranularity.Day ? start.AddDays(1) : start.AddMonths(1))
         {
-            var bucket = entries[start].ToList();
+            var bucket = inputs[start].ToList();
             var outputs = payments[start].ToList();
             buckets.Add(new ChartBucketResponse(
                 start,
-                Money.Sum(bucket.Where(e => e.IsReceived).Select(e => e.Details.Amount)).Cents,
-                Money.Sum(bucket.Where(e => !e.IsReceived).Select(e => e.Details.Amount)).Cents,
+                Money.Sum(bucket.Where(e => e.IsReceived).Select(e => e.Amount)).Cents,
+                Money.Sum(bucket.Where(e => !e.IsReceived).Select(e => e.Amount)).Cents,
                 Money.Sum(outputs.Where(p => p.IsPaid).Select(p => p.Amount)).Cents,
                 Money.Sum(outputs.Where(p => !p.IsPaid).Select(p => p.Amount)).Cents));
         }
@@ -98,6 +130,8 @@ public sealed class GetCashFlowChartHandler(
         granularity == ChartGranularity.Day ? date : new DateOnly(date.Year, date.Month, 1);
 
     private sealed record ChartOutput(DateOnly Date, bool IsPaid, Money Amount);
+
+    private sealed record ChartInput(DateOnly Date, bool IsReceived, Money Amount);
 }
 
 /// <summary>
@@ -110,6 +144,7 @@ public sealed class GetMonthlyReportHandler(
     CardPaymentLedger cardPaymentLedger,
     ExpenseLedger expenseLedger,
     Revolving.RevolvingLedger revolvingLedger,
+    Lendings.LendingLedger lendingLedger,
     IBalanceEntryRepository balanceEntries,
     AccountBalanceQuery balances,
     IPayerRepository payers,
@@ -123,8 +158,11 @@ public sealed class GetMonthlyReportHandler(
         var previousEntries = await ledger.EntriesAsync(previous.FirstDay, previous.LastDay, cancellationToken);
         var names = await CashFlowNames.LoadAsync(payers, categories, cards, cancellationToken);
 
-        var totals = InputLedger.Totals(entries);
-        var previousTotal = InputLedger.Totals(previousEntries).TotalCents;
+        // Repayments and amounts expected back count as inputs, money lent as an output (money lending FR-10).
+        var lendingBook = await lendingLedger.LoadAsync(cancellationToken);
+        var inputs = ReportInputs(entries, lendingBook, month);
+        var totals = Totals(inputs);
+        var previousTotal = Totals(ReportInputs(previousEntries, lendingBook, previous)).TotalCents;
 
         var calculators = await balances.CalculatorsAsync(DateOnly.MaxValue, cancellationToken);
         var monthEntries = (await balanceEntries.ListAsync(null, cancellationToken))
@@ -140,16 +178,17 @@ public sealed class GetMonthlyReportHandler(
         var cardBook = await cardPaymentLedger.LoadAsync(cancellationToken);
         var expenseBook = await expenseLedger.LoadAsync(cancellationToken);
         var revolvingBook = await revolvingLedger.LoadAsync(cancellationToken, month);
-        var outputs = Outputs(book, cardBook, expenseBook, revolvingBook, month);
+        var outputs = Outputs(book, cardBook, expenseBook, revolvingBook, lendingBook, month);
         var outputTotals = outputs.Totals;
-        var previousOutputs = Outputs(book, cardBook, expenseBook, revolvingBook, previous).Totals.TotalCents;
+        var previousOutputs = Outputs(book, cardBook, expenseBook, revolvingBook, lendingBook, previous).Totals.TotalCents;
+        string CategoryName(Guid id) => id == Lendings.LendingBook.GroupId ? Lendings.LendingBook.GroupName : names.Category(id).Name;
 
         return new MonthlyReportResponse(
             month.ToString(),
             totals,
-            Group(entries, e => e.Details.CategoryId, names.Category),
-            Group(entries, e => e.Details.AccountId, names.Account),
-            Group(entries, e => e.Details.PayerId, names.Payer),
+            Group(inputs, i => i.CategoryId, CategoryName),
+            Group(inputs, i => i.AccountId, id => names.Account(id).Name),
+            Group(inputs, i => i.PayerId, id => names.Payer(id).Name),
             monthEntries,
             previousTotal,
             totals.TotalCents - previousTotal,
@@ -157,8 +196,53 @@ public sealed class GetMonthlyReportHandler(
             totals.TotalCents - outputTotals.TotalCents,
             previousOutputs,
             previousTotal - previousOutputs,
-            SharedCosts(book.Shared, entries, month));
+            SharedCosts(book.Shared, entries, month),
+            Lending(lendingBook, month));
     }
+
+    /// <summary>The month's inputs and the lending that comes back in it (money lending FR-10).</summary>
+    private static List<ReportInput> ReportInputs(IEnumerable<InputEntry> entries, Lendings.LendingBook lendingBook, YearMonth month) =>
+        entries
+            .Select(e => new ReportInput(e.IsReceived, e.Details.Amount, e.Details.CategoryId, e.Details.AccountId, e.Details.PayerId))
+            .Concat(lendingBook.InputsBetween(month.FirstDay, month.LastDay)
+                .Select(i => new ReportInput(i.IsReceived, i.Amount, Lendings.LendingBook.GroupId, i.AccountId, i.PayerId)))
+            .ToList();
+
+    /// <summary>The month's lending by borrower: lent, returned and expected back (money lending FR-10).</summary>
+    private static Lendings.ReportLendingResponse? Lending(Lendings.LendingBook lendingBook, YearMonth month)
+    {
+        var lent = lendingBook.OutputsBetween(month.FirstDay, month.LastDay).ToList();
+        var back = lendingBook.InputsBetween(month.FirstDay, month.LastDay).ToList();
+        if (lent.Count == 0 && back.Count == 0)
+        {
+            return null;
+        }
+        var byBorrower = lent.Select(o => o.PayerId).Concat(back.Select(i => i.PayerId)).Distinct()
+            .Select(id => new Lendings.ReportLendingBorrowerResponse(
+                id,
+                lendingBook.Borrower(id).Name,
+                Money.Sum(lent.Where(o => o.PayerId == id).Select(o => o.Amount)).Cents,
+                Money.Sum(back.Where(i => i.PayerId == id && i.IsReceived).Select(i => i.Amount)).Cents,
+                Money.Sum(back.Where(i => i.PayerId == id && !i.IsReceived).Select(i => i.Amount)).Cents))
+            .OrderBy(b => b.Name, StringComparer.CurrentCultureIgnoreCase)
+            .ToList();
+        return new Lendings.ReportLendingResponse(
+            byBorrower.Sum(b => b.LentCents),
+            byBorrower.Sum(b => b.ReturnedCents),
+            byBorrower.Sum(b => b.ExpectedBackCents),
+            byBorrower);
+    }
+
+    private static InputTotalsResponse Totals(IEnumerable<ReportInput> inputs)
+    {
+        var list = inputs.ToList();
+        var expected = Money.Sum(list.Where(i => !i.IsReceived).Select(i => i.Amount));
+        var received = Money.Sum(list.Where(i => i.IsReceived).Select(i => i.Amount));
+        return new InputTotalsResponse(expected.Cents, received.Cents, (expected + received).Cents);
+    }
+
+    /// <summary>One input of the report: an input, a repayment or an amount expected back.</summary>
+    private sealed record ReportInput(bool IsReceived, Money Amount, Guid CategoryId, Guid AccountId, Guid PayerId);
 
     /// <summary>
     /// The month's shared bills and loan payments (by the date they count on) with the participants' parts
@@ -190,7 +274,12 @@ public sealed class GetMonthlyReportHandler(
     /// payments group, or expense category), account, loan and card.
     /// </summary>
     private static ReportOutputsResponse Outputs(
-        LoanBook book, CardPaymentBook cardBook, ExpenseBook expenseBook, Revolving.RevolvingBook revolvingBook, YearMonth month)
+        LoanBook book,
+        CardPaymentBook cardBook,
+        ExpenseBook expenseBook,
+        Revolving.RevolvingBook revolvingBook,
+        Lendings.LendingBook lendingBook,
+        YearMonth month)
     {
         var loanPayments = book.PaymentsBetween(month.FirstDay, month.LastDay)
             .Select(p => new ReportOutput(p.IsPaid, p.Amount, p.AccountId, book.CategoryOf(p.LoanId), p.LoanId, null))
@@ -203,9 +292,16 @@ public sealed class GetMonthlyReportHandler(
         var billsAndExpenses = expenseBook.OutputsBetween(month.FirstDay, month.LastDay)
             .Select(o => new ReportOutput(o.IsPaid, o.Amount, o.AccountId, null, null, null, o.CategoryId))
             .ToList();
-        var all = loanPayments.Concat(cardPayments).Concat(billsAndExpenses).ToList();
+        var lent = lendingBook.OutputsBetween(month.FirstDay, month.LastDay)
+            .Select(o => new ReportOutput(true, o.Amount, o.AccountId, null, null, null))
+            .ToList();
+        var all = loanPayments.Concat(cardPayments).Concat(billsAndExpenses).Concat(lent).ToList();
         var byCategory = GroupOutputs(loanPayments, o => o.LoanCategoryId, id => book.Category(id!.Value).Name);
         byCategory.AddRange(GroupOutputs(billsAndExpenses, o => o.ExpenseCategoryId, id => expenseBook.Category(id!.Value).Name));
+        if (lent.Count > 0)
+        {
+            byCategory.Add(new ReportOutputGroupResponse(Lendings.LendingBook.GroupId, Lendings.LendingBook.GroupName, Totals(lent)));
+        }
         if (cardPayments.Count > 0)
         {
             byCategory = [.. byCategory, new ReportOutputGroupResponse(null, CardPayments, Totals(cardPayments))];
@@ -250,10 +346,10 @@ public sealed class GetMonthlyReportHandler(
 
     /// <summary>Groups with their totals, largest total first.</summary>
     private static List<ReportGroupResponse> Group(
-        IEnumerable<InputEntry> entries, Func<InputEntry, Guid> key, Func<Guid, NamedReference> name) =>
-        entries
+        IEnumerable<ReportInput> inputs, Func<ReportInput, Guid> key, Func<Guid, string> name) =>
+        inputs
             .GroupBy(key)
-            .Select(g => new ReportGroupResponse(g.Key, name(g.Key).Name, InputLedger.Totals(g)))
+            .Select(g => new ReportGroupResponse(g.Key, name(g.Key), Totals(g)))
             .OrderByDescending(g => g.Totals.TotalCents)
             .ThenBy(g => g.Name, StringComparer.CurrentCultureIgnoreCase)
             .ToList();

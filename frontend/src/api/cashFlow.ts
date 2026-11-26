@@ -262,6 +262,8 @@ export interface ChartQuery {
   loanCategoryId?: string
   cardId?: string
   expenseCategoryId?: string
+  /** A borrower (a payer): the chart shows only lending with them (money lending FR-10). */
+  borrowerId?: string
 }
 
 export function useCashFlowChart(query: ChartQuery) {
@@ -280,6 +282,7 @@ export function useCashFlowChart(query: ChartQuery) {
         loanCategoryId,
         cardId,
         expenseCategoryId,
+        borrowerId,
       } = query
       return unwrap(
         await api.GET('/api/cash-flow/chart', {
@@ -294,6 +297,7 @@ export function useCashFlowChart(query: ChartQuery) {
               ...(loanCategoryId ? { loanCategoryId } : {}),
               ...(cardId ? { cardId } : {}),
               ...(expenseCategoryId ? { expenseCategoryId } : {}),
+              ...(borrowerId ? { borrowerId } : {}),
             },
           },
         }),

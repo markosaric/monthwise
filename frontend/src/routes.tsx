@@ -94,6 +94,13 @@ const ParticipantNewPage = screen(() =>
 const ParticipantEditPage = screen(() =>
   import('@/pages/sharedCosts/ParticipantFormPages').then((m) => m.ParticipantEditPage),
 )
+const LendingPage = screen(() => import('@/pages/LendingPage').then((m) => m.LendingPage))
+const LendingNewPage = screen(() =>
+  import('@/pages/lending/LendingFormPages').then((m) => m.LendingNewPage),
+)
+const LendingEditPage = screen(() =>
+  import('@/pages/lending/LendingFormPages').then((m) => m.LendingEditPage),
+)
 const SavingsPage = screen(() => import('@/pages/SavingsPage').then((m) => m.SavingsPage))
 const SettingsPage = screen(() => import('@/pages/SettingsPage').then((m) => m.SettingsPage))
 const CardsSettingsPage = screen(() =>
@@ -178,6 +185,9 @@ export const routes: RouteObject[] = [
           { path: 'shared-costs/:yearMonth', element: <SharedCostsPage /> },
           { path: 'shared-costs/participants/new', element: <ParticipantNewPage /> },
           { path: 'shared-costs/participants/:id/edit', element: <ParticipantEditPage /> },
+          { path: 'lending', element: <LendingPage /> },
+          { path: 'lending/new', element: <LendingNewPage /> },
+          { path: 'lending/:id/edit', element: <LendingEditPage /> },
           { path: 'savings', element: <SavingsPage /> },
           { path: 'settings', element: <SettingsPage /> },
           { path: 'settings/cards', element: <CardsSettingsPage /> },

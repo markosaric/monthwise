@@ -5,6 +5,7 @@ import {
   CircleCheck,
   Clock,
   CreditCard,
+  HandCoins,
   Equal,
   Landmark,
   Repeat,
@@ -23,6 +24,7 @@ import { addActions } from '@/components/design/actions'
 import { ChangePill } from '@/components/design/ChangePill'
 import { meaningColors, sectionColors } from '@/components/design/colors'
 import { IconTile } from '@/components/design/IconTile'
+import { lendingTexts } from '@/components/lending/texts'
 import { PairedBarChart } from '@/components/design/PairedBarChart'
 import { QuickActionButton, QuickActionRow } from '@/components/design/QuickActionButton'
 import { StatCard, StatGrid } from '@/components/design/StatCard'
@@ -247,6 +249,7 @@ const kindColors: Record<DashboardItem['kind'], string> = {
   LoanPayment: sectionColors.loans,
   CardPayment: sectionColors.cards,
   Input: meaningColors.moneyIn,
+  Lending: sectionColors.lending,
 }
 
 function ComingUp({ items }: { items: DashboardItem[] }) {
@@ -267,7 +270,7 @@ function ComingUp({ items }: { items: DashboardItem[] }) {
         ) : (
           <ul className="flex flex-col divide-y">
             {items.map((item) => {
-              const input = item.kind === 'Input'
+              const input = item.kind === 'Input' || item.kind === 'Lending'
               return (
                 <li
                   key={`${item.kind}-${item.name}-${item.date}`}
@@ -330,7 +333,7 @@ function CashFlowCard({ data }: { data: Dashboard }) {
   )
 }
 
-/** Small cards for Loans, Card payments, Shared costs and Recurring bills; only those with data. */
+/** Small cards for Loans, Card payments, Shared costs, Lending and Recurring bills; only those with data. */
 function SmallCards({ data }: { data: Dashboard }) {
   const cards: {
     key: string
@@ -371,6 +374,19 @@ function SmallCards({ data }: { data: Dashboard }) {
       detail: `${t.small.sharedCosts} · ${t.small.owing(data.sharedCosts.participantsOwing)}`,
       to: '/shared-costs',
       problem: data.sharedCosts.hasOverdue,
+    })
+  }
+  if (data.lending) {
+    cards.push({
+      key: 'lending',
+      icon: HandCoins,
+      color: data.lending.hasOverdue ? meaningColors.problem : sectionColors.lending,
+      title: formatCents(data.lending.outstandingCents),
+      detail: data.lending.hasOverdue
+        ? `${lendingTexts.dashboard.title} · ${lendingTexts.dashboard.overdue(formatCents(data.lending.overdueCents))}`
+        : `${lendingTexts.dashboard.title} · ${lendingTexts.dashboard.owing(data.lending.openCount)}`,
+      to: '/lending',
+      problem: data.lending.hasOverdue,
     })
   }
   if (data.recurringBills) {

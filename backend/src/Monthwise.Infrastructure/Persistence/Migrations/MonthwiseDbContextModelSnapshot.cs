@@ -18,7 +18,7 @@ namespace Monthwise.Infrastructure.Persistence.Migrations
 #pragma warning disable 612, 618
             modelBuilder
                 .HasAnnotation("Npgsql:CollationDefinition:monthwise_name", "und-u-ks-level2,und-u-ks-level2,icu,False")
-                .HasAnnotation("ProductVersion", "10.0.12")
+                .HasAnnotation("ProductVersion", "10.0.15")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -1399,6 +1399,112 @@ namespace Monthwise.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Monthwise.Domain.Lendings.Lending", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<long>("Amount")
+                        .HasColumnType("bigint")
+                        .HasColumnName("amount_cents");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("description");
+
+                    b.Property<DateOnly>("ExpectedReturnDate")
+                        .HasColumnType("date")
+                        .HasColumnName("expected_return_date");
+
+                    b.Property<Guid>("FromAccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("from_account_id");
+
+                    b.Property<DateOnly>("LendDate")
+                        .HasColumnType("date")
+                        .HasColumnName("lend_date");
+
+                    b.Property<Guid>("PayerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("payer_id");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id")
+                        .HasName("pk_lending");
+
+                    b.HasIndex("PayerId")
+                        .HasDatabaseName("ix_lending_payer_id");
+
+                    b.HasIndex("FromAccountId", "LendDate")
+                        .HasDatabaseName("ix_lending_from_account_id_lend_date");
+
+                    b.ToTable("lending", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_lending_amount_positive", "amount_cents > 0");
+
+                            t.HasCheckConstraint("ck_lending_return_after_lend", "expected_return_date >= lend_date");
+                        });
+                });
+
+            modelBuilder.Entity("Monthwise.Domain.Lendings.LendingRepayment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<long>("Amount")
+                        .HasColumnType("bigint")
+                        .HasColumnName("amount_cents");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("LendingId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("lending_id");
+
+                    b.Property<string>("Note")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("note");
+
+                    b.Property<DateOnly>("ReceivedDate")
+                        .HasColumnType("date")
+                        .HasColumnName("received_date");
+
+                    b.Property<Guid>("ToAccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("to_account_id");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id")
+                        .HasName("pk_lending_repayment");
+
+                    b.HasIndex("LendingId")
+                        .HasDatabaseName("ix_lending_repayment_lending_id");
+
+                    b.HasIndex("ToAccountId", "ReceivedDate")
+                        .HasDatabaseName("ix_lending_repayment_to_account_id_received_date");
+
+                    b.ToTable("lending_repayment", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_lending_repayment_amount_positive", "amount_cents > 0");
+                        });
+                });
+
             modelBuilder.Entity("Monthwise.Domain.Loans.Loan", b =>
                 {
                     b.Property<Guid>("Id")
@@ -2327,6 +2433,40 @@ namespace Monthwise.Infrastructure.Persistence.Migrations
                         .HasConstraintName("fk_recurring_bill_participant_share_participant_id");
                 });
 
+            modelBuilder.Entity("Monthwise.Domain.Lendings.Lending", b =>
+                {
+                    b.HasOne("Monthwise.Domain.Cards.Card", null)
+                        .WithMany()
+                        .HasForeignKey("FromAccountId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_lending_card_from_account_id");
+
+                    b.HasOne("Monthwise.Domain.CashFlow.Payer", null)
+                        .WithMany()
+                        .HasForeignKey("PayerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_lending_payer_payer_id");
+                });
+
+            modelBuilder.Entity("Monthwise.Domain.Lendings.LendingRepayment", b =>
+                {
+                    b.HasOne("Monthwise.Domain.Lendings.Lending", null)
+                        .WithMany("Repayments")
+                        .HasForeignKey("LendingId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_lending_repayment_lending_lending_id");
+
+                    b.HasOne("Monthwise.Domain.Cards.Card", null)
+                        .WithMany()
+                        .HasForeignKey("ToAccountId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_lending_repayment_card_to_account_id");
+                });
+
             modelBuilder.Entity("Monthwise.Domain.Loans.Loan", b =>
                 {
                     b.HasOne("Monthwise.Domain.Cards.Card", null)
@@ -2489,6 +2629,11 @@ namespace Monthwise.Infrastructure.Persistence.Migrations
 
                     b.Navigation("SensitiveData")
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("Monthwise.Domain.Lendings.Lending", b =>
+                {
+                    b.Navigation("Repayments");
                 });
 
             modelBuilder.Entity("Monthwise.Domain.Loans.Loan", b =>
