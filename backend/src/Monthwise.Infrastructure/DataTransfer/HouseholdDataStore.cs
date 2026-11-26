@@ -50,6 +50,7 @@ internal sealed partial class HouseholdDataStore(
         ("card_purchase", nameof(DataSummaryResponse.CardPurchases)),
         ("bill", nameof(DataSummaryResponse.Bills)),
         ("expense", nameof(DataSummaryResponse.Expenses)),
+        ("lending", nameof(DataSummaryResponse.Lendings)),
     ];
 
     public async Task<HouseholdData> ReadAllAsync(DateTimeOffset now, string release, CancellationToken cancellationToken)
@@ -333,7 +334,8 @@ internal sealed partial class HouseholdDataStore(
         counts[nameof(DataSummaryResponse.Inputs)],
         counts[nameof(DataSummaryResponse.CardPurchases)],
         counts[nameof(DataSummaryResponse.Bills)],
-        counts[nameof(DataSummaryResponse.Expenses)]);
+        counts[nameof(DataSummaryResponse.Expenses)],
+        counts[nameof(DataSummaryResponse.Lendings)]);
 
     private Task<string> GetCurrentSchemaAsync(CancellationToken cancellationToken) =>
         ScalarAsync<string>("SELECT current_schema()", cancellationToken);

@@ -209,16 +209,16 @@ internal static class CashFlowEndpoints
 
         cashFlow.MapGet("/chart", async (
                 DateOnly from, DateOnly to, ChartGranularity? granularity, Guid? accountId, Guid? payerId, Guid? categoryId, Guid? loanCategoryId,
-                Guid? cardId, Guid? expenseCategoryId, GetCashFlowChartHandler handler, CancellationToken ct) =>
+                Guid? cardId, Guid? expenseCategoryId, Guid? borrowerId, GetCashFlowChartHandler handler, CancellationToken ct) =>
                 (await handler.HandleAsync(
                     from,
                     to,
                     granularity ?? ChartGranularity.Day,
-                    new ChartFilter(accountId, payerId, categoryId, loanCategoryId, cardId, expenseCategoryId),
+                    new ChartFilter(accountId, payerId, categoryId, loanCategoryId, cardId, expenseCategoryId, borrowerId),
                     ct)).ToOk())
             .WithName("GetCashFlowChart")
             .WithSummary(
-                "Received and expected inputs, and paid and expected loan and card payments, bills and expenses, per day or month between two dates.");
+                "Received and expected inputs, and paid and expected loan and card payments, bills, expenses and lending, per day or month between two dates.");
 
         cashFlow.MapGet("/report", async Task<Results<Ok<MonthlyReportResponse>, ValidationProblem>> (
                 string month, GetMonthlyReportHandler handler, CancellationToken ct) =>

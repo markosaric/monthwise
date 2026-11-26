@@ -167,6 +167,7 @@ internal sealed class ExportFileCodec(ISensitiveDataCipher cipher) : IExportFile
                 ["cardPurchases"] = summary.CardPurchases,
                 ["bills"] = summary.Bills,
                 ["expenses"] = summary.Expenses,
+                ["lendings"] = summary.Lendings,
             },
             ["tables"] = data.Tables.DeepClone(),
         };
@@ -201,7 +202,8 @@ internal sealed class ExportFileCodec(ISensitiveDataCipher cipher) : IExportFile
             || !TryGetCount(summary, "inputs", out var inputs)
             || !TryGetCount(summary, "cardPurchases", out var cardPurchases)
             || !TryGetCount(summary, "bills", out var bills)
-            || !TryGetCount(summary, "expenses", out var expenses))
+            || !TryGetCount(summary, "expenses", out var expenses)
+            || !TryGetCount(summary, "lendings", out var lendings))
         {
             return null;
         }
@@ -210,7 +212,7 @@ internal sealed class ExportFileCodec(ISensitiveDataCipher cipher) : IExportFile
             createdAt,
             release,
             migration,
-            new DataSummaryResponse(cards, loans, inputs, cardPurchases, bills, expenses),
+            new DataSummaryResponse(cards, loans, inputs, cardPurchases, bills, expenses, lendings),
             tables);
     }
 

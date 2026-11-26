@@ -14,6 +14,7 @@
   --color-section-cards: var(--section-cards);
   --color-section-loans: var(--section-loans);
   --color-section-shared: var(--section-shared);
+  --color-section-lending: var(--section-lending);
   --color-section-savings: var(--section-savings);
   --color-section-settings: var(--section-settings);
   --color-money-in: var(--money-in);
@@ -76,6 +77,7 @@
   --section-cards: #8b5cf6;
   --section-loans: #9a3412;
   --section-shared: #db2777;
+  --section-lending: #0891b2;
   --section-savings: #16a34a;
   --section-settings: #64748b;
   --money-in: #16a34a;

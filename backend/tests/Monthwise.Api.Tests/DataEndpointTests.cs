@@ -27,7 +27,7 @@ public sealed class DataEndpointTests : IAsyncLifetime
 
     /// <summary>The household tables added after <see cref="PreviousMigration"/>, which a file of that release does not have.</summary>
     private static readonly string[] TablesAfterPreviousMigration =
-        ["revolving_bill", "revolving_debt_entry", "revolving_extra_payment", "revolving_terms"];
+        ["lending", "lending_repayment", "revolving_bill", "revolving_debt_entry", "revolving_extra_payment", "revolving_terms"];
     private static readonly Guid VisaIssuer = new("0199b0c0-0000-7000-8000-000000000001");
     private static readonly Guid ZaBa = new("0199b0c0-0000-7000-8000-000000000101");
 
@@ -64,6 +64,7 @@ public sealed class DataEndpointTests : IAsyncLifetime
     {
         var card = await CreateCardAsync("Family Visa", Visa, CroatianIban);
         await CreateParticipantAsync("Ana");
+        await CreateLendingWithRepaymentAsync(card);
         var before = await SnapshotAsync();
         var storedBefore = await StoredNumbersAsync(card);
 
@@ -75,6 +76,7 @@ public sealed class DataEndpointTests : IAsyncLifetime
         Assert.Equal(HttpStatusCode.OK, check.StatusCode);
         var checkBody = await check.Content.ReadFromJsonAsync<JsonElement>(Ct);
         Assert.Equal(1, checkBody.GetProperty("file").GetProperty("cards").GetInt32());
+        Assert.Equal(1, checkBody.GetProperty("file").GetProperty("lendings").GetInt32());
         Assert.Equal(0, checkBody.GetProperty("current").GetProperty("cards").GetInt32());
 
         var import = await PostFormAsync("/api/data/import", file, Password, "REPLACE");
@@ -509,6 +511,30 @@ public sealed class DataEndpointTests : IAsyncLifetime
         }, Ct);
         Assert.True(response.StatusCode == HttpStatusCode.Created, await response.Content.ReadAsStringAsync(Ct));
         return (await response.Content.ReadFromJsonAsync<JsonElement>(Ct)).GetProperty("id").GetGuid();
+    }
+
+    /// <summary>Money lent from the account and partly returned (money lending FR-12).</summary>
+    private async Task CreateLendingWithRepaymentAsync(Guid accountId)
+    {
+        var lent = await Client.PostAsJsonAsync("/api/lendings", new
+        {
+            borrowerName = "Ivo",
+            amountCents = 30_000L,
+            lendDate = "2026-01-10",
+            fromAccountId = accountId,
+            expectedReturnDate = "2026-03-01",
+            description = "Made-up test lending",
+        }, Ct);
+        Assert.True(lent.StatusCode == HttpStatusCode.Created, await lent.Content.ReadAsStringAsync(Ct));
+        var lendingId = (await lent.Content.ReadFromJsonAsync<JsonElement>(Ct)).GetProperty("id").GetGuid();
+        var repaid = await Client.PostAsJsonAsync($"/api/lendings/{lendingId}/repayments", new
+        {
+            amountCents = 10_000L,
+            toAccountId = accountId,
+            receivedDate = "2026-02-01",
+            note = (string?)null,
+        }, Ct);
+        Assert.True(repaid.StatusCode == HttpStatusCode.Created, await repaid.Content.ReadAsStringAsync(Ct));
     }
 
     private async Task CreateParticipantAsync(string name)

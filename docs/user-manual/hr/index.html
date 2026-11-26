@@ -51,6 +51,7 @@
   <li><a href="#cards">Kartice, rate i revolving kartice</a></li>
   <li><a href="#loans">Krediti i leasing</a></li>
   <li><a href="#shared">Zajednički troškovi</a></li>
+  <li><a href="#lending">Posudbe</a></li>
   <li><a href="#settings">Postavke</a></li>
   <li><a href="#phone">Na mobitelu</a></li>
   <li><a href="#install">Instalacija Monthwisea</a></li>
@@ -136,7 +137,12 @@
 <p>Za troškove koje dijelite s nekim (partnerom ili cimerom). Dodajte osobu pomoću <span class="ui">Dodaj sudionika</span>, a zatim joj odredite udio na ponavljajućem računu ili kreditu. Monthwise svaki mjesec izračunava koliko vam ta osoba duguje i prikazuje to ovdje i kao očekivanu uplatu na zaslonu Mjesec. Doprinos označite kad primite novac.</p>
 <figure><img src="../images/hr/shared-costs.jpg" alt="Zajednički troškovi s otvorenim doprinosima po sudioniku"><figcaption>Zajednički troškovi</figcaption></figure>
 
-<h2 id="settings">8. Postavke</h2>
+<h2 id="lending">8. Posudbe</h2>
+<p>Za novac koji posudite nekome, npr. prijatelju ili rođaku, a koji će vam ga kasnije vratiti. <span class="ui">Dodaj posudbu</span> traži dužnika, iznos, datum posudbe, račun s kojeg novac odlazi i datum kada očekujete povrat, te neobavezan opis. Dužnik je s istog popisa kao i uplatitelji uplata: odaberite predloženo ime ili upišite novo, i ono se dodaje na popis (preimenujte ga ili uklonite u <span class="ui">Postavke → Uplatitelji</span>).</p>
+<p>Posuđeni iznos je isplata s njegova računa na datum posudbe. Nije trošak, račun ni podizanje gotovine. Kad se novac vrati, na posudbi odaberite <span class="ui">Zabilježi povrat</span>: iznos je unaprijed ispunjen svime što je još nepodmireno, a račun onim s kojeg je novac otišao, pa povrat svega odjednom traži jedan klik. Posudba se može vratiti u više povrata, a svaki je uplata na račun na koji stigne. Dok se sve ne vrati, nepodmireni iznos je očekivana uplata na očekivani datum povrata. Kad dužnik zatraži više vremena, uredite posudbu i promijenite taj datum.</p>
+<p>Zaslon Posudbe prikazuje koliko vam još duguju i koliko kasni, karticu za svaku posudbu i zbrojeve po dužniku. Posudba čiji je očekivani datum prošao označena je crveno kao <em>Kasni</em> ovdje, na zaslonu Mjesec i na Pregledu. Kad se sve vrati, posudba je <em>Vraćeno</em> i prelazi pod filtar <span class="ui">Vraćene</span>. Zaslon Mjesec ima svoj popis posudbi, a grafikon novčanog toka i mjesečno izvješće prikazuju posudbe u vlastitoj skupini; grafikon se može filtrirati po dužniku.</p>
+
+<h2 id="settings">9. Postavke</h2>
 <p>Popisi koje aplikacija svugdje koristi: kartice i računi, uplatitelji, kategorije uplata, kategorije troškova, kategorije kredita i ponavljajući računi. Uz početne unose dodajte i svoje. Kategorija koja se već koristi ne može se obrisati; umjesto toga je sakrijte. Unaprijed zadane kategorije prikazuju se na odabranom jeziku dok ih ne preimenujete; naziv koji sami upišete uvijek se prikazuje onako kako ste ga upisali.</p>
 <figure><img src="../images/hr/settings.jpg" alt="Pregled postavki"><figcaption>Postavke</figcaption></figure>
 <p>Brojevi kartica i IBAN-ovi spremaju se šifrirani i prikazuju se samo na zahtjev. Otvorite račun i odaberite <span class="ui">Dodaj ispravak</span> kad se njegovo stanje razlikuje od stanja u banci; ispravci mijenjaju stanje, ali se ne računaju kao uplata ni isplata.</p>
@@ -144,10 +150,10 @@
 <p>Na dnu Postavki prikazani su verzija Monthwisea i vremenska zona koju koristi za „danas” (vidi <a href="#install">Instalacija Monthwisea</a>).</p>
 <p>Pločica <span class="ui">Podaci i sigurnosne kopije</span>, u skupini <em>Podaci</em>, izvozi i uvozi sve vaše podatke; vidi <a href="#data">Podaci i sigurnosne kopije</a>.</p>
 
-<h2 id="phone">9. Na mobitelu</h2>
+<h2 id="phone">10. Na mobitelu</h2>
 <p>Monthwise radi i u pregledniku na mobitelu. Izbornik se premješta u traku na dnu zaslona; sve ostalo radi jednako.</p>
 <figure class="phone"><img src="../images/hr/mobile-dashboard.jpg" alt="Pregled na mobitelu"><figcaption>Pregled na mobitelu</figcaption></figure>
-<h2 id="install">10. Instalacija Monthwisea</h2>
+<h2 id="install">11. Instalacija Monthwisea</h2>
 <p>Monthwise radi na jedan od tri načina. Sva tri koriste istu verziju aplikacije, a podaci se mogu premjestiti s jednog na drugi.</p>
 <div class="table-wrap"><table>
 <tr><th>Način</th><th>Najbolje za</th><th>Trošak</th></tr>
@@ -251,7 +257,7 @@ Remove-Item Env:PGPASSWORD
 <p>Instalacija postavljena prije nego što je baza postala privatna ne može se premjestiti na mjestu. <code>deploy.sh</code> tada ništa ne mijenja i ispisuje korake: izvezite podatke u Postavkama, objavite u novu grupu resursa (<code>MONTHWISE_RESOURCE_GROUP=rg-monthwise-2</code> ispred iste naredbe), ondje uvezite datoteku, provjerite je i obrišite staru grupu resursa.</p>
 <p>Na Azureu vlastite automatske sigurnosne kopije baze zamjenjuju kopije za ažuriranje. Ako nova verzija ne može ažurirati bazu podataka, prestaje raditi na bazi, a <code>deploy.sh</code> ispisuje vrijeme neposredno prije objave i naredbu za vraćanje baze na to vrijeme (vidi <a href="#data-azure">Vlastite sigurnosne kopije Azurea</a>).</p>
 
-<h2 id="data">11. Podaci i sigurnosne kopije</h2>
+<h2 id="data">12. Podaci i sigurnosne kopije</h2>
 <p><span class="ui">Postavke → Podaci i sigurnosne kopije</span> sprema sve vaše podatke u jednu datoteku na vašem uređaju i vraća ih iz takve datoteke. Na vrhu odjeljka piše kad ste zadnji put izvezli i uvezli podatke.</p>
 <h3 id="data-export">Izvoz</h3>
 <ol>

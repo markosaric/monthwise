@@ -22,7 +22,15 @@ function anOverview(overrides: Partial<DataOverview> = {}): DataOverview {
   }
 }
 
-const summary = { cards: 3, loans: 1, inputs: 40, cardPurchases: 5, bills: 12, expenses: 30 }
+const summary = {
+  cards: 3,
+  loans: 1,
+  inputs: 40,
+  cardPurchases: 5,
+  bills: 12,
+  expenses: 30,
+  lendings: 2,
+}
 
 function stubData(overview = anOverview(), extra: ApiHandlers = {}) {
   return stubApi({

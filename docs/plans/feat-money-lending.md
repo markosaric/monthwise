@@ -1,7 +1,7 @@
 # Plan: Money lending
 
 - **Branch:** `feat/money-lending`
-- **Status:** Draft
+- **Status:** Done
 - **Date:** 2026-11-26
 - **Requirements:** [money-lending.md](../feature-requirements/money-lending.md) (approved)
 

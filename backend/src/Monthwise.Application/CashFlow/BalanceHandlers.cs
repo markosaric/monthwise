@@ -11,7 +11,7 @@ namespace Monthwise.Application.CashFlow;
 
 /// <summary>
 /// Calculates account balances from balance entries, inputs, loan payments, card payments, bills and
-/// expenses (FR-10, Appendix 1; installments FR-9; bills and expenses FR-10).
+/// expenses (FR-10, Appendix 1; installments FR-9; bills and expenses FR-10), and lending (money lending FR-7, FR-8).
 /// </summary>
 public sealed class AccountBalanceQuery(
     IBalanceEntryRepository balanceEntries,
@@ -21,6 +21,7 @@ public sealed class AccountBalanceQuery(
     CardPaymentLedger cardPaymentLedger,
     ExpenseLedger expenseLedger,
     Revolving.RevolvingLedger revolvingLedger,
+    Lendings.LendingLedger lendingLedger,
     TimeProvider timeProvider)
 {
     /// <summary>Balances of the given accounts: current (today) and expected at the end of this month.</summary>
@@ -69,6 +70,10 @@ public sealed class AccountBalanceQuery(
             .Select(o => (o.AccountId, o.Amount)));
 
         withAccount.AddRange(outputs.Where(o => o.AccountId is not null).Select(o => (o.AccountId, -o.Amount)));
+        // Outstanding lent money expected back on the lending's account (money lending FR-8).
+        withAccount.AddRange((await lendingLedger.LoadAsync(cancellationToken)).Inputs()
+            .Where(i => !i.IsReceived && i.Date <= upTo)
+            .Select(i => ((Guid?)i.AccountId, i.Amount)));
         var withoutAccount = outputs.Where(o => o.AccountId is null && o.Amount.IsPositive).Select(o => o.Amount).ToList();
         return new ExpectedMovements(
             withAccount.Select(m => (m.AccountId!.Value, m.Amount)).ToList(),
@@ -98,7 +103,15 @@ public sealed class AccountBalanceQuery(
         var revolving = (await revolvingLedger.LoadAsync(cancellationToken)).Outputs()
             .Where(o => o.IsPaid && o.AccountId is not null && o.Date <= movementsUpTo)
             .Select(o => (AccountId: o.AccountId!.Value, Movement: new BalanceMovement(o.Date, -o.Amount)));
-        var movements = received.Concat(paid).Concat(cardPayments).Concat(billsAndExpenses).Concat(revolving).ToList();
+        // Money lent leaves its account on the lend date; repayments arrive on theirs (money lending FR-7, FR-8).
+        var lendingBook = await lendingLedger.LoadAsync(cancellationToken);
+        var lent = lendingBook.Outputs()
+            .Where(o => o.Date <= movementsUpTo)
+            .Select(o => (o.AccountId, Movement: new BalanceMovement(o.Date, -o.Amount)));
+        var repaid = lendingBook.Inputs()
+            .Where(i => i.IsReceived && i.Date <= movementsUpTo)
+            .Select(i => (i.AccountId, Movement: new BalanceMovement(i.Date, i.Amount)));
+        var movements = received.Concat(paid).Concat(cardPayments).Concat(billsAndExpenses).Concat(revolving).Concat(lent).Concat(repaid).ToList();
         var accountIds = entries.Select(e => e.AccountId).Concat(movements.Select(m => m.AccountId)).Distinct();
         return accountIds.ToDictionary(id => id, id => new AccountBalance(
             entries.Where(e => e.AccountId == id).Select(ToCheckpoint),

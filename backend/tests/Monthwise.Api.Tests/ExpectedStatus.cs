@@ -56,6 +56,13 @@ public static partial class ExpectedStatus
             case "extra-payments" or "debt-entries":
                 Assert.Equal($"/api/{nested}/{Id(body)}", location);
                 break;
+            case "repayments":
+                var repaymentPrefix = $"{route.TrimEnd('/')}/";
+                Assert.NotNull(location);
+                Assert.StartsWith(repaymentPrefix, location, StringComparison.Ordinal);
+                var repaymentId = Guid.Parse(location[repaymentPrefix.Length..]);
+                Assert.Contains(body.GetProperty("repayments").EnumerateArray(), r => r.GetProperty("id").GetGuid() == repaymentId);
+                break;
             case "payment-changes":
                 var prefix = $"{route.TrimEnd('/')}/";
                 Assert.NotNull(location);
@@ -78,7 +85,7 @@ public static partial class ExpectedStatus
 
     [GeneratedRegex(
         @"^/api/(?<collection>cards|participants|inputs|input-categories|card-issuers|banks|loans|loan-categories"
-        + @"|card-purchases|expense-categories|recurring-bills|bills|expenses|expenses/cash-withdrawals|revolving-cards)"
-        + @"(/[0-9a-f-]{36}/(?<nested>balance-entries|payment-changes|subcategories|extra-payments|debt-entries))?/?$")]
+        + @"|card-purchases|expense-categories|recurring-bills|bills|expenses|expenses/cash-withdrawals|revolving-cards|lendings)"
+        + @"(/[0-9a-f-]{36}/(?<nested>balance-entries|payment-changes|subcategories|extra-payments|debt-entries|repayments))?/?$")]
     private static partial Regex CreatePath();
 }

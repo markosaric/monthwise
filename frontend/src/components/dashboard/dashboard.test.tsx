@@ -251,6 +251,27 @@ describe('Dashboard', () => {
     expect(screen.queryByRole('link', { name: /Shared costs outstanding/ })).not.toBeInTheDocument()
   })
 
+  it('shows what is still owed, with the overdue part highlighted, and opens Lending (money lending FR-11)', async () => {
+    stubDashboard(
+      aDashboard({
+        lending: { outstandingCents: 45000, overdueCents: 15000, openCount: 2, hasOverdue: true },
+      }),
+    )
+    renderRoute('/')
+
+    const card = await screen.findByRole('link', { name: /Lending · 150,00\s€ overdue/ })
+    expect(card).toHaveAttribute('href', '/lending')
+    expect(within(card).getByText('450,00 €')).toHaveClass('text-problem')
+  })
+
+  it('shows no Lending card when nothing is outstanding', async () => {
+    stubDashboard(aDashboard({ lending: null }))
+    renderRoute('/')
+
+    await screen.findByRole('heading', { name: 'October 2026' })
+    expect(screen.queryByRole('link', { name: /Lending ·/ })).not.toBeInTheDocument()
+  })
+
   it('shows quick actions as icons that open their forms and come back to the Dashboard', async () => {
     stubDashboard()
     renderRoute('/')

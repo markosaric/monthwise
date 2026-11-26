@@ -148,6 +148,7 @@ const summaryRows: { key: keyof DataSummary; label: string }[] = [
   { key: 'cardPurchases', label: t.summary.cardPurchases },
   { key: 'bills', label: t.summary.bills },
   { key: 'expenses', label: t.summary.expenses },
+  { key: 'lendings', label: t.summary.lendings },
 ]
 
 /** What is in the file next to what is in Monthwise now (FR-5). */

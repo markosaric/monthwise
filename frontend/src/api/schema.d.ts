@@ -618,7 +618,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Received and expected inputs, and paid and expected loan and card payments, bills and expenses, per day or month between two dates. */
+        /** Received and expected inputs, and paid and expected loan and card payments, bills, expenses and lending, per day or month between two dates. */
         get: operations["GetCashFlowChart"];
         put?: never;
         post?: never;
@@ -1676,6 +1676,109 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/lendings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Open and overdue lendings by expected return date, or returned ones latest first, with the outstanding and overdue totals. */
+        get: operations["GetLendings"];
+        put?: never;
+        /** Records money lent from an account; the borrower is found or added in the payers list. */
+        post: operations["CreateLending"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/lendings/borrowers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Per borrower: lent, returned and outstanding. */
+        get: operations["GetLendingBorrowers"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/lendings/month": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The money lent, returned and expected back in a month (yyyy-MM), with totals. */
+        get: operations["GetMonthLending"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/lendings/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetLending"];
+        put: operations["UpdateLending"];
+        post?: never;
+        /** Deletes the lending with its repayments. */
+        delete: operations["DeleteLending"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/lendings/{id}/repayments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Records a repayment of at most the outstanding amount; returns the lending. */
+        post: operations["AddLendingRepayment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/lendings/{id}/repayments/{repaymentId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["UpdateLendingRepayment"];
+        post?: never;
+        /** Deletes a repayment; returns the lending. */
+        delete: operations["DeleteLendingRepayment"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/data": {
         parameters: {
             query?: never;
@@ -1936,6 +2039,18 @@ export interface components {
         };
         /** @enum {unknown} */
         BillState: "NotIssued" | "Expected" | "Paid";
+        BorrowerTotalsResponse: {
+            /** Format: uuid */
+            payerId: string;
+            name: string;
+            /** Format: int64 */
+            lentCents: number;
+            /** Format: int64 */
+            returnedCents: number;
+            /** Format: int64 */
+            outstandingCents: number;
+            hasOverdue: boolean;
+        };
         CardBillingResponse: {
             /** Format: int32 */
             statementDay: number;
@@ -2250,7 +2365,7 @@ export interface components {
             balances: components["schemas"]["AccountBalanceResponse"][];
         };
         /** @enum {unknown} */
-        DashboardItemKind: "Bill" | "LoanPayment" | "CardPayment" | "Input";
+        DashboardItemKind: "Bill" | "LoanPayment" | "CardPayment" | "Input" | "Lending";
         DashboardItemResponse: {
             kind: components["schemas"]["DashboardItemKind"];
             name: string;
@@ -2258,6 +2373,15 @@ export interface components {
             date: string;
             /** Format: int64 */
             amountCents: number;
+        };
+        DashboardLendingResponse: {
+            /** Format: int64 */
+            outstandingCents: number;
+            /** Format: int64 */
+            overdueCents: number;
+            /** Format: int32 */
+            openCount: number;
+            hasOverdue: boolean;
         };
         DashboardLoansResponse: {
             /** Format: int32 */
@@ -2284,6 +2408,8 @@ export interface components {
             loanPaymentsCents: number;
             /** Format: int64 */
             cardPaymentsCents: number;
+            /** Format: int64 */
+            lendingCents: number;
         };
         DashboardRecurringBillsResponse: {
             /** Format: int32 */
@@ -2310,6 +2436,7 @@ export interface components {
             cardPayments: null | components["schemas"]["DashboardCardPaymentsResponse"];
             sharedCosts: null | components["schemas"]["DashboardSharedCostsResponse"];
             recurringBills: null | components["schemas"]["DashboardRecurringBillsResponse"];
+            lending: null | components["schemas"]["DashboardLendingResponse"];
         };
         DashboardSharedCostsResponse: {
             /** Format: int64 */
@@ -2366,6 +2493,11 @@ export interface components {
             bills: number;
             /** Format: int32 */
             expenses: number;
+            /**
+             * Format: int32
+             * @default 0
+             */
+            lendings: number;
         };
         /** @enum {unknown} */
         DataTransferKind: "Export" | "Import" | "SafetyCopy" | "SafetyCopyRestore";
@@ -2633,6 +2765,48 @@ export interface components {
         LastPaidFromResponse: {
             paidFrom: null | components["schemas"]["PaidFromResponse"];
         };
+        /** @enum {unknown} */
+        LendingFilter: "Open" | "Returned" | null;
+        LendingListResponse: {
+            lendings: components["schemas"]["LendingResponse"][];
+            /** Format: int64 */
+            outstandingCents: number;
+            /** Format: int64 */
+            overdueCents: number;
+        };
+        LendingRequest: {
+            borrowerName: null | string;
+            /** Format: int64 */
+            amountCents: number;
+            /** Format: date */
+            lendDate: string;
+            /** Format: uuid */
+            fromAccountId: string;
+            /** Format: date */
+            expectedReturnDate: string;
+            description: null | string;
+        };
+        LendingResponse: {
+            /** Format: uuid */
+            id: string;
+            borrower: components["schemas"]["NamedReference"];
+            /** Format: int64 */
+            amountCents: number;
+            /** Format: date */
+            lendDate: string;
+            fromAccount: components["schemas"]["NamedReference"];
+            /** Format: date */
+            expectedReturnDate: string;
+            description: null | string;
+            /** Format: int64 */
+            returnedCents: number;
+            /** Format: int64 */
+            outstandingCents: number;
+            state: components["schemas"]["LendingState"];
+            repayments: components["schemas"]["RepaymentResponse"][];
+        };
+        /** @enum {unknown} */
+        LendingState: "Open" | "Overdue" | "Returned";
         LoanCategoryRequest: {
             name: string;
             allowsResidualValue: boolean;
@@ -2825,6 +2999,31 @@ export interface components {
             inputs: components["schemas"]["InputEntryResponse"][];
             totals: components["schemas"]["InputTotalsResponse"];
         };
+        MonthLendingEntryResponse: {
+            /** Format: uuid */
+            lendingId: string;
+            /** Format: uuid */
+            repaymentId: null | string;
+            borrower: components["schemas"]["NamedReference"];
+            /** Format: date */
+            date: string;
+            /** Format: int64 */
+            amountCents: number;
+            account: components["schemas"]["NamedReference"];
+            isOverdue: boolean;
+        };
+        MonthLendingResponse: {
+            month: string;
+            lent: components["schemas"]["MonthLendingEntryResponse"][];
+            returned: components["schemas"]["MonthLendingEntryResponse"][];
+            expectedBack: components["schemas"]["MonthLendingEntryResponse"][];
+            /** Format: int64 */
+            lentCents: number;
+            /** Format: int64 */
+            returnedCents: number;
+            /** Format: int64 */
+            expectedBackCents: number;
+        };
         MonthLoanPaymentsResponse: {
             month: string;
             payments: components["schemas"]["LoanPaymentResponse"][];
@@ -2851,6 +3050,7 @@ export interface components {
             /** Format: int64 */
             previousMonthResultCents: number;
             sharedCosts?: null | components["schemas"]["ReportSharedCostsResponse"];
+            lending?: null | components["schemas"]["ReportLendingResponse"];
         };
         MonthRevolvingResponse: {
             month: string;
@@ -3029,6 +3229,25 @@ export interface components {
             /** Format: int32 */
             dueDay: null | number;
         };
+        RepaymentRequest: {
+            /** Format: int64 */
+            amountCents: number;
+            /** Format: uuid */
+            toAccountId: string;
+            /** Format: date */
+            receivedDate: string;
+            note: null | string;
+        };
+        RepaymentResponse: {
+            /** Format: uuid */
+            id: string;
+            /** Format: int64 */
+            amountCents: number;
+            toAccount: components["schemas"]["NamedReference"];
+            /** Format: date */
+            receivedDate: string;
+            note: null | string;
+        };
         ReportBalanceEntryResponse: {
             account: components["schemas"]["NamedReference"];
             kind: components["schemas"]["BalanceEntryKind"];
@@ -3045,6 +3264,26 @@ export interface components {
             id: string;
             name: string;
             totals: components["schemas"]["InputTotalsResponse"];
+        };
+        ReportLendingBorrowerResponse: {
+            /** Format: uuid */
+            payerId: string;
+            name: string;
+            /** Format: int64 */
+            lentCents: number;
+            /** Format: int64 */
+            returnedCents: number;
+            /** Format: int64 */
+            expectedBackCents: number;
+        };
+        ReportLendingResponse: {
+            /** Format: int64 */
+            lentCents: number;
+            /** Format: int64 */
+            returnedCents: number;
+            /** Format: int64 */
+            expectedBackCents: number;
+            byBorrower: components["schemas"]["ReportLendingBorrowerResponse"][];
         };
         ReportOutputGroupResponse: {
             /** Format: uuid */
@@ -5155,6 +5394,7 @@ export interface operations {
                 loanCategoryId?: string;
                 cardId?: string;
                 expenseCategoryId?: string;
+                borrowerId?: string;
             };
             header?: never;
             path?: never;
@@ -9051,6 +9291,364 @@ export interface operations {
             };
             /** @description Conflict */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetLendings: {
+        parameters: {
+            query?: {
+                state?: components["schemas"]["LendingFilter"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LendingListResponse"];
+                };
+            };
+        };
+    };
+    CreateLending: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LendingRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LendingResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+        };
+    };
+    GetLendingBorrowers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BorrowerTotalsResponse"][];
+                };
+            };
+        };
+    };
+    GetMonthLending: {
+        parameters: {
+            query: {
+                month: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MonthLendingResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+        };
+    };
+    GetLending: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LendingResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    UpdateLending: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LendingRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LendingResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    DeleteLending: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    AddLendingRepayment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RepaymentRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LendingResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    UpdateLendingRepayment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                repaymentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RepaymentRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LendingResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    DeleteLendingRepayment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                repaymentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LendingResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

@@ -126,7 +126,7 @@ export function AppLayout() {
           <SystemStatusAlert variant="bar" />
           <nav
             aria-label={appTexts.layout.mobileMenu}
-            className="grid grid-cols-8 border-t bg-card pb-[env(safe-area-inset-bottom)]"
+            className="grid grid-cols-9 border-t bg-card pb-[env(safe-area-inset-bottom)]"
           >
             {navItems.map(({ to, label, shortLabel, icon: Icon, color }) => (
               <NavLink

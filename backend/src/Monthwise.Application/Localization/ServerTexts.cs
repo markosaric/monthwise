@@ -62,6 +62,7 @@ public static partial class ServerTexts
         ["Description"] = "Opis",
         ["Note"] = "Bilješka",
         ["Payer"] = "Uplatitelj",
+        ["Borrower"] = "Dužnik",
         ["Payee"] = "Primatelj",
         ["Reason"] = "Razlog",
     };
@@ -93,7 +94,7 @@ public static partial class ServerTexts
         (ResidualValue(), m => $"{m.Groups[1].Value}, ostatak vrijednosti"),
     ];
 
-    [GeneratedRegex(@"^(Name|Description|Note|Payer|Payee|Reason) can be at most (\d+) characters\.$")]
+    [GeneratedRegex(@"^(Name|Description|Note|Payer|Borrower|Payee|Reason) can be at most (\d+) characters\.$")]
     private static partial Regex TooLong();
 
     [GeneratedRegex(@"^Bill day must be a day between (\d+) and (\d+)\.$")]
@@ -153,6 +154,7 @@ public static partial class ServerTexts
         // Names the API makes up for groups and payments.
         ["No account yet"] = "Još nema računa",
         ["Card payments"] = "Plaćanja kartica",
+        ["Lending"] = "Posudbe",
         ["Unknown"] = "Nepoznato",
         ["An import is running. Try again in a moment."] = "Uvoz je u tijeku. Pokušajte ponovno za trenutak.",
         ["The database could not be brought up to date. See the log for details."] = "Bazu podataka nije bilo moguće ažurirati. Pojedinosti su u zapisniku.",
@@ -205,6 +207,7 @@ public static partial class ServerTexts
         ["Bill not found."] = "Račun nije pronađen.",
         ["Bills were already added from this recurring bill. Stop it instead."] =
             "Iz ovog ponavljajućeg računa već su dodani računi. Umjesto toga ga zaustavite.",
+        ["Borrower is required."] = "Dužnik je obavezan.",
         ["Card not found."] = "Kartica nije pronađena.",
         ["Card number is not valid."] = "Broj kartice nije ispravan.",
         ["Cash can only be withdrawn from a primary account."] = "Gotovina se može podići samo s tekućeg računa.",
@@ -219,6 +222,8 @@ public static partial class ServerTexts
             "Odaberite tekući račun koji nije blokiran, istekao ni arhiviran.",
         ["Choose a subcategory of the chosen category."] = "Odaberite potkategoriju odabrane kategorije.",
         ["Choose a subcategory."] = "Odaberite potkategoriju.",
+        ["Choose an account that is not a credit card and not blocked, expired or archived."] =
+            "Odaberite račun koji nije kreditna kartica i nije blokiran, istekao ni arhiviran.",
         ["Choose an account that is not blocked, expired or archived."] = "Odaberite račun koji nije blokiran, istekao ni arhiviran.",
         ["Choose an account."] = "Odaberite račun.",
         ["Choose an export file."] = "Odaberite datoteku izvoza.",
@@ -228,6 +233,8 @@ public static partial class ServerTexts
         ["Choose starting balance or correction."] = "Odaberite početni saldo ili ispravak.",
         ["Choose the account it was paid from."] = "Odaberite račun s kojeg je plaćeno.",
         ["Choose the account the contribution is paid to."] = "Odaberite račun na koji se uplaćuje doprinos.",
+        ["Choose the account the money arrived on."] = "Odaberite račun na koji je novac stigao.",
+        ["Choose the account the money left."] = "Odaberite račun s kojeg je novac otišao.",
         ["Choose the account the monthly bills are paid from."] = "Odaberite račun s kojeg se plaćaju mjesečni računi.",
         ["Choose the month the change applies from."] = "Odaberite mjesec od kojeg promjena vrijedi.",
         ["Choose the primary account card payments are paid from."] = "Odaberite tekući račun s kojeg se plaćaju kartice.",
@@ -252,12 +259,15 @@ public static partial class ServerTexts
         ["Enter the number of payments or the end month."] = "Unesite broj rata ili završni mjesec.",
         ["Enter the password of the file."] = "Unesite lozinku datoteke.",
         ["Expected date must be the same as or later than the issue date."] = "Datum naplate mora biti isti ili kasniji od datuma računa.",
+        ["Expected return date must be the same as or later than the lend date."] =
+            "Očekivani datum povrata mora biti isti ili kasniji od datuma posudbe.",
         ["Expense not found."] = "Trošak nije pronađen.",
         ["Extra payment not found."] = "Dodatna uplata nije pronađena.",
         ["IBAN is not valid."] = "IBAN nije ispravan.",
         ["Input not found."] = "Uplata nije pronađena.",
         ["Interest rate cannot be negative."] = "Kamatna stopa ne može biti negativna.",
         ["Issue date is required."] = "Datum računa je obavezan.",
+        ["Lending not found."] = "Posudba nije pronađena.",
         ["Loan not found."] = "Kredit nije pronađen.",
         ["Max debt limit cannot be negative."] = "Najveći limit duga ne može biti negativan.",
         ["Max installments must be 12, 24 or 36."] = "Najveći broj rata mora biti 12, 24 ili 36.",
@@ -281,15 +291,19 @@ public static partial class ServerTexts
         ["Payment date must be later than the statement date."] = "Datum dospijeća mora biti kasniji od datuma obračuna.",
         ["Purchase not found."] = "Kupnja nije pronađena.",
         ["Received date must be the same as or later than the issue date."] = "Datum primitka mora biti isti ili kasniji od datuma računa.",
+        ["Received date must be the same as or later than the lend date."] =
+            "Datum primitka mora biti isti ili kasniji od datuma posudbe.",
         ["Record a cash withdrawal with Cash withdrawal instead."] = "Podizanje gotovine zabilježite pomoću Podizanja gotovine.",
         ["Recurring bill not found."] = "Ponavljajući račun nije pronađen.",
         ["Recurring input not found."] = "Ponavljajuća uplata nije pronađena.",
+        ["Repayment not found."] = "Povrat nije pronađen.",
         ["Residual value must be greater than zero."] = "Ostatak vrijednosti mora biti veći od nule.",
         ["Set the card's statement date, payment date and paying account first."] =
             "Najprije postavite datum obračuna, datum dospijeća i račun plaćanja kartice.",
         ["Start month cannot be after a paid payment."] = "Početni mjesec ne može biti nakon plaćene rate.",
         ["Start month is not valid."] = "Početni mjesec nije ispravan.",
         ["Subcategory not found."] = "Potkategorija nije pronađena.",
+        ["The amount cannot be less than what was already returned."] = "Iznos ne može biti manji od već vraćenog.",
         ["The bill has no contribution until it is issued."] = "Račun nema doprinos dok nije izdan.",
         ["The change must start after the month of the latest paid payment."] = "Promjena mora početi nakon mjeseca zadnje plaćene rate.",
         ["The change must start within the loan's payments."] = "Promjena mora početi unutar rata kredita.",
@@ -304,10 +318,12 @@ public static partial class ServerTexts
             "Datoteku nije izradila verzija Monthwisea koju ova verzija poznaje.",
         ["The import failed and no data was changed. See the log for details."] =
             "Uvoz nije uspio i nijedan podatak nije promijenjen. Pojedinosti su u zapisniku.",
+        ["The lend date cannot be after a repayment."] = "Datum posudbe ne može biti nakon povrata.",
         ["The loan cannot end before a paid payment."] = "Kredit ne može završiti prije plaćene rate.",
         ["The participant pays at least one share and fewer than all of them."] = "Sudionik plaća barem jedan udio i manje od svih.",
         ["The password is wrong or the file is damaged."] = "Lozinka je pogrešna ili je datoteka oštećena.",
         ["The purchase date is before the card's valid from."] = "Datum kupnje je prije početka valjanosti kartice.",
+        ["The repayment cannot be more than the outstanding amount."] = "Povrat ne može biti veći od nepodmirenog iznosa.",
         ["The replacement card does not exist."] = "Zamjenska kartica ne postoji.",
         ["The replacement card is archived, blocked or expired."] = "Zamjenska kartica je arhivirana, blokirana ili istekla.",
         ["The residual value is already paid and cannot be changed."] = "Ostatak vrijednosti već je plaćen i ne može se mijenjati.",

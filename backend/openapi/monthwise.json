@@ -2467,7 +2467,7 @@
         "tags": [
           "Cash flow"
         ],
-        "summary": "Received and expected inputs, and paid and expected loan and card payments, bills and expenses, per day or month between two dates.",
+        "summary": "Received and expected inputs, and paid and expected loan and card payments, bills, expenses and lending, per day or month between two dates.",
         "operationId": "GetCashFlowChart",
         "parameters": [
           {
@@ -2537,6 +2537,14 @@
           },
           {
             "name": "expenseCategoryId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "borrowerId",
             "in": "query",
             "schema": {
               "type": "string",
@@ -7780,6 +7788,484 @@
         }
       }
     },
+    "/api/lendings": {
+      "get": {
+        "tags": [
+          "Lending"
+        ],
+        "summary": "Open and overdue lendings by expected return date, or returned ones latest first, with the outstanding and overdue totals.",
+        "operationId": "GetLendings",
+        "parameters": [
+          {
+            "name": "state",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/LendingFilter"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LendingListResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Lending"
+        ],
+        "summary": "Records money lent from an account; the borrower is found or added in the payers list.",
+        "operationId": "CreateLending",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LendingRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LendingResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/lendings/borrowers": {
+      "get": {
+        "tags": [
+          "Lending"
+        ],
+        "summary": "Per borrower: lent, returned and outstanding.",
+        "operationId": "GetLendingBorrowers",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BorrowerTotalsResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/lendings/month": {
+      "get": {
+        "tags": [
+          "Lending"
+        ],
+        "summary": "The money lent, returned and expected back in a month (yyyy-MM), with totals.",
+        "operationId": "GetMonthLending",
+        "parameters": [
+          {
+            "name": "month",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MonthLendingResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/lendings/{id}": {
+      "get": {
+        "tags": [
+          "Lending"
+        ],
+        "operationId": "GetLending",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LendingResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Lending"
+        ],
+        "operationId": "UpdateLending",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LendingRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LendingResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Lending"
+        ],
+        "summary": "Deletes the lending with its repayments.",
+        "operationId": "DeleteLending",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/lendings/{id}/repayments": {
+      "post": {
+        "tags": [
+          "Lending"
+        ],
+        "summary": "Records a repayment of at most the outstanding amount; returns the lending.",
+        "operationId": "AddLendingRepayment",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RepaymentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LendingResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/lendings/{id}/repayments/{repaymentId}": {
+      "put": {
+        "tags": [
+          "Lending"
+        ],
+        "operationId": "UpdateLendingRepayment",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "repaymentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RepaymentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LendingResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Lending"
+        ],
+        "summary": "Deletes a repayment; returns the lending.",
+        "operationId": "DeleteLendingRepayment",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "repaymentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LendingResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/data": {
       "get": {
         "tags": [
@@ -8598,6 +9084,41 @@
           "Expected",
           "Paid"
         ]
+      },
+      "BorrowerTotalsResponse": {
+        "required": [
+          "payerId",
+          "name",
+          "lentCents",
+          "returnedCents",
+          "outstandingCents",
+          "hasOverdue"
+        ],
+        "type": "object",
+        "properties": {
+          "payerId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "lentCents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "returnedCents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "outstandingCents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "hasOverdue": {
+            "type": "boolean"
+          }
+        }
       },
       "CardBillingResponse": {
         "required": [
@@ -9775,7 +10296,8 @@
           "Bill",
           "LoanPayment",
           "CardPayment",
-          "Input"
+          "Input",
+          "Lending"
         ]
       },
       "DashboardItemResponse": {
@@ -9800,6 +10322,32 @@
           "amountCents": {
             "type": "integer",
             "format": "int64"
+          }
+        }
+      },
+      "DashboardLendingResponse": {
+        "required": [
+          "outstandingCents",
+          "overdueCents",
+          "openCount",
+          "hasOverdue"
+        ],
+        "type": "object",
+        "properties": {
+          "outstandingCents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "overdueCents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "openCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "hasOverdue": {
+            "type": "boolean"
           }
         }
       },
@@ -9855,7 +10403,8 @@
           "billsCents",
           "expensesCents",
           "loanPaymentsCents",
-          "cardPaymentsCents"
+          "cardPaymentsCents",
+          "lendingCents"
         ],
         "type": "object",
         "properties": {
@@ -9872,6 +10421,10 @@
             "format": "int64"
           },
           "cardPaymentsCents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "lendingCents": {
             "type": "integer",
             "format": "int64"
           }
@@ -9910,7 +10463,8 @@
           "loans",
           "cardPayments",
           "sharedCosts",
-          "recurringBills"
+          "recurringBills",
+          "lending"
         ],
         "type": "object",
         "properties": {
@@ -10000,6 +10554,16 @@
               },
               {
                 "$ref": "#/components/schemas/DashboardRecurringBillsResponse"
+              }
+            ]
+          },
+          "lending": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/DashboardLendingResponse"
               }
             ]
           }
@@ -10183,6 +10747,11 @@
           "expenses": {
             "type": "integer",
             "format": "int32"
+          },
+          "lendings": {
+            "type": "integer",
+            "format": "int32",
+            "default": 0
           }
         }
       },
@@ -11177,6 +11746,148 @@
           }
         }
       },
+      "LendingFilter": {
+        "enum": [
+          "Open",
+          "Returned",
+          null
+        ]
+      },
+      "LendingListResponse": {
+        "required": [
+          "lendings",
+          "outstandingCents",
+          "overdueCents"
+        ],
+        "type": "object",
+        "properties": {
+          "lendings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LendingResponse"
+            }
+          },
+          "outstandingCents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "overdueCents": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "LendingRequest": {
+        "required": [
+          "borrowerName",
+          "amountCents",
+          "lendDate",
+          "fromAccountId",
+          "expectedReturnDate",
+          "description"
+        ],
+        "type": "object",
+        "properties": {
+          "borrowerName": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "amountCents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "lendDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "fromAccountId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "expectedReturnDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "description": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "LendingResponse": {
+        "required": [
+          "id",
+          "borrower",
+          "amountCents",
+          "lendDate",
+          "fromAccount",
+          "expectedReturnDate",
+          "description",
+          "returnedCents",
+          "outstandingCents",
+          "state",
+          "repayments"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "borrower": {
+            "$ref": "#/components/schemas/NamedReference"
+          },
+          "amountCents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "lendDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "fromAccount": {
+            "$ref": "#/components/schemas/NamedReference"
+          },
+          "expectedReturnDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "description": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "returnedCents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "outstandingCents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "state": {
+            "$ref": "#/components/schemas/LendingState"
+          },
+          "repayments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RepaymentResponse"
+            }
+          }
+        }
+      },
+      "LendingState": {
+        "enum": [
+          "Open",
+          "Overdue",
+          "Returned"
+        ]
+      },
       "LoanCategoryRequest": {
         "required": [
           "name",
@@ -11891,6 +12602,95 @@
           }
         }
       },
+      "MonthLendingEntryResponse": {
+        "required": [
+          "lendingId",
+          "repaymentId",
+          "borrower",
+          "date",
+          "amountCents",
+          "account",
+          "isOverdue"
+        ],
+        "type": "object",
+        "properties": {
+          "lendingId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "repaymentId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "borrower": {
+            "$ref": "#/components/schemas/NamedReference"
+          },
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "amountCents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "account": {
+            "$ref": "#/components/schemas/NamedReference"
+          },
+          "isOverdue": {
+            "type": "boolean"
+          }
+        }
+      },
+      "MonthLendingResponse": {
+        "required": [
+          "month",
+          "lent",
+          "returned",
+          "expectedBack",
+          "lentCents",
+          "returnedCents",
+          "expectedBackCents"
+        ],
+        "type": "object",
+        "properties": {
+          "month": {
+            "type": "string"
+          },
+          "lent": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MonthLendingEntryResponse"
+            }
+          },
+          "returned": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MonthLendingEntryResponse"
+            }
+          },
+          "expectedBack": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MonthLendingEntryResponse"
+            }
+          },
+          "lentCents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "returnedCents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "expectedBackCents": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
       "MonthLoanPaymentsResponse": {
         "required": [
           "month",
@@ -11995,6 +12795,16 @@
               },
               {
                 "$ref": "#/components/schemas/ReportSharedCostsResponse"
+              }
+            ]
+          },
+          "lending": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ReportLendingResponse"
               }
             ]
           }
@@ -12689,6 +13499,68 @@
           }
         }
       },
+      "RepaymentRequest": {
+        "required": [
+          "amountCents",
+          "toAccountId",
+          "receivedDate",
+          "note"
+        ],
+        "type": "object",
+        "properties": {
+          "amountCents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "toAccountId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "receivedDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "note": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "RepaymentResponse": {
+        "required": [
+          "id",
+          "amountCents",
+          "toAccount",
+          "receivedDate",
+          "note"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "amountCents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "toAccount": {
+            "$ref": "#/components/schemas/NamedReference"
+          },
+          "receivedDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "note": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
       "ReportBalanceEntryResponse": {
         "required": [
           "account",
@@ -12743,6 +13615,66 @@
           },
           "totals": {
             "$ref": "#/components/schemas/InputTotalsResponse"
+          }
+        }
+      },
+      "ReportLendingBorrowerResponse": {
+        "required": [
+          "payerId",
+          "name",
+          "lentCents",
+          "returnedCents",
+          "expectedBackCents"
+        ],
+        "type": "object",
+        "properties": {
+          "payerId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "lentCents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "returnedCents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "expectedBackCents": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "ReportLendingResponse": {
+        "required": [
+          "lentCents",
+          "returnedCents",
+          "expectedBackCents",
+          "byBorrower"
+        ],
+        "type": "object",
+        "properties": {
+          "lentCents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "returnedCents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "expectedBackCents": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "byBorrower": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReportLendingBorrowerResponse"
+            }
           }
         }
       },
@@ -13502,6 +14434,9 @@
     },
     {
       "name": "Expenses"
+    },
+    {
+      "name": "Lending"
     },
     {
       "name": "Data and backups"

@@ -3,6 +3,7 @@ import { Navigate, useParams } from 'react-router'
 import { useMonthCardPayments } from '@/api/cardPurchases'
 import { useMonthlyReport } from '@/api/cashFlow'
 import { useMonthBills, useMonthExpenses } from '@/api/expenses'
+import { useMonthLending } from '@/api/lending'
 import { useMonthLoanPayments } from '@/api/loans'
 import { useMonthRevolving } from '@/api/revolving'
 import { CardPaymentsSection } from '@/components/cardPurchases/CardPaymentsSection'
@@ -15,6 +16,8 @@ import { RingChart } from '@/components/design/RingChart'
 import { StatCard, StatGrid } from '@/components/design/StatCard'
 import { BillsSection } from '@/components/expenses/BillsSection'
 import { ExpensesSection } from '@/components/expenses/ExpensesSection'
+import { LendingSection } from '@/components/lending/LendingSection'
+import { lendingTexts } from '@/components/lending/texts'
 import { LoanPaymentsSection } from '@/components/loans/LoanPaymentsSection'
 import { RevolvingMonthSection } from '@/components/revolving/RevolvingMonthSection'
 import { Card, CardContent } from '@/components/ui/card'
@@ -42,6 +45,7 @@ export function MonthPage() {
       <LoanPaymentsSection month={month} />
       <CardPaymentsSection month={month} />
       <RevolvingMonthSection month={month} />
+      <LendingSection month={month} />
     </div>
   )
 }
@@ -57,6 +61,7 @@ function MonthSummary({ month }: { month: string }) {
   const { data: loanPayments } = useMonthLoanPayments(month)
   const { data: cardPayments } = useMonthCardPayments(month)
   const { data: revolving } = useMonthRevolving(month)
+  const { data: lending } = useMonthLending(month)
   if (!report) return null
 
   const inputs = report.totals
@@ -139,6 +144,11 @@ function MonthSummary({ month }: { month: string }) {
                 label: cardPurchaseTexts.monthTitle,
                 cents: (cardPayments?.totals.totalCents ?? 0) + (revolving?.totals.totalCents ?? 0),
                 color: sectionColors.cards,
+              },
+              {
+                label: lendingTexts.month.title,
+                cents: lending?.lentCents ?? 0,
+                color: sectionColors.lending,
               },
             ]}
           />

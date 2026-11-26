@@ -5,6 +5,7 @@ using Monthwise.Application.Cards;
 using Monthwise.Application.CashFlow;
 using Monthwise.Application.DataTransfer;
 using Monthwise.Application.Expenses;
+using Monthwise.Application.Lendings;
 using Monthwise.Application.Loans;
 using Monthwise.Application.Revolving;
 using Monthwise.Application.SharedCosts;
@@ -106,6 +107,10 @@ public static class DependencyInjection
         services.AddScoped<BillHandler>();
         services.AddScoped<GetMonthExpensesHandler>();
         services.AddScoped<ExpenseHandler>();
+        services.AddScoped<LendingLedger>();
+        services.AddScoped<GetLendingsHandler>();
+        services.AddScoped<GetMonthLendingHandler>();
+        services.AddScoped<LendingHandler>();
 
         services.AddScoped<SharedCostLedger>();
         services.AddScoped<ShareResolver>();

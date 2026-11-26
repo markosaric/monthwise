@@ -6,6 +6,7 @@ using Monthwise.Domain.CashFlow;
 using Monthwise.Domain.Common;
 using Monthwise.Domain.DataTransfer;
 using Monthwise.Domain.Expenses;
+using Monthwise.Domain.Lendings;
 using Monthwise.Domain.Loans;
 using Monthwise.Domain.Revolving;
 using Monthwise.Domain.SharedCosts;
@@ -47,6 +48,8 @@ public sealed class MonthwiseDbContext(DbContextOptions<MonthwiseDbContext> opti
     public DbSet<Bill> Bills => Set<Bill>();
     public DbSet<Expense> Expenses => Set<Expense>();
     public DbSet<Participant> Participants => Set<Participant>();
+    public DbSet<Lending> Lendings => Set<Lending>();
+    public DbSet<LendingRepayment> LendingRepayments => Set<LendingRepayment>();
     public DbSet<RevolvingTerms> RevolvingTerms => Set<RevolvingTerms>();
     public DbSet<DebtEntry> DebtEntries => Set<DebtEntry>();
     public DbSet<ExtraPayment> ExtraPayments => Set<ExtraPayment>();
@@ -84,6 +87,8 @@ public sealed class MonthwiseDbContext(DbContextOptions<MonthwiseDbContext> opti
         modelBuilder.ApplyConfiguration(new BillConfiguration());
         modelBuilder.ApplyConfiguration(new ExpenseConfiguration());
         modelBuilder.ApplyConfiguration(new ParticipantConfiguration());
+        modelBuilder.ApplyConfiguration(new LendingConfiguration());
+        modelBuilder.ApplyConfiguration(new LendingRepaymentConfiguration());
         modelBuilder.ApplyConfiguration(new RevolvingTermsConfiguration());
         modelBuilder.ApplyConfiguration(new DebtEntryConfiguration());
         modelBuilder.ApplyConfiguration(new ExtraPaymentConfiguration());

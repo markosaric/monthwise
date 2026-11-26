@@ -21,6 +21,7 @@ export function aDashboard(overrides: Partial<Dashboard> = {}): Dashboard {
       expensesCents: 44640,
       loanPaymentsCents: 59520,
       cardPaymentsCents: 29760,
+      lendingCents: 0,
     },
     lastSixMonths: [
       { month: '2026-05', inputsCents: 300000, outputsCents: 250000 },
@@ -39,6 +40,7 @@ export function aDashboard(overrides: Partial<Dashboard> = {}): Dashboard {
     cardPayments: { monthTotalCents: 29760, count: 2, cardsWithInstallments: 1 },
     sharedCosts: { outstandingCents: 15000, participantsOwing: 1, hasOverdue: false },
     recurringBills: { activeCount: 9, notIssuedThisMonth: 2 },
+    lending: null,
     ...overrides,
   }
 }

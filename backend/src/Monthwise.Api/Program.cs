@@ -87,6 +87,7 @@ api.MapCardPurchaseEndpoints();
 api.MapRevolvingEndpoints();
 api.MapExpenseEndpoints();
 api.MapSharedCostEndpoints();
+api.MapLendingEndpoints();
 api.MapDashboardEndpoints();
 api.MapDataEndpoints();
 
