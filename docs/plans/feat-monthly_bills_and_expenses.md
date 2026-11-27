@@ -1,7 +1,7 @@
 # Plan: Monthly bills and expenses
 
 - **Branch:** `feat/monthly_bills_and_expenses`
-- **Status:** In progress
+- **Status:** Done
 - **Date:** 2026-10-09
 - **Requirements:** [monthly-bills-and-expenses.md](../feature-requirements/monthly-bills-and-expenses.md) (approved), and
   [credit-card-installments.md, Appendix 1](../feature-requirements/credit-card-installments.md#appendix-1-shared-expense-categories)

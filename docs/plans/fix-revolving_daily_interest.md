@@ -3,7 +3,7 @@
 - **Branch:** `claude/project-thread-no7dqr` (restarted from `main` after #15; this plan has its own
   file name because the branch's first plan, [feat-revolving_credit_card.md](feat-revolving_credit_card.md),
   is the merged feature's plan)
-- **Status:** Draft
+- **Status:** Done
 - **Date:** 2026-11-03
 - **Requirements:** [revolving-credit-card.md](../feature-requirements/revolving-credit-card.md),
   Appendix 1 (approved)

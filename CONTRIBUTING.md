@@ -186,7 +186,9 @@ All commits follow [Conventional Commits 1.0.0](https://www.conventionalcommits.
 | `chore` | other maintenance |
 | `revert` | reverts a previous commit |
 
-**Scopes** (optional): `frontend`, `backend`, `domain`, `api`, `db`, `docs`, `ci`.
+**Scopes** (optional): a part of the code (`frontend`, `ui`, `backend`, `domain`, `api`, `db`, `docs`,
+`ci`, `deploy`, `docker`), `deps` for dependency updates, or a feature area (`cards`, `bills`,
+`dashboard`, `login`, `revolving`, …).
 
 **Rules**
 - Description in English, imperative mood, lowercase, no trailing period, max ~72 characters:

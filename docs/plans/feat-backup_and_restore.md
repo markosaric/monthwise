@@ -1,7 +1,7 @@
 # Plan: Backup and restore
 
 - **Branch:** `feat/backup_and_restore`
-- **Status:** In progress
+- **Status:** Done
 - **Date:** 2026-10-31
 - **Requirements:** [backup-and-restore.md](../feature-requirements/backup-and-restore.md) (approved)
 

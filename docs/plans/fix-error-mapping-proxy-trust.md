@@ -1,7 +1,7 @@
 # Plan: Database error answers and trusted proxy
 
 - **Branch:** `fix/error-mapping-proxy-trust`
-- **Status:** In progress
+- **Status:** Done
 - **Date:** 2026-11-12
 - **Requirements:** [error-mapping-and-proxy-trust.md](../feature-requirements/error-mapping-and-proxy-trust.md)
 

@@ -1,7 +1,7 @@
 # Plan: Name comparison ignoring upper/lower case
 
 - **Branch:** `fix/name-comparison`
-- **Status:** In progress
+- **Status:** Done
 - **Date:** 2026-11-11
 - **Requirements:** [name-comparison.md](../feature-requirements/name-comparison.md)
 
