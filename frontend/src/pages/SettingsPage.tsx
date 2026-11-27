@@ -5,6 +5,7 @@ import {
   Repeat,
   ShoppingBag,
   Tags,
+  UserCog,
   Users,
   type LucideIcon,
 } from 'lucide-react'
@@ -15,6 +16,9 @@ import { useCards } from '@/api/cards'
 import { useDataOverview } from '@/api/dataTransfer'
 import { useExpenseCategories, useRecurringBills } from '@/api/expenses'
 import { useLoanCategories } from '@/api/loans'
+import { useUsers } from '@/api/users'
+import { AccountSection } from '@/components/login/AccountSection'
+import { loginTexts } from '@/components/login/texts'
 import { cardTexts } from '@/components/cards/texts'
 import { cashFlowTexts } from '@/components/cashflow/texts'
 import { daysAgo } from '@/components/dataTransfer/format'
@@ -43,7 +47,8 @@ function counted(count: number | undefined, text: (count: number) => string): st
 /**
  * Settings as tiles grouped into Accounts, Money in, Money out and Data, each with a coloured icon
  * and a count of what it holds (design refresh FR-20); the Data tile shows the age of the last
- * export instead (backup and restore FR-1).
+ * export instead (backup and restore FR-1). Below them who is signed in, with Change password and
+ * Sign out (login FR-5, FR-8), and the language.
  */
 export function SettingsPage() {
   const { data: cards } = useCards('Default')
@@ -54,6 +59,7 @@ export function SettingsPage() {
   const { data: recurringBills } = useRecurringBills()
   const { data: health } = useHealth()
   const { data: dataOverview } = useDataOverview()
+  const { data: users } = useUsers()
   const lastExport = dataOverview?.lastExport
 
   const groups: { title: string; tiles: Tile[] }[] = [
@@ -67,6 +73,14 @@ export function SettingsPage() {
           title: cardTexts.section,
           description: cardTexts.sectionDescription,
           count: counted(cards?.length, appTexts.settings.counts.cards),
+        },
+        {
+          to: '/settings/users',
+          icon: UserCog,
+          color: sectionColors.settings,
+          title: loginTexts.users.section,
+          description: loginTexts.users.description,
+          count: users?.canManage ? counted(users.users.length, loginTexts.users.count) : undefined,
         },
       ],
     },
@@ -173,6 +187,7 @@ export function SettingsPage() {
           </ul>
         </section>
       ))}
+      <AccountSection />
       <LanguageSetting />
       {health?.version && (
         <p className="text-xs text-muted-foreground">

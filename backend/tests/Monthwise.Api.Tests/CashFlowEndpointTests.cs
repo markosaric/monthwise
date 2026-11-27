@@ -47,7 +47,7 @@ public sealed class CashFlowEndpointTests : IAsyncLifetime
         _connectionString = TestDatabase.ConnectionString;
 
         _factory = new MonthwiseApiFactory(_connectionString, migrateOnStartup: true);
-        _client = _factory.CreateClient();
+        _client = await _factory.CreateSignedInClientAsync();
         await Client.GetAsync(new Uri("/api/health", UriKind.Relative), Ct);
         await ExecuteSqlAsync(DeleteAllSql);
         _account = await CreateAccountAsync("Main account", isPrimary: true);

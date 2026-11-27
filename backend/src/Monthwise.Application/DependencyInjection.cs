@@ -9,6 +9,7 @@ using Monthwise.Application.Lendings;
 using Monthwise.Application.Loans;
 using Monthwise.Application.Revolving;
 using Monthwise.Application.SharedCosts;
+using Monthwise.Application.Users;
 
 namespace Monthwise.Application;
 
@@ -125,6 +126,10 @@ public static class DependencyInjection
         services.AddScoped<ExportDataHandler>();
         services.AddScoped<ImportDataHandler>();
         services.AddScoped<BackupReminderHandler>();
+
+        services.AddScoped<UsersHandler>();
+        services.AddScoped<ChangePasswordHandler>();
+        services.AddScoped<SetupHandler>();
         return services;
     }
 }

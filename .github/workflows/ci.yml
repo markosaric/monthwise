@@ -129,6 +129,7 @@ jobs:
           printf 'k1' > "$config/secrets/SensitiveData__ActiveKeyId"
           openssl rand -base64 32 | tr -d '\n' > "$config/secrets/SensitiveData__EncryptionKeys__k1"
           openssl rand -base64 32 | tr -d '\n' > "$config/secrets/SensitiveData__HashKey"
+          openssl rand -hex 12 | tr -d '\n' > "$config/secrets/Setup__Code"
           docker compose --project-name monthwise --file deploy/docker/compose.yml --env-file "$config/compose.env" up --detach
       - name: Smoke checks
         run: deploy/smoke-test.sh http://localhost:8080

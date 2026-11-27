@@ -36,8 +36,19 @@ public class ArchitectureTests
         var references = ReferencedAssemblyNames(Infrastructure);
 
         Assert.DoesNotContain("Monthwise.Api", references);
-        Assert.DoesNotContain(references, name => name.StartsWith("Microsoft.AspNetCore", StringComparison.Ordinal));
+        Assert.DoesNotContain(references, name => name.StartsWith("Microsoft.AspNetCore", StringComparison.Ordinal)
+            && !StoragePackages.Contains(name));
     }
+
+    /// <summary>
+    /// The only ASP.NET Core packages Infrastructure may use: the database stores of Identity and of the
+    /// session keys (ADR 0008). They store data and know nothing of HTTP.
+    /// </summary>
+    private static readonly string[] StoragePackages =
+    [
+        "Microsoft.AspNetCore.Identity.EntityFrameworkCore",
+        "Microsoft.AspNetCore.DataProtection.EntityFrameworkCore",
+    ];
 
     private static string[] ReferencedAssemblyNames(Assembly assembly) =>
         assembly.GetReferencedAssemblies().Select(a => a.Name ?? string.Empty).ToArray();

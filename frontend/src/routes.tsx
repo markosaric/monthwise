@@ -1,5 +1,6 @@
 import { Navigate, type RouteObject } from 'react-router'
 import { AppLayout } from '@/components/layout/AppLayout'
+import { AuthGate } from '@/components/login/AuthGate'
 import { ScreenError } from '@/components/layout/ScreenError'
 import { lazyScreen, type LazyScreen } from '@/lib/lazyScreen'
 import { NotFoundPage } from '@/pages/NotFoundPage'
@@ -132,78 +133,101 @@ const ExpenseCategoriesSettingsPage = screen(() =>
 const DataSettingsPage = screen(() =>
   import('@/pages/settings/DataSettingsPage').then((m) => m.DataSettingsPage),
 )
+const UsersSettingsPage = screen(() =>
+  import('@/pages/settings/UsersSettingsPage').then((m) => m.UsersSettingsPage),
+)
+const UserNewPage = screen(() =>
+  import('@/pages/settings/UserFormPages').then((m) => m.UserNewPage),
+)
+const UserEditPage = screen(() =>
+  import('@/pages/settings/UserFormPages').then((m) => m.UserEditPage),
+)
+const PasswordPage = screen(() =>
+  import('@/pages/settings/PasswordPage').then((m) => m.PasswordPage),
+)
 
 export const routes: RouteObject[] = [
   {
-    element: <AppLayout />,
+    // Only a signed-in user sees the app; otherwise setup or sign-in (login FR-1, FR-2).
+    element: <AuthGate />,
     errorElement: <ScreenError fullPage />,
     children: [
       {
-        // A failing screen shows its message below the app shell (FR-3).
-        errorElement: <ScreenError />,
+        element: <AppLayout />,
+        errorElement: <ScreenError fullPage />,
         children: [
-          { index: true, element: <DashboardPage /> },
-          { path: 'month', element: <MonthPage /> },
-          { path: 'month/:yearMonth', element: <MonthPage /> },
-          { path: 'month/:yearMonth/inputs/new', element: <InputNewPage /> },
-          { path: 'month/:yearMonth/inputs/:id/edit', element: <InputEditPage /> },
           {
-            path: 'month/:yearMonth/recurring-inputs/:id/occurrences/:date/edit',
-            element: <OccurrenceEditPage />,
+            // A failing screen shows its message below the app shell (FR-3).
+            errorElement: <ScreenError />,
+            children: [
+              { index: true, element: <DashboardPage /> },
+              { path: 'month', element: <MonthPage /> },
+              { path: 'month/:yearMonth', element: <MonthPage /> },
+              { path: 'month/:yearMonth/inputs/new', element: <InputNewPage /> },
+              { path: 'month/:yearMonth/inputs/:id/edit', element: <InputEditPage /> },
+              {
+                path: 'month/:yearMonth/recurring-inputs/:id/occurrences/:date/edit',
+                element: <OccurrenceEditPage />,
+              },
+              {
+                path: 'month/:yearMonth/recurring-inputs/:id/edit',
+                element: <RecurringInputEditPage />,
+              },
+              { path: 'month/:yearMonth/bills/new', element: <BillNewPage /> },
+              { path: 'month/:yearMonth/expenses/new', element: <ExpenseNewPage /> },
+              { path: 'bills/:id/edit', element: <BillEditPage /> },
+              { path: 'expenses/:id/edit', element: <ExpenseEditPage /> },
+              { path: 'recurring-bills', element: <RecurringBillsPage /> },
+              { path: 'recurring-bills/new', element: <RecurringBillNewPage /> },
+              { path: 'recurring-bills/:id/edit', element: <RecurringBillEditPage /> },
+              { path: 'cash-flow', element: <CashFlowPage /> },
+              { path: 'cash-flow/:yearMonth', element: <MonthlyReportPage /> },
+              { path: 'cards', element: <CardsPage /> },
+              { path: 'cards/purchases/new', element: <PurchaseNewPage /> },
+              { path: 'cards/purchases/:id', element: <PurchaseDetailsPage /> },
+              { path: 'cards/purchases/:id/edit', element: <PurchaseEditPage /> },
+              { path: 'cards/revolving/:cardId', element: <RevolvingCardPage /> },
+              { path: 'cards/revolving/:cardId/pay', element: <ExtraPaymentNewPage /> },
+              {
+                path: 'cards/revolving/:cardId/payments/:paymentId/edit',
+                element: <ExtraPaymentEditPage />,
+              },
+              { path: 'pay-revolving', element: <ExtraPaymentNewPage /> },
+              { path: 'cards/:cardId', element: <InstallmentCardPage /> },
+              { path: 'cards/:cardId/payments/:month', element: <CardPaymentPage /> },
+              { path: 'loans', element: <LoansPage /> },
+              { path: 'loans/new', element: <LoanNewPage /> },
+              { path: 'loans/:id', element: <LoanDetailsPage /> },
+              { path: 'loans/:id/edit', element: <LoanEditPage /> },
+              { path: 'shared-costs', element: <SharedCostsPage /> },
+              { path: 'shared-costs/:yearMonth', element: <SharedCostsPage /> },
+              { path: 'shared-costs/participants/new', element: <ParticipantNewPage /> },
+              { path: 'shared-costs/participants/:id/edit', element: <ParticipantEditPage /> },
+              { path: 'lending', element: <LendingPage /> },
+              { path: 'lending/new', element: <LendingNewPage /> },
+              { path: 'lending/:id/edit', element: <LendingEditPage /> },
+              { path: 'savings', element: <SavingsPage /> },
+              { path: 'settings', element: <SettingsPage /> },
+              { path: 'settings/cards', element: <CardsSettingsPage /> },
+              { path: 'settings/cards/new', element: <CardNewPage /> },
+              { path: 'settings/cards/:id', element: <CardDetailsPage /> },
+              { path: 'settings/cards/:id/edit', element: <CardEditPage /> },
+              { path: 'settings/payers', element: <PayersSettingsPage /> },
+              { path: 'settings/input-categories', element: <InputCategoriesSettingsPage /> },
+              { path: 'settings/loan-categories', element: <LoanCategoriesSettingsPage /> },
+              { path: 'settings/expense-categories', element: <ExpenseCategoriesSettingsPage /> },
+              { path: 'settings/data', element: <DataSettingsPage /> },
+              { path: 'settings/users', element: <UsersSettingsPage /> },
+              { path: 'settings/users/new', element: <UserNewPage /> },
+              { path: 'settings/users/:id/edit', element: <UserEditPage /> },
+              { path: 'settings/password', element: <PasswordPage /> },
+              {
+                path: 'settings/purchase-categories',
+                element: <Navigate to="/settings/expense-categories" replace />,
+              },
+              { path: '*', element: <NotFoundPage /> },
+            ],
           },
-          {
-            path: 'month/:yearMonth/recurring-inputs/:id/edit',
-            element: <RecurringInputEditPage />,
-          },
-          { path: 'month/:yearMonth/bills/new', element: <BillNewPage /> },
-          { path: 'month/:yearMonth/expenses/new', element: <ExpenseNewPage /> },
-          { path: 'bills/:id/edit', element: <BillEditPage /> },
-          { path: 'expenses/:id/edit', element: <ExpenseEditPage /> },
-          { path: 'recurring-bills', element: <RecurringBillsPage /> },
-          { path: 'recurring-bills/new', element: <RecurringBillNewPage /> },
-          { path: 'recurring-bills/:id/edit', element: <RecurringBillEditPage /> },
-          { path: 'cash-flow', element: <CashFlowPage /> },
-          { path: 'cash-flow/:yearMonth', element: <MonthlyReportPage /> },
-          { path: 'cards', element: <CardsPage /> },
-          { path: 'cards/purchases/new', element: <PurchaseNewPage /> },
-          { path: 'cards/purchases/:id', element: <PurchaseDetailsPage /> },
-          { path: 'cards/purchases/:id/edit', element: <PurchaseEditPage /> },
-          { path: 'cards/revolving/:cardId', element: <RevolvingCardPage /> },
-          { path: 'cards/revolving/:cardId/pay', element: <ExtraPaymentNewPage /> },
-          {
-            path: 'cards/revolving/:cardId/payments/:paymentId/edit',
-            element: <ExtraPaymentEditPage />,
-          },
-          { path: 'pay-revolving', element: <ExtraPaymentNewPage /> },
-          { path: 'cards/:cardId', element: <InstallmentCardPage /> },
-          { path: 'cards/:cardId/payments/:month', element: <CardPaymentPage /> },
-          { path: 'loans', element: <LoansPage /> },
-          { path: 'loans/new', element: <LoanNewPage /> },
-          { path: 'loans/:id', element: <LoanDetailsPage /> },
-          { path: 'loans/:id/edit', element: <LoanEditPage /> },
-          { path: 'shared-costs', element: <SharedCostsPage /> },
-          { path: 'shared-costs/:yearMonth', element: <SharedCostsPage /> },
-          { path: 'shared-costs/participants/new', element: <ParticipantNewPage /> },
-          { path: 'shared-costs/participants/:id/edit', element: <ParticipantEditPage /> },
-          { path: 'lending', element: <LendingPage /> },
-          { path: 'lending/new', element: <LendingNewPage /> },
-          { path: 'lending/:id/edit', element: <LendingEditPage /> },
-          { path: 'savings', element: <SavingsPage /> },
-          { path: 'settings', element: <SettingsPage /> },
-          { path: 'settings/cards', element: <CardsSettingsPage /> },
-          { path: 'settings/cards/new', element: <CardNewPage /> },
-          { path: 'settings/cards/:id', element: <CardDetailsPage /> },
-          { path: 'settings/cards/:id/edit', element: <CardEditPage /> },
-          { path: 'settings/payers', element: <PayersSettingsPage /> },
-          { path: 'settings/input-categories', element: <InputCategoriesSettingsPage /> },
-          { path: 'settings/loan-categories', element: <LoanCategoriesSettingsPage /> },
-          { path: 'settings/expense-categories', element: <ExpenseCategoriesSettingsPage /> },
-          { path: 'settings/data', element: <DataSettingsPage /> },
-          {
-            path: 'settings/purchase-categories',
-            element: <Navigate to="/settings/expense-categories" replace />,
-          },
-          { path: '*', element: <NotFoundPage /> },
         ],
       },
     ],

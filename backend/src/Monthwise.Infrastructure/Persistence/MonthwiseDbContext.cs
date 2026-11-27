@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Monthwise.Application.Common;
 using Monthwise.Domain.CardPurchases;
@@ -13,12 +15,13 @@ using Monthwise.Domain.SharedCosts;
 using Monthwise.Infrastructure.Persistence.Configurations;
 using Monthwise.Infrastructure.Persistence.Converters;
 using Monthwise.Infrastructure.Security;
+using Monthwise.Infrastructure.Users;
 using Npgsql;
 
 namespace Monthwise.Infrastructure.Persistence;
 
 public sealed class MonthwiseDbContext(DbContextOptions<MonthwiseDbContext> options, ISensitiveDataCipher cipher)
-    : DbContext(options), IUnitOfWork
+    : IdentityUserContext<AppUser, Guid>(options), IUnitOfWork, IDataProtectionKeyContext
 {
     private LoadedRows? _loaded;
 
@@ -57,45 +60,51 @@ public sealed class MonthwiseDbContext(DbContextOptions<MonthwiseDbContext> opti
     public DbSet<DataTransferRecord> DataTransferLog => Set<DataTransferRecord>();
     public DbSet<BackupReminder> BackupReminders => Set<BackupReminder>();
     public DbSet<SafetyCopy> SafetyCopies => Set<SafetyCopy>();
+    public DbSet<DataProtectionKey> DataProtectionKeys => Set<DataProtectionKey>();
+    internal DbSet<SetupCodeUse> SetupCodeUses => Set<SetupCodeUse>();
 
-    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    protected override void OnModelCreating(ModelBuilder builder)
     {
+        // The Identity user tables first, then renamed with the rest of the login tables (ADR 0008).
+        base.OnModelCreating(builder);
+        builder.ApplyLoginConfiguration();
+
         // The model is built once per process and cached, together with the encrypting converters
         // and the cipher they hold. The API has one cipher (a singleton); tests use fixed test keys.
-        modelBuilder.HasNameCollation();
-        modelBuilder.ApplyConfiguration(new CardConfiguration());
-        modelBuilder.ApplyConfiguration(new CardSensitiveDataConfiguration(cipher));
-        modelBuilder.ApplyConfiguration(new CardIssuerConfiguration());
-        modelBuilder.ApplyConfiguration(new BankConfiguration());
-        modelBuilder.ApplyConfiguration(new CashFlowInputConfiguration());
-        modelBuilder.ApplyConfiguration(new RecurringInputConfiguration());
-        modelBuilder.ApplyConfiguration(new SkippedOccurrenceConfiguration());
-        modelBuilder.ApplyConfiguration(new PayerConfiguration());
-        modelBuilder.ApplyConfiguration(new InputCategoryConfiguration());
-        modelBuilder.ApplyConfiguration(new BalanceEntryConfiguration());
-        modelBuilder.ApplyConfiguration(new LoanConfiguration());
-        modelBuilder.ApplyConfiguration(new PaymentChangeConfiguration());
-        modelBuilder.ApplyConfiguration(new LoanPaymentConfiguration());
-        modelBuilder.ApplyConfiguration(new LoanCategoryConfiguration());
-        modelBuilder.ApplyConfiguration(new LoanSubcategoryConfiguration());
-        modelBuilder.ApplyConfiguration(new CardBillingTermsConfiguration());
-        modelBuilder.ApplyConfiguration(new ExpenseCategoryConfiguration());
-        modelBuilder.ApplyConfiguration(new CardPurchaseConfiguration());
-        modelBuilder.ApplyConfiguration(new InstallmentReversalConfiguration());
-        modelBuilder.ApplyConfiguration(new CardPaymentConfiguration());
-        modelBuilder.ApplyConfiguration(new RecurringBillConfiguration());
-        modelBuilder.ApplyConfiguration(new BillConfiguration());
-        modelBuilder.ApplyConfiguration(new ExpenseConfiguration());
-        modelBuilder.ApplyConfiguration(new ParticipantConfiguration());
-        modelBuilder.ApplyConfiguration(new LendingConfiguration());
-        modelBuilder.ApplyConfiguration(new LendingRepaymentConfiguration());
-        modelBuilder.ApplyConfiguration(new RevolvingTermsConfiguration());
-        modelBuilder.ApplyConfiguration(new DebtEntryConfiguration());
-        modelBuilder.ApplyConfiguration(new ExtraPaymentConfiguration());
-        modelBuilder.ApplyConfiguration(new RevolvingBillConfiguration());
-        modelBuilder.ApplyConfiguration(new DataTransferRecordConfiguration());
-        modelBuilder.ApplyConfiguration(new BackupReminderConfiguration());
-        modelBuilder.ApplyConfiguration(new SafetyCopyConfiguration());
+        builder.HasNameCollation();
+        builder.ApplyConfiguration(new CardConfiguration());
+        builder.ApplyConfiguration(new CardSensitiveDataConfiguration(cipher));
+        builder.ApplyConfiguration(new CardIssuerConfiguration());
+        builder.ApplyConfiguration(new BankConfiguration());
+        builder.ApplyConfiguration(new CashFlowInputConfiguration());
+        builder.ApplyConfiguration(new RecurringInputConfiguration());
+        builder.ApplyConfiguration(new SkippedOccurrenceConfiguration());
+        builder.ApplyConfiguration(new PayerConfiguration());
+        builder.ApplyConfiguration(new InputCategoryConfiguration());
+        builder.ApplyConfiguration(new BalanceEntryConfiguration());
+        builder.ApplyConfiguration(new LoanConfiguration());
+        builder.ApplyConfiguration(new PaymentChangeConfiguration());
+        builder.ApplyConfiguration(new LoanPaymentConfiguration());
+        builder.ApplyConfiguration(new LoanCategoryConfiguration());
+        builder.ApplyConfiguration(new LoanSubcategoryConfiguration());
+        builder.ApplyConfiguration(new CardBillingTermsConfiguration());
+        builder.ApplyConfiguration(new ExpenseCategoryConfiguration());
+        builder.ApplyConfiguration(new CardPurchaseConfiguration());
+        builder.ApplyConfiguration(new InstallmentReversalConfiguration());
+        builder.ApplyConfiguration(new CardPaymentConfiguration());
+        builder.ApplyConfiguration(new RecurringBillConfiguration());
+        builder.ApplyConfiguration(new BillConfiguration());
+        builder.ApplyConfiguration(new ExpenseConfiguration());
+        builder.ApplyConfiguration(new ParticipantConfiguration());
+        builder.ApplyConfiguration(new LendingConfiguration());
+        builder.ApplyConfiguration(new LendingRepaymentConfiguration());
+        builder.ApplyConfiguration(new RevolvingTermsConfiguration());
+        builder.ApplyConfiguration(new DebtEntryConfiguration());
+        builder.ApplyConfiguration(new ExtraPaymentConfiguration());
+        builder.ApplyConfiguration(new RevolvingBillConfiguration());
+        builder.ApplyConfiguration(new DataTransferRecordConfiguration());
+        builder.ApplyConfiguration(new BackupReminderConfiguration());
+        builder.ApplyConfiguration(new SafetyCopyConfiguration());
     }
 
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)

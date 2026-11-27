@@ -20,11 +20,11 @@ describe('a failing screen', () => {
 
   afterEach(() => vi.restoreAllMocks())
 
-  it('shows a message below the app shell instead of a blank page', () => {
+  it('shows a message below the app shell instead of a blank page', async () => {
     renderRoute('/savings')
 
     expect(
-      screen.getByRole('heading', { name: 'This screen could not be shown' }),
+      await screen.findByRole('heading', { name: 'This screen could not be shown' }),
     ).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Reload' })).toBeInTheDocument()
     expect(within(menu()).getByRole('link', { name: 'Cards' })).toBeInTheDocument()
@@ -33,16 +33,17 @@ describe('a failing screen', () => {
   it('shows another screen normally when the user opens it from the menu', async () => {
     renderRoute('/savings')
 
+    await screen.findByRole('navigation', { name: 'Main' })
     await userEvent.click(within(menu()).getByRole('link', { name: 'Cards' }))
 
     expect(screen.getByRole('heading', { name: 'Cards' })).toBeInTheDocument()
     expect(screen.queryByText('This screen could not be shown')).not.toBeInTheDocument()
   })
 
-  it('still shows "Page not found" for an unknown address', () => {
+  it('still shows "Page not found" for an unknown address', async () => {
     renderRoute('/no-such-screen')
 
-    expect(screen.getByRole('heading', { name: 'Page not found' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Page not found' })).toBeInTheDocument()
     expect(menu()).toBeInTheDocument()
   })
 })

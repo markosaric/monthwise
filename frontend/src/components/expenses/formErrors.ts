@@ -4,7 +4,8 @@ import { appTexts } from '@/components/common/texts'
 
 /**
  * Shows API validation errors next to their fields; returns the message for the form when none of
- * them belongs to a field. `fieldMap` maps API field names that differ from the form's.
+ * them belongs to a field: an error the API gives without a field (e.g. a wrong sign-in), or else
+ * the problem's title. `fieldMap` maps API field names that differ from the form's.
  */
 export function applyApiErrors<T extends FieldValues>(
   error: unknown,
@@ -21,5 +22,5 @@ export function applyApiErrors<T extends FieldValues>(
       mapped = true
     }
   }
-  return mapped ? null : error.message
+  return mapped ? null : (error.fieldErrors['']?.[0] ?? error.message)
 }

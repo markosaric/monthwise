@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Smoke checks of a running release (NFR-6): healthy within 60 seconds, the front-end on screen
-# addresses, API errors for unknown API addresses. Used by CI and after a manual installation.
+# addresses, API errors for unknown API addresses, no household data without signing in. Used by CI and after a manual installation.
 # Usage: smoke-test.sh [base-url]    default http://localhost:8080
 set -euo pipefail
 
@@ -27,8 +27,13 @@ api_not_found() {
   [[ "$status" == "404" && "$type" == application/problem+json* ]]
 }
 
+data_needs_sign_in() {
+  [[ "$(curl --silent --output /dev/null --write-out '%{http_code}' "$BASE_URL/api/dashboard")" == "401" ]]
+}
+
 check "health is Healthy within 60 seconds" healthy
 check "/ serves the front-end" serves_front_end /
 check "/month serves the front-end" serves_front_end /month
 check "/api/does-not-exist answers 404 problem details" api_not_found
+check "/api/dashboard answers 401 without signing in" data_needs_sign_in
 printf 'Version: %s\n' "$(curl --silent "$BASE_URL/api/health" | sed -E 's/.*"version":"([^"]*)".*/\1/')"

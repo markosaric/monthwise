@@ -15,7 +15,9 @@ internal static class HealthEndpoints
             .WithTags("Health")
             .WithSummary("Reports whether the API and its database work, the migration state, the running version and the household time zone.")
             .Produces<HealthResponse>(StatusCodes.Status200OK)
-            .Produces<HealthResponse>(StatusCodes.Status503ServiceUnavailable);
+            .Produces<HealthResponse>(StatusCodes.Status503ServiceUnavailable)
+            // Shows no household data (production packaging FR-11), so it needs no sign-in.
+            .AllowAnonymous();
 
         return routes;
     }

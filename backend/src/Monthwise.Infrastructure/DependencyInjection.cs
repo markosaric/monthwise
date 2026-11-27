@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -11,10 +12,13 @@ using Monthwise.Application.Lendings;
 using Monthwise.Application.Loans;
 using Monthwise.Application.Revolving;
 using Monthwise.Application.SharedCosts;
+using Monthwise.Application.Users;
+using Monthwise.Domain.Users;
 using Monthwise.Infrastructure.DataTransfer;
 using Monthwise.Infrastructure.Persistence;
 using Monthwise.Infrastructure.Persistence.Repositories;
 using Monthwise.Infrastructure.Security;
+using Monthwise.Infrastructure.Users;
 
 namespace Monthwise.Infrastructure;
 
@@ -68,10 +72,41 @@ public static class DependencyInjection
         services.AddSingleton<IExportFileCodec, ExportFileCodec>();
 
         services.AddSingleton<DatabaseMigrationState>();
+        services.AddUserAccounts();
 
         services.AddHealthChecks()
             .AddDbContextCheck<MonthwiseDbContext>(DatabaseHealthCheckName);
 
+        return services;
+    }
+
+    /// <summary>
+    /// ASP.NET Core Identity's user manager over <see cref="MonthwiseDbContext"/>, with the rules of login U2,
+    /// U3 and FR-3 (ADR 0008). The host adds sign-in and the cookie.
+    /// </summary>
+    private static IServiceCollection AddUserAccounts(this IServiceCollection services)
+    {
+        services.AddIdentityCore<AppUser>(options =>
+            {
+                options.User.RequireUniqueEmail = false;
+                // UserRules checks the characters (letters of any language, digits and .-_).
+                options.User.AllowedUserNameCharacters = string.Empty;
+                options.Password.RequiredLength = UserRules.PasswordMinLength;
+                options.Password.RequireDigit = false;
+                options.Password.RequireLowercase = false;
+                options.Password.RequireUppercase = false;
+                options.Password.RequireNonAlphanumeric = false;
+                options.Password.RequiredUniqueChars = 1;
+                options.Lockout.AllowedForNewUsers = true;
+                options.Lockout.MaxFailedAccessAttempts = 5;
+                options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
+                // The table layout is fixed here, so the model is the same at run time and when
+                // migrations are made (where no options exist and Identity uses this version).
+                options.Stores.SchemaVersion = IdentitySchemaVersions.Version1;
+            })
+            .AddEntityFrameworkStores<MonthwiseDbContext>();
+        services.AddScoped<IUserAccounts, UserAccounts>();
+        services.AddScoped<ISetupCodes, SetupCodes>();
         return services;
     }
 

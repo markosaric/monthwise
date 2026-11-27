@@ -155,7 +155,7 @@ public sealed class HouseholdClockEndpointTests : IAsyncLifetime
     [Fact]
     public async Task The_dashboard_and_a_received_input_use_the_household_date()
     {
-        using var client = Start(timeZone: null);
+        using var client = await StartAsync(timeZone: null);
 
         var dashboard = await GetAsync(client, "/api/dashboard");
         Assert.Equal("2026-12", dashboard.GetProperty("month").GetString());
@@ -168,7 +168,7 @@ public sealed class HouseholdClockEndpointTests : IAsyncLifetime
     [Fact]
     public async Task Another_household_time_zone_is_followed()
     {
-        using var client = Start(timeZone: "America/New_York");
+        using var client = await StartAsync(timeZone: "America/New_York");
 
         var dashboard = await GetAsync(client, "/api/dashboard");
         Assert.Equal("2026-11", dashboard.GetProperty("month").GetString());
@@ -178,7 +178,7 @@ public sealed class HouseholdClockEndpointTests : IAsyncLifetime
         Assert.Equal("2026-11-30", received.GetProperty("receivedDate").GetString());
     }
 
-    private HttpClient Start(string? timeZone)
+    private async Task<HttpClient> StartAsync(string? timeZone)
     {
         _factory = new MonthwiseApiFactory(TestDatabase.ConnectionString, migrateOnStartup: false);
         var configured = _factory.WithWebHostBuilder(builder =>
@@ -193,7 +193,7 @@ public sealed class HouseholdClockEndpointTests : IAsyncLifetime
                     new FixedClock(JustAfterMidnight),
                     HouseholdTimeZone.Resolve(provider.GetRequiredService<IConfiguration>()[HouseholdTimeZone.SettingName]))));
         });
-        return configured.CreateClient();
+        return await configured.CreateSignedInClientAsync();
     }
 
     private static async Task<Guid> CreateInputAsync(HttpClient client, DateOnly date)
