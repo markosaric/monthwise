@@ -65,7 +65,7 @@ describe('app shell', () => {
     stubHealth(200, { status: 'Healthy', database: 'Healthy' })
     const { unmount } = renderRoute('/')
 
-    const toggle = screen.getByRole('button', { name: 'Collapse menu' })
+    const toggle = await screen.findByRole('button', { name: 'Collapse menu' })
     expect(toggle).toHaveAttribute('aria-expanded', 'true')
     expect(within(menu()).getByText('Month')).toBeInTheDocument()
 
@@ -79,7 +79,7 @@ describe('app shell', () => {
 
     unmount()
     renderRoute('/')
-    expect(screen.getByRole('button', { name: 'Expand menu' })).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: 'Expand menu' })).toBeInTheDocument()
 
     await userEvent.click(screen.getByRole('button', { name: 'Expand menu' }))
     expect(screen.getByRole('button', { name: 'Collapse menu' })).toBeInTheDocument()
@@ -92,7 +92,7 @@ describe('app shell', () => {
     })
     renderRoute('/')
 
-    await userEvent.click(screen.getByRole('button', { name: 'Collapse menu' }))
+    await userEvent.click(await screen.findByRole('button', { name: 'Collapse menu' }))
 
     expect(screen.getByRole('button', { name: 'Expand menu' })).toBeInTheDocument()
     vi.restoreAllMocks()
@@ -102,6 +102,7 @@ describe('app shell', () => {
     stubHealth(200, { status: 'Healthy', database: 'Healthy' })
     renderRoute('/')
 
+    await screen.findByRole('navigation', { name: 'Main' })
     await userEvent.click(within(menu()).getByRole('link', { name: 'Cards' }))
 
     expect(screen.getByRole('heading', { name: 'Cards' })).toBeInTheDocument()

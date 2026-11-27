@@ -10,4 +10,5 @@ setting with `__` for `:` (`SensitiveData__HashKey` is `SensitiveData:HashKey`).
 | `SensitiveData__ActiveKeyId` | `k1` |
 | `SensitiveData__EncryptionKeys__k1` | base64 of 32 random bytes |
 | `SensitiveData__HashKey` | base64 of 32 random bytes |
+| `Setup__Code` | the setup code for the first household admin: 24 characters in groups of four |
 | `postgres_password` | the database password (used by PostgreSQL itself) |

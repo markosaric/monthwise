@@ -2,7 +2,7 @@
 # Monthwise native background service on macOS (FR-9): PostgreSQL and Monthwise start at login,
 # without Docker. Needs Homebrew and the GitHub CLI (gh auth login, once).
 # Usage: monthwise.sh install [version] | start | stop | update [version] | status | logs
-#        | network on|off | uninstall [--data]
+#        | network on|off | new-setup-code | uninstall [--data]
 set -euo pipefail
 
 REPO="markosaric/monthwise"
@@ -129,6 +129,43 @@ create_secrets() {
   say ""
 }
 
+# A setup code (login FR-1, FR-9): 24 characters without look-alikes such as 0 and O, in groups of four.
+new_setup_code() {
+  local chars
+  chars="$(head -c 4000 /dev/urandom | LC_ALL=C tr -dc 'ABCDEFGHJKMNPQRSTUVWXYZ23456789')"
+  printf '%s-%s-%s-%s-%s-%s' "${chars:0:4}" "${chars:4:4}" "${chars:8:4}" "${chars:12:4}" "${chars:16:4}" "${chars:20:4}"
+}
+
+write_setup_code() {
+  new_setup_code > "$SECRETS_DIR/Setup__Code"
+  chmod 600 "$SECRETS_DIR/Setup__Code"
+}
+
+show_setup_code() {
+  say ""
+  say "Setup code: $(cat "$SECRETS_DIR/Setup__Code")"
+  say "Open Monthwise and enter this setup code to create the first user. If no household admin can"
+  say "sign in any more, it also resets a household admin's password. It works once; keep it private."
+  say ""
+}
+
+# New installations and updates of older ones get a setup code; it is shown once, when it is made.
+ensure_setup_code() {
+  [[ -f "$SECRETS_DIR/Setup__Code" ]] && return
+  write_setup_code
+  SETUP_CODE_CREATED=1
+}
+
+cmd_new_setup_code() {
+  [[ -x "$APP_DIR/Monthwise.Api" ]] || fail "Monthwise is not installed. Use: monthwise.sh install"
+  write_setup_code
+  # Monthwise reads its secrets when it starts.
+  stop_agent "$APP_AGENT"
+  start_agent "$APP_AGENT"
+  wait_until_ready || fail "Monthwise did not become ready. Its log: monthwise.sh logs"
+  show_setup_code
+}
+
 write_settings() { # write_settings BIND_ADDRESS
   cat > "$SETTINGS_FILE" << EOF
 {
@@ -168,6 +205,7 @@ and IBANs unreadable, so none are created."
   mkdir -p "$BASE_DIR" "$NATIVE_DIR" "$CONFIG_DIR" "$LOG_DIR"
   chmod 700 "$BASE_DIR"
   [[ -f "$SECRETS_DIR/SensitiveData__HashKey" ]] || create_secrets
+  ensure_setup_code
   [[ -f "$SETTINGS_FILE" ]] || write_settings 127.0.0.1
 
   if [[ ! -d "$PG_DATA" ]]; then
@@ -190,7 +228,8 @@ and IBANs unreadable, so none are created."
 
   wait_until_ready || fail "Monthwise did not become ready. Its log: monthwise.sh logs"
   say "Monthwise is running at $(address) and starts by itself when you log in."
-  say "Manage it with: \"$NATIVE_DIR/monthwise.sh\" start|stop|update|status|logs|network|uninstall"
+  if [[ -n "${SETUP_CODE_CREATED:-}" ]]; then show_setup_code; fi
+  say "Manage it with: \"$NATIVE_DIR/monthwise.sh\" start|stop|update|status|logs|network|new-setup-code|uninstall"
 }
 
 # pg_tool TOOL ARG... : a PostgreSQL tool of this installation, signed in to its database server.
@@ -265,6 +304,8 @@ cmd_update() {
   say "Downloading Monthwise ($version)..."
   download_release "$version" "$NATIVE_DIR/app.new"
 
+  ensure_setup_code
+
   # The app is stopped first, so nothing changes in the database after its backup.
   say "Saving an update backup of the database..."
   stop_agent "$APP_AGENT"
@@ -281,6 +322,7 @@ cmd_update() {
   start_agent "$APP_AGENT"
   if wait_until_ready; then
     say "Monthwise is updated: $(running_version)"
+    if [[ -n "${SETUP_CODE_CREATED:-}" ]]; then show_setup_code; fi
     return
   fi
 
@@ -316,7 +358,7 @@ cmd_network() {
   start_agent "$APP_AGENT"
   if [[ "$1" == "on" ]]; then
     say "Other devices on your network can now connect to port $APP_PORT of this computer."
-    say "Until login exists, anyone who can reach it can see and change all data."
+    say "Everyone who connects has to sign in with a Monthwise user."
   else
     say "Only this computer can connect to Monthwise."
   fi
@@ -346,6 +388,7 @@ case "${1:-}" in
   status) if curl --silent --max-time 2 "$(address)/api/health"; then echo; else say "Monthwise is not answering at $(address)."; fi ;;
   logs) tail -n 200 "$(latest_log)" ;;
   network) shift; cmd_network "$@" ;;
+  new-setup-code) cmd_new_setup_code ;;
   uninstall) shift; cmd_uninstall "$@" ;;
-  *) say "Usage: monthwise.sh install [version] | start | stop | update [version] | status | logs | network on|off | uninstall [--data]"; exit 2 ;;
+  *) say "Usage: monthwise.sh install [version] | start | stop | update [version] | status | logs | network on|off | new-setup-code | uninstall [--data]"; exit 2 ;;
 esac

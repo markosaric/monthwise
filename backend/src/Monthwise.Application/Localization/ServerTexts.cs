@@ -65,6 +65,7 @@ public static partial class ServerTexts
         ["Borrower"] = "Dužnik",
         ["Payee"] = "Primatelj",
         ["Reason"] = "Razlog",
+        ["Display name"] = "Ime za prikaz",
     };
 
     private static string Day(Match m, int group) => m.Groups[group].Value;
@@ -82,6 +83,9 @@ public static partial class ServerTexts
         (TooFewInstallments(), m => $"Kupnja na rate ima najmanje {m.Groups[1].Value} rate."),
         (SharesBetween(), m => $"Broj udjela mora biti između {Day(m, 1)} i {Day(m, 2)}."),
         (PasswordTooShort(), m => $"Lozinka mora imati najmanje {m.Groups[1].Value} znakova."),
+        (PasswordTooLong(), m => $"Lozinka može imati najviše {m.Groups[1].Value} znakova."),
+        (UsernameInvalid(), m =>
+            $"Korisničko ime mora imati od {Day(m, 1)} do {Day(m, 2)} znakova: slova, brojke, točku, crticu ili podvlaku."),
         (FileTooLarge(), m => $"Ova je datoteka prevelika da bi bila datoteka izvoza Monthwisea (više od {m.Groups[1].Value} MB)."),
         (ConfirmationWord(), m => $"Upišite {m.Groups[1].Value} za potvrdu da se svi podaci zamjenjuju."),
         (MonthRange(), m => $"Unesite mjesec od {m.Groups[1].Value} do {m.Groups[2].Value}."),
@@ -94,7 +98,7 @@ public static partial class ServerTexts
         (ResidualValue(), m => $"{m.Groups[1].Value}, ostatak vrijednosti"),
     ];
 
-    [GeneratedRegex(@"^(Name|Description|Note|Payer|Borrower|Payee|Reason) can be at most (\d+) characters\.$")]
+    [GeneratedRegex(@"^(Name|Description|Note|Payer|Borrower|Payee|Reason|Display name) can be at most (\d+) characters\.$")]
     private static partial Regex TooLong();
 
     [GeneratedRegex(@"^Bill day must be a day between (\d+) and (\d+)\.$")]
@@ -126,6 +130,12 @@ public static partial class ServerTexts
 
     [GeneratedRegex(@"^The password must be at least (\d+) characters long\.$")]
     private static partial Regex PasswordTooShort();
+
+    [GeneratedRegex(@"^The password can be at most (\d+) characters long\.$")]
+    private static partial Regex PasswordTooLong();
+
+    [GeneratedRegex(@"^Username must be (\d+) to (\d+) characters: letters, digits, dot, dash or underscore\.$")]
+    private static partial Regex UsernameInvalid();
 
     [GeneratedRegex(@"^This file is too large to be a Monthwise export file \(more than (\d+) MB\)\.$")]
     private static partial Regex FileTooLarge();
@@ -398,5 +408,24 @@ public static partial class ServerTexts
             "Datum „vrijedi do” mora biti isti ili kasniji od datuma „vrijedi od”.",
         ["When the schedule changes, the first expected date must be after the last received occurrence."] =
             "Kada se raspored mijenja, prvi datum naplate mora biti nakon posljednjeg primljenog ponavljanja.",
+        // Login (login.md).
+        ["Display name is required."] = "Ime za prikaz je obavezno.",
+        ["This username is already used."] = "Ovo se korisničko ime već koristi.",
+        ["The current password is not right."] = "Trenutna lozinka nije ispravna.",
+        ["There must always be at least one active household admin."] = "Uvijek mora postojati barem jedan aktivni administrator kućanstva.",
+        ["User not found."] = "Korisnik nije pronađen.",
+        ["The username or password is not right."] = "Korisničko ime ili lozinka nisu ispravni.",
+        ["Signing in with this username is locked for a while. Try again later."] =
+            "Prijava s ovim korisničkim imenom zaključana je na neko vrijeme. Pokušajte ponovno kasnije.",
+        ["This installation has no setup code. See the user manual, chapter Sign in and users."] =
+            "Ova instalacija nema kod za postavljanje. Pogledajte korisnički priručnik, poglavlje Prijava i korisnici.",
+        ["The setup code is not right or was already used."] = "Kod za postavljanje nije ispravan ili je već iskorišten.",
+        ["This username belongs to a member. Choose a household admin or a new username."] =
+            "Ovo korisničko ime pripada članu. Odaberite administratora kućanstva ili novo korisničko ime.",
+        ["Sign in to continue."] = "Prijavite se za nastavak.",
+        ["Only a household admin can do this."] = "Ovo može samo administrator kućanstva.",
+        ["Choose a new password first."] = "Najprije odaberite novu lozinku.",
+        ["This request did not come from Monthwise's screens."] = "Ovaj zahtjev nije došao s ekrana Monthwisea.",
+        ["Too many sign-in attempts. Wait a minute and try again."] = "Previše pokušaja prijave. Pričekajte minutu i pokušajte ponovno.",
     };
 }

@@ -4,6 +4,7 @@
 # them from Key Vault afterwards, so the data stays readable.
 #
 # Usage: deploy.sh <version>      e.g. deploy.sh 1.2.0
+#        deploy.sh --new-setup-code  a new setup code, when no household admin can sign in (login FR-9)
 # Environment:
 #   GHCR_USERNAME, GHCR_TOKEN   GitHub user and a token with only read:packages (required)
 #   BUDGET_EMAIL                email address for the budget alert (required)
@@ -11,6 +12,52 @@
 #   MONTHWISE_LOCATION          default westeurope (EU)
 #   MONTHWISE_BUDGET            monthly budget, default 25
 set -euo pipefail
+
+say() { printf '%s\n' "$*"; }
+
+# A setup code (login FR-1, FR-9): 24 characters without look-alikes such as 0 and O, in groups of four.
+new_setup_code() {
+  local chars
+  chars="$(head -c 4000 /dev/urandom | LC_ALL=C tr -dc 'ABCDEFGHJKMNPQRSTUVWXYZ23456789')"
+  printf '%s-%s-%s-%s-%s-%s' "${chars:0:4}" "${chars:4:4}" "${chars:8:4}" "${chars:12:4}" "${chars:16:4}" "${chars:20:4}"
+}
+
+show_setup_code_command() {
+  say ""
+  say "Read the setup code with:"
+  say "  az keyvault secret show --vault-name $1 --name setup-code --query value -o tsv"
+  say "Open Monthwise and enter it to create the first user. If no household admin can sign in any"
+  say "more, it also resets a household admin's password. It works once; keep it private."
+  say ""
+}
+
+# Writes a new setup code to Key Vault and restarts Monthwise so it reads it at once.
+new_setup_code_command() {
+  local group="${MONTHWISE_RESOURCE_GROUP:-rg-monthwise}" vault identity code_file revision
+  az account show > /dev/null || { say "Sign in first: az login"; exit 1; }
+  vault="$(az keyvault list --resource-group "$group" --query '[0].name' -o tsv)"
+  [[ -n "$vault" ]] || { say "No Monthwise installation in resource group $group."; exit 1; }
+  code_file="$(mktemp)"
+  trap 'rm -f "$code_file"' EXIT
+  chmod 600 "$code_file"
+  new_setup_code > "$code_file"
+  # From a file, so the code is never on the command line.
+  az keyvault secret set --vault-name "$vault" --name setup-code --file "$code_file" --encoding utf-8 --output none
+  identity="$(az identity list --resource-group "$group" --query '[0].id' -o tsv)"
+  # Setting the reference again makes the app read the new version now instead of within 30 minutes.
+  az containerapp secret set --resource-group "$group" --name ca-monthwise --output none \
+    --secrets "setup-code=keyvaultref:https://$vault.vault.azure.net/secrets/setup-code,identityref:$identity"
+  revision="$(az containerapp show --resource-group "$group" --name ca-monthwise \
+    --query properties.latestRevisionName -o tsv)"
+  az containerapp revision restart --resource-group "$group" --name ca-monthwise --revision "$revision" --output none
+  say "Monthwise has a new setup code and restarts with it."
+  show_setup_code_command "$vault"
+}
+
+if [[ "${1:-}" == "--new-setup-code" ]]; then
+  new_setup_code_command
+  exit 0
+fi
 
 VERSION="${1:?Usage: deploy.sh <version>, e.g. deploy.sh 1.2.0}"
 VERSION="${VERSION#v}"
@@ -21,8 +68,6 @@ RESOURCE_GROUP="${MONTHWISE_RESOURCE_GROUP:-rg-monthwise}"
 LOCATION="${MONTHWISE_LOCATION:-westeurope}"
 BUDGET="${MONTHWISE_BUDGET:-25}"
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-
-say() { printf '%s\n' "$*"; }
 
 az account show > /dev/null || { say "Sign in first: az login"; exit 1; }
 say "Subscription: $(az account show --query name -o tsv). Resource group: $RESOURCE_GROUP ($LOCATION)."
@@ -50,6 +95,8 @@ if [[ -z "$vault" ]]; then
   app_database_password="$(openssl rand -hex 24)"
   encryption_key="$(openssl rand -base64 32)"
   hash_key="$(openssl rand -base64 32)"
+  setup_code="$(new_setup_code)"
+  setup_code_created=1
   budget_start="$(date -u +%Y-%m-01)"
 else
   say "Reusing the secrets in Key Vault $vault."
@@ -58,6 +105,12 @@ else
   app_database_password="$(read_secret app-database-password)"
   encryption_key="$(read_secret encryption-key-k1)"
   hash_key="$(read_secret hash-key)"
+  # Installations from before login get their setup code now.
+  setup_code="$(read_secret setup-code 2> /dev/null || true)"
+  if [[ -z "$setup_code" ]]; then
+    setup_code="$(new_setup_code)"
+    setup_code_created=1
+  fi
   budget_start="$(az consumption budget show --budget-name monthwise-monthly --resource-group "$RESOURCE_GROUP" \
     --query 'timePeriod.start' -o tsv 2> /dev/null | cut -c1-10)"
   budget_start="${budget_start:-$(date -u +%Y-%m-01)}"
@@ -79,6 +132,7 @@ cat > "$parameters" << EOF
     "appDatabasePassword": { "value": "$app_database_password" },
     "encryptionKey": { "value": "$encryption_key" },
     "hashKey": { "value": "$hash_key" },
+    "setupCode": { "value": "$setup_code" },
     "deployerObjectId": { "value": "$(az ad signed-in-user show --query id -o tsv)" },
     "budgetEmail": { "value": "$BUDGET_EMAIL" },
     "budgetAmount": { "value": $BUDGET },
@@ -137,6 +191,9 @@ if [[ -z "$vault" ]]; then
   say "  az keyvault secret show --vault-name $vault --name encryption-key-k1 --query value -o tsv"
   say "  az keyvault secret show --vault-name $vault --name hash-key --query value -o tsv"
   say ""
+fi
+if [[ -n "${setup_code_created:-}" ]]; then
+  show_setup_code_command "$vault"
 fi
 
 say "Waiting for Monthwise at $url ..."

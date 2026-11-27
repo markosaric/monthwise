@@ -32,7 +32,7 @@ public sealed class CardEndpointTests : IAsyncLifetime
         _connectionString = TestDatabase.ConnectionString;
 
         _factory = new MonthwiseApiFactory(_connectionString, migrateOnStartup: true);
-        _client = _factory.CreateClient();
+        _client = await _factory.CreateSignedInClientAsync();
         // Starting the host applies the migrations.
         await Client.GetAsync(new Uri("/api/health", UriKind.Relative), Ct);
         await ExecuteSqlAsync(CashFlowEndpointTests.DeleteAllSql);

@@ -1,8 +1,10 @@
-import { PanelLeftClose, PanelLeftOpen } from 'lucide-react'
+import { LogOut, PanelLeftClose, PanelLeftOpen } from 'lucide-react'
 import { Tooltip } from 'radix-ui'
 import type { ReactElement } from 'react'
 import { NavLink, Outlet } from 'react-router'
+import { useCurrentUser, useSignOut } from '@/api/auth'
 import { useReloadAfterImport } from '@/api/dataTransfer'
+import { loginTexts } from '@/components/login/texts'
 import { tint } from '@/components/design/colors'
 import { Toaster } from '@/components/ui/sonner'
 import { cn } from '@/lib/utils'
@@ -113,8 +115,9 @@ export function AppLayout() {
             ))}
           </nav>
 
-          <div className="mt-auto pt-4">
+          <div className="mt-auto flex flex-col gap-2 pt-4">
             <SystemStatusAlert variant="menu" collapsed={collapsed} />
+            <SignedInUser collapsed={collapsed} />
           </div>
         </aside>
 
@@ -149,6 +152,41 @@ export function AppLayout() {
         <Toaster position="top-center" />
       </div>
     </Tooltip.Provider>
+  )
+}
+
+/** The signed-in user's name and Sign out at the bottom of the menu (login FR-5). Phones have both in Settings. */
+function SignedInUser({ collapsed }: { collapsed: boolean }) {
+  const user = useCurrentUser()
+  const signOut = useSignOut()
+  if (!user) return null
+  const label = loginTexts.account.signOut
+
+  return (
+    <div
+      className={cn(
+        'flex items-center gap-2 border-t px-4 py-3 text-sm',
+        collapsed && 'justify-center px-0',
+      )}
+    >
+      {!collapsed && (
+        <span className="min-w-0 flex-1 truncate" title={user.displayName}>
+          {user.displayName}
+        </span>
+      )}
+      <MenuTooltip label={collapsed ? label : undefined}>
+        <button
+          type="button"
+          onClick={() => signOut.mutate()}
+          disabled={signOut.isPending}
+          aria-label={label}
+          title={collapsed ? undefined : label}
+          className="grid size-8 shrink-0 place-items-center rounded-md border text-muted-foreground hover:bg-muted hover:text-foreground"
+        >
+          <LogOut className="size-4" aria-hidden />
+        </button>
+      </MenuTooltip>
+    </div>
   )
 }
 

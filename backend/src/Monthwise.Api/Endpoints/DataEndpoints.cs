@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
+using Monthwise.Api.Hosting;
 using Monthwise.Application.DataTransfer;
 using Monthwise.Domain.DataTransfer;
 
@@ -8,19 +9,14 @@ namespace Monthwise.Api.Endpoints;
 /// <summary>Export, import and their history (docs/feature-requirements/backup-and-restore.md).</summary>
 internal static class DataEndpoints
 {
-    /// <summary>Who may export and import (FR-1). Login comes in a later phase; until then it allows every request.</summary>
-    public const string HouseholdAdminPolicy = "HouseholdAdmin";
+    /// <summary>Who may export and import (FR-1): a household admin (login FR-10).</summary>
+    private const string HouseholdAdminPolicy = LoginHosting.HouseholdAdminPolicy;
 
     /// <summary>
     /// The largest import request: the file limit plus room for the form fields, so a file just over the limit
     /// still reaches the handler and gets its plain message (backup and restore Appendix 3).
     /// </summary>
     public const long MaxRequestBytes = DataTransferLimits.MaxFileBytes + (1024L * 1024);
-
-    public static IServiceCollection AddDataPolicies(this IServiceCollection services) =>
-        services.AddAuthorizationBuilder()
-            .AddPolicy(HouseholdAdminPolicy, policy => policy.RequireAssertion(_ => true))
-            .Services;
 
     public static IEndpointRouteBuilder MapDataEndpoints(this IEndpointRouteBuilder routes)
     {

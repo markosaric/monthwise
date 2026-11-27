@@ -1,7 +1,7 @@
 # Monthwise native background service on Windows (FR-9): PostgreSQL and Monthwise start at login,
 # without Docker and without administrator rights. Needs the GitHub CLI (gh auth login, once).
 # Usage: monthwise.ps1 install [version] | start | stop | update [version] | status | logs
-#        | network on|off | uninstall [-Data]
+#        | network on|off | new-setup-code | uninstall [-Data]
 param(
     [Parameter(Position = 0)] [string] $Command,
     [Parameter(Position = 1)] [string] $Argument,
@@ -99,6 +99,36 @@ function New-SecretFile {
     Write-Host ''
 }
 
+# A setup code (login FR-1, FR-9): 24 characters without look-alikes such as 0 and O, in groups of four.
+function New-SetupCode {
+    $alphabet = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'
+    $chars = New-Object System.Collections.Generic.List[char]
+    while ($chars.Count -lt 24) {
+        foreach ($byte in (New-RandomByteArray 32)) {
+            # 248 is the largest multiple of 31 up to 256: bytes above it are skipped, so every character is equally likely.
+            if ($byte -lt 248 -and $chars.Count -lt 24) { $chars.Add($alphabet[$byte % $alphabet.Length]) }
+        }
+    }
+    $groups = for ($i = 0; $i -lt 24; $i += 4) { -join $chars[$i..($i + 3)] }
+    $groups -join '-'
+}
+
+function Show-SetupCode {
+    Write-Host ''
+    Write-Host "Setup code: $(Get-Content -Raw (Join-Path $SecretsDir 'Setup__Code'))" -ForegroundColor Green
+    Write-Host 'Open Monthwise and enter this setup code to create the first user. If no household admin can'
+    Write-Host "sign in any more, it also resets a household admin's password. It works once; keep it private."
+    Write-Host ''
+}
+
+# New installations and updates of older ones get a setup code; it is shown once, when it is made.
+function Initialize-SetupCode {
+    $file = Join-Path $SecretsDir 'Setup__Code'
+    if (Test-Path $file) { return $false }
+    Write-PlainFile $file (New-SetupCode)
+    return $true
+}
+
 function Write-SettingFile([string] $Bind) {
     $settings = [ordered]@{
         Urls = "http://${Bind}:$AppPort"
@@ -166,6 +196,7 @@ function Install-Monthwise([string] $Version) {
     # Only this user account (and the system) can open the Monthwise folder.
     & icacls $BaseDir /inheritance:r /grant:r "${env:USERNAME}:(OI)(CI)F" /grant:r 'SYSTEM:(OI)(CI)F' | Out-Null
     if (-not (Test-Path (Join-Path $SecretsDir 'SensitiveData__HashKey'))) { New-SecretFile }
+    $setupCodeCreated = Initialize-SetupCode
     if (-not (Test-Path $SettingsFile)) { Write-SettingFile '127.0.0.1' }
 
     Write-Host "Downloading Monthwise ($Version) and PostgreSQL..."
@@ -200,7 +231,8 @@ function Install-Monthwise([string] $Version) {
 
     if (-not (Wait-Ready)) { Fail 'Monthwise did not become ready. Its log: monthwise.ps1 logs' }
     Write-Host "Monthwise is running at $(Get-Address) and starts by itself when you log in."
-    Write-Host "Manage it with: $(Join-Path $NativeDir 'monthwise.ps1') start|stop|update|status|logs|network|uninstall"
+    Write-Host "Manage it with: $(Join-Path $NativeDir 'monthwise.ps1') start|stop|update|status|logs|network|new-setup-code|uninstall"
+    if ($setupCodeCreated) { Show-SetupCode }
 }
 
 # Runs a PostgreSQL tool of this installation, signed in to its database server, and returns
@@ -273,6 +305,7 @@ function Update-Monthwise([string] $Version) {
     $new = Join-Path $NativeDir 'app.new'
     $previous = Join-Path $NativeDir 'app.previous'
     Expand-Release $Version $new
+    $setupCodeCreated = Initialize-SetupCode
 
     # The app is stopped first, so nothing changes in the database after its backup.
     Write-Host 'Saving an update backup of the database...'
@@ -291,6 +324,7 @@ function Update-Monthwise([string] $Version) {
     Start-ScheduledTask -TaskName $AppTask
     if (Wait-Ready) {
         Write-Host "Monthwise is updated: $(Get-RunningVersion)"
+        if ($setupCodeCreated) { Show-SetupCode }
         return
     }
 
@@ -343,9 +377,18 @@ switch ($Command) {
         Start-ScheduledTask -TaskName $AppTask
         if ($Argument -eq 'on') {
             Write-Host "Other devices on your network can now connect to port $AppPort of this computer (allow it in Windows Firewall when asked)."
-            Write-Host 'Until login exists, anyone who can reach it can see and change all data.' -ForegroundColor Yellow
+            Write-Host 'Everyone who connects has to sign in with a Monthwise user.'
         }
         else { Write-Host 'Only this computer can connect to Monthwise.' }
+    }
+    'new-setup-code' {
+        if (-not (Test-Path $AppExe)) { Fail 'Monthwise is not installed. Use: monthwise.ps1 install' }
+        Write-PlainFile (Join-Path $SecretsDir 'Setup__Code') (New-SetupCode)
+        # Monthwise reads its secrets when it starts.
+        Stop-App
+        Start-ScheduledTask -TaskName $AppTask
+        if (-not (Wait-Ready)) { Fail 'Monthwise did not become ready. Its log: monthwise.ps1 logs' }
+        Show-SetupCode
     }
     'uninstall' {
         Stop-App
@@ -366,7 +409,7 @@ switch ($Command) {
         Write-Host "Monthwise is uninstalled. The data, update backups, secrets, PostgreSQL and logs are kept in $NativeDir."
     }
     default {
-        Write-Host 'Usage: monthwise.ps1 install [version] | start | stop | update [version] | status | logs | network on|off | uninstall [-Data]'
+        Write-Host 'Usage: monthwise.ps1 install [version] | start | stop | update [version] | status | logs | network on|off | new-setup-code | uninstall [-Data]'
         exit 2
     }
 }

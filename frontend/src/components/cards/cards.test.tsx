@@ -81,7 +81,7 @@ describe('Settings screen', () => {
     })
     renderRoute('/settings')
 
-    const accounts = screen.getByRole('region', { name: 'Accounts' })
+    const accounts = await screen.findByRole('region', { name: 'Accounts' })
     expect(await within(accounts).findByText('2 cards')).toBeInTheDocument()
     const moneyIn = screen.getByRole('region', { name: 'Money in' })
     expect(await within(moneyIn).findByText('0 payers')).toBeInTheDocument()

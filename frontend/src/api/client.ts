@@ -7,12 +7,16 @@ import type { components, paths } from './schema'
  * back-end OpenAPI document with `npm run api:generate`; never edit that file by hand.
  * Requests go to the same origin (`/api/...`); in development Vite proxies them to the API.
  * Every request names the app's language, so the API answers with messages and names in it
- * (croatian-language.md FR-3, FR-4).
+ * (croatian-language.md FR-3, FR-4), and carries `requestHeaders`, without which the API refuses
+ * changes (login NFR-4).
  */
+/** The header that marks a request as coming from Monthwise's own screens; other sites cannot send it (login NFR-4). */
+export const requestHeaders = { 'X-Monthwise-Request': '1' } as const
+
 export const api = createClient<paths>({
   baseUrl: typeof window === 'undefined' ? 'http://localhost' : window.location.origin,
   credentials: 'same-origin',
-  headers: { 'Accept-Language': currentLanguage() },
+  headers: { 'Accept-Language': currentLanguage(), ...requestHeaders },
   // Look up fetch per request (not once at start-up) so tests can stub it.
   fetch: (request) => globalThis.fetch(request),
 })

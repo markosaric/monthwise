@@ -25,9 +25,7 @@ builder.Services.ConfigureHttpJsonOptions(options =>
 });
 builder.Services.AddOpenApi();
 builder.Services.AddProxyHosting(builder.Configuration);
-builder.Services.AddDataPolicies();
-
-// Authentication (ASP.NET Core Identity, cookie) is added in its own feature plan.
+builder.Services.AddLogin(builder.Configuration);
 
 var app = builder.Build();
 
@@ -49,6 +47,7 @@ app.UseStatusCodePages();
 app.UseMigrationGate();
 app.UseImportGate();
 app.UseFrontend();
+app.UseLogin();
 
 if (app.Environment.IsDevelopment())
 {
@@ -78,8 +77,12 @@ if (app.Configuration.GetValue<bool>("Database:MigrateOnStartup"))
     }
 }
 
-var api = app.MapGroup("/api").WithSupportedRange();
+// Every API endpoint needs a signed-in user without a temporary password, unless it allows anonymous
+// calls on purpose (login FR-2).
+var api = app.MapGroup("/api").WithSupportedRange().RequireAuthorization();
 api.MapHealthEndpoints();
+api.MapAuthEndpoints();
+api.MapUserEndpoints();
 api.MapCardEndpoints();
 api.MapCashFlowEndpoints();
 api.MapLoanEndpoints();

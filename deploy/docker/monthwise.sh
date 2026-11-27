@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Monthwise Docker one-click on macOS (and Linux): start, stop, update and remove Monthwise.
-# Usage: monthwise.sh start [--open] | stop | update [version] | status | logs | network on|off | remove [--data]
+# Usage: monthwise.sh start [--open] | stop | update [version] | status | logs | network on|off
+#        | new-setup-code | remove [--data]
 set -euo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -81,6 +82,7 @@ ensure_config() {
     } > "$ENV_FILE"
   fi
   ensure_secrets
+  ensure_setup_code
   protect_secrets
 }
 
@@ -113,6 +115,40 @@ the stored card numbers and IBANs unreadable, so none are created."
   say "Copy these files into your password manager now. Without them the stored card numbers"
   say "and IBANs can never be read again."
   say ""
+}
+
+# A setup code (login FR-1, FR-9): 24 characters without look-alikes such as 0 and O, in groups of four.
+new_setup_code() {
+  local chars
+  chars="$(head -c 4000 /dev/urandom | LC_ALL=C tr -dc 'ABCDEFGHJKMNPQRSTUVWXYZ23456789')"
+  printf '%s-%s-%s-%s-%s-%s' "${chars:0:4}" "${chars:4:4}" "${chars:8:4}" "${chars:12:4}" "${chars:16:4}" "${chars:20:4}"
+}
+
+show_setup_code() {
+  say ""
+  say "Setup code: $(cat "$SECRETS_DIR/Setup__Code")"
+  say "Open Monthwise and enter this setup code to create the first user. If no household admin can"
+  say "sign in any more, it also resets a household admin's password. It works once; keep it private."
+  say ""
+}
+
+# New installations and updates of older ones get a setup code; it is shown once, when it is made.
+ensure_setup_code() {
+  [[ -f "$SECRETS_DIR/Setup__Code" ]] && return
+  new_setup_code > "$SECRETS_DIR/Setup__Code"
+  show_setup_code
+}
+
+cmd_new_setup_code() {
+  [[ -f "$ENV_FILE" ]] || fail "Start Monthwise once first: monthwise.sh start"
+  ensure_docker
+  new_setup_code > "$SECRETS_DIR/Setup__Code"
+  protect_secrets
+  # Monthwise reads its secrets when it starts.
+  compose up --detach
+  compose restart app
+  wait_until_ready || exit 1
+  show_setup_code
 }
 
 protect_secrets() {
@@ -295,7 +331,7 @@ cmd_network() {
   compose up --detach
   if [[ "$1" == "on" ]]; then
     say "Other devices on your network can now connect to port $(env_value MONTHWISE_PORT 8080) of this computer."
-    say "Until login exists, anyone who can reach it can see and change all data."
+    say "Everyone who connects has to sign in with a Monthwise user."
   else
     say "Only this computer can connect to Monthwise."
   fi
@@ -325,6 +361,7 @@ case "${1:-}" in
   status) ensure_docker; compose ps; curl --silent --max-time 2 "$(address)/api/health" && echo ;;
   logs) ensure_docker; compose logs --tail 200 "${@:2}" ;;
   network) shift; cmd_network "$@" ;;
+  new-setup-code) cmd_new_setup_code ;;
   remove) shift; cmd_remove "$@" ;;
-  *) say "Usage: monthwise.sh start [--open] | stop | update [version] | status | logs | network on|off | remove [--data]"; exit 2 ;;
+  *) say "Usage: monthwise.sh start [--open] | stop | update [version] | status | logs | network on|off | new-setup-code | remove [--data]"; exit 2 ;;
 esac

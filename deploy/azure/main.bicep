@@ -31,6 +31,10 @@ param encryptionKey string
 @secure()
 param hashKey string
 
+@secure()
+@description('The setup code that creates the first household admin (login FR-1, FR-9).')
+param setupCode string
+
 @description('Object id of the person deploying, who may read and write the Key Vault secrets.')
 param deployerObjectId string
 
@@ -208,6 +212,12 @@ resource hashKeySecret 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
   properties: { value: hashKey }
 }
 
+resource setupCodeSecret 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
+  parent: vault
+  name: 'setup-code'
+  properties: { value: setupCode }
+}
+
 resource environment 'Microsoft.App/managedEnvironments@2024-03-01' = {
   name: 'cae-monthwise-${suffix}'
   location: location
@@ -301,6 +311,7 @@ resource app 'Microsoft.App/containerApps@2024-03-01' = if (!setupOnly) {
         { name: 'connection-string', keyVaultUrl: connectionStringSecret.properties.secretUri, identity: identity.id }
         { name: 'encryption-key-k1', keyVaultUrl: encryptionKeySecret.properties.secretUri, identity: identity.id }
         { name: 'hash-key', keyVaultUrl: hashKeySecret.properties.secretUri, identity: identity.id }
+        { name: 'setup-code', keyVaultUrl: setupCodeSecret.properties.secretUri, identity: identity.id }
       ]
     }
     template: {
@@ -343,6 +354,7 @@ resource app 'Microsoft.App/containerApps@2024-03-01' = if (!setupOnly) {
             { secretRef: 'connection-string', path: 'ConnectionStrings__Monthwise' }
             { secretRef: 'encryption-key-k1', path: 'SensitiveData__EncryptionKeys__k1' }
             { secretRef: 'hash-key', path: 'SensitiveData__HashKey' }
+            { secretRef: 'setup-code', path: 'Setup__Code' }
           ]
         }
       ]

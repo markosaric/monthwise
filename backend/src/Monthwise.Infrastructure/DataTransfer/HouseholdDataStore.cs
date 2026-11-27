@@ -38,6 +38,13 @@ internal sealed partial class HouseholdDataStore(
         "data_transfer_log",
         "data_backup_settings",
         "data_safety_copy",
+        // Login (ADR 0008): users, their sessions' keys and the used setup codes stay with the installation.
+        "app_user",
+        "app_user_claim",
+        "app_user_login",
+        "app_user_token",
+        "data_protection_key",
+        "setup_code_use",
     };
 
     private const int CommandTimeoutSeconds = 600;

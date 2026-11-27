@@ -1,5 +1,6 @@
 # Monthwise Docker one-click on Windows: start, stop, update and remove Monthwise.
-# Usage: monthwise.ps1 start [-Open] | stop | update [version] | status | logs | network on|off | remove [-Data]
+# Usage: monthwise.ps1 start [-Open] | stop | update [version] | status | logs | network on|off
+#        | new-setup-code | remove [-Data]
 param(
     [Parameter(Position = 0)] [string] $Command,
     [Parameter(Position = 1)] [string] $Argument,
@@ -116,6 +117,7 @@ function Initialize-Config {
             "MONTHWISE_BIND=127.0.0.1`nMONTHWISE_PORT=8080`n")
     }
     Initialize-SecretFile
+    Initialize-SetupCode
 }
 
 function Initialize-SecretFile {
@@ -140,6 +142,37 @@ function Initialize-SecretFile {
     Write-Host 'Copy these files into your password manager now. Without them the stored card numbers' -ForegroundColor Yellow
     Write-Host 'and IBANs can never be read again.' -ForegroundColor Yellow
     Write-Host ''
+}
+
+# A setup code (login FR-1, FR-9): 24 characters without look-alikes such as 0 and O, in groups of four.
+function New-SetupCode {
+    $alphabet = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'
+    $random = [System.Security.Cryptography.RandomNumberGenerator]::Create()
+    $byte = New-Object byte[] 1
+    $chars = New-Object System.Collections.Generic.List[char]
+    while ($chars.Count -lt 24) {
+        $random.GetBytes($byte)
+        # 248 is the largest multiple of 31 up to 256: bytes above it are skipped, so every character is equally likely.
+        if ($byte[0] -lt 248) { $chars.Add($alphabet[$byte[0] % $alphabet.Length]) }
+    }
+    $groups = for ($i = 0; $i -lt 24; $i += 4) { -join $chars[$i..($i + 3)] }
+    $groups -join '-'
+}
+
+function Show-SetupCode {
+    Write-Host ''
+    Write-Host "Setup code: $(Get-Content -Raw (Join-Path $SecretsDir 'Setup__Code'))" -ForegroundColor Green
+    Write-Host 'Open Monthwise and enter this setup code to create the first user. If no household admin can'
+    Write-Host "sign in any more, it also resets a household admin's password. It works once; keep it private."
+    Write-Host ''
+}
+
+# New installations and updates of older ones get a setup code; it is shown once, when it is made.
+function Initialize-SetupCode {
+    $file = Join-Path $SecretsDir 'Setup__Code'
+    if (Test-Path $file) { return }
+    Write-PlainFile $file (New-SetupCode)
+    Show-SetupCode
 }
 
 function Connect-Registry {
@@ -324,11 +357,21 @@ switch ($Command) {
         Invoke-Compose up --detach
         if ($Argument -eq 'on') {
             Write-Host "Other devices on your network can now connect to port $(Get-EnvValue 'MONTHWISE_PORT' '8080') of this computer."
-            Write-Host 'Until login exists, anyone who can reach it can see and change all data.' -ForegroundColor Yellow
+            Write-Host 'Everyone who connects has to sign in with a Monthwise user.'
         }
         else {
             Write-Host 'Only this computer can connect to Monthwise.'
         }
+    }
+    'new-setup-code' {
+        if (-not (Test-Path $EnvFile)) { Fail 'Start Monthwise once first: monthwise.ps1 start' }
+        Initialize-Docker
+        Write-PlainFile (Join-Path $SecretsDir 'Setup__Code') (New-SetupCode)
+        # Monthwise reads its secrets when it starts.
+        Invoke-Compose up --detach
+        Invoke-Compose restart app
+        Wait-Ready
+        Show-SetupCode
     }
     'remove' {
         Initialize-Docker
@@ -347,7 +390,7 @@ switch ($Command) {
         }
     }
     default {
-        Write-Host 'Usage: monthwise.ps1 start [-Open] | stop | update [version] | status | logs | network on|off | remove [-Data]'
+        Write-Host 'Usage: monthwise.ps1 start [-Open] | stop | update [version] | status | logs | network on|off | new-setup-code | remove [-Data]'
         exit 2
     }
 }

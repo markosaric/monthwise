@@ -5,7 +5,7 @@ using Monthwise.Domain.DataTransfer;
 namespace Monthwise.Application.DataTransfer;
 
 /// <summary>The top of the Data and backups section and the Dashboard reminder (backup and restore FR-1, FR-9, FR-10).</summary>
-public sealed class DataOverviewHandler(IDataTransferRepository repository, TimeProvider timeProvider)
+public sealed class DataOverviewHandler(IDataTransferRepository repository, ICurrentUser currentUser, TimeProvider timeProvider)
 {
     private static readonly DataTransferKind[] ExportKinds = [DataTransferKind.Export];
     private static readonly DataTransferKind[] ImportKinds = [DataTransferKind.Import, DataTransferKind.SafetyCopyRestore];
@@ -23,8 +23,8 @@ public sealed class DataOverviewHandler(IDataTransferRepository repository, Time
             lastImport?.ToResponse(),
             safetyCopyCreatedAt,
             reminder.ToResponse(now, lastExport?.OccurredAt),
-            // Login comes in a later phase; until then whoever uses Monthwise may export and import.
-            CanManage: true);
+            // Only a household admin may export and import (FR-1, login FR-10).
+            CanManage: currentUser.IsHouseholdAdmin);
     }
 }
 
@@ -47,6 +47,7 @@ public sealed class ExportDataHandler(
     IExportFileCodec codec,
     IDataTransferRepository repository,
     IUnitOfWork unitOfWork,
+    ICurrentUser currentUser,
     TimeProvider timeProvider)
 {
     public async Task<Result<ExportFile>> HandleAsync(ExportRequest request, CancellationToken cancellationToken)
@@ -68,12 +69,14 @@ public sealed class ExportDataHandler(
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
             repository.Add(DataTransferRecord.Create(
-                DataTransferKind.Export, now, succeeded: false, ReleaseVersion.Current, fileName, message: DataTransferErrors.ExportFailed.Message));
+                DataTransferKind.Export, now, succeeded: false, ReleaseVersion.Current, fileName, message: DataTransferErrors.ExportFailed.Message,
+                userName: currentUser.DisplayName));
             await unitOfWork.SaveChangesAsync(cancellationToken);
             throw;
         }
 
-        repository.Add(DataTransferRecord.Create(DataTransferKind.Export, now, succeeded: true, ReleaseVersion.Current, fileName));
+        repository.Add(DataTransferRecord.Create(
+            DataTransferKind.Export, now, succeeded: true, ReleaseVersion.Current, fileName, userName: currentUser.DisplayName));
         await unitOfWork.SaveChangesAsync(cancellationToken);
         return Result.Success(new ExportFile(fileName, content));
     }
@@ -89,6 +92,7 @@ public sealed class ImportDataHandler(
     IDataTransferRepository repository,
     IUnitOfWork unitOfWork,
     ImportGate gate,
+    ICurrentUser currentUser,
     TimeProvider timeProvider)
 {
     public async Task<Result<ImportCheckResponse>> CheckAsync(byte[]? file, string? password, CancellationToken cancellationToken)
@@ -188,7 +192,8 @@ public sealed class ImportDataHandler(
                 {
                     now = timeProvider.GetUtcNow();
                     await KeepSafetyCopyAsync(safetyCopyAt, safetyCopy, ct);
-                    repository.Add(DataTransferRecord.Create(kind, now, succeeded: true, ReleaseVersion.Current, fileName, data.CreatedAt));
+                    repository.Add(DataTransferRecord.Create(
+                        kind, now, succeeded: true, ReleaseVersion.Current, fileName, data.CreatedAt, userName: currentUser.DisplayName));
                     await unitOfWork.SaveChangesAsync(ct);
                 },
                 cancellationToken);
@@ -221,14 +226,15 @@ public sealed class ImportDataHandler(
         {
             repository.Add(SafetyCopy.Create(createdAt, ReleaseVersion.Current, content));
         }
-        repository.Add(DataTransferRecord.Create(DataTransferKind.SafetyCopy, createdAt, succeeded: true, ReleaseVersion.Current));
+        repository.Add(DataTransferRecord.Create(
+            DataTransferKind.SafetyCopy, createdAt, succeeded: true, ReleaseVersion.Current, userName: currentUser.DisplayName));
     }
 
     private async Task RecordAsync(
         DataTransferKind kind, string? fileName, DateTimeOffset? fileCreatedAt, string message, CancellationToken cancellationToken)
     {
         repository.Add(DataTransferRecord.Create(
-            kind, timeProvider.GetUtcNow(), succeeded: false, ReleaseVersion.Current, fileName, fileCreatedAt, message));
+            kind, timeProvider.GetUtcNow(), succeeded: false, ReleaseVersion.Current, fileName, fileCreatedAt, message, currentUser.DisplayName));
         await unitOfWork.SaveChangesAsync(cancellationToken);
     }
 

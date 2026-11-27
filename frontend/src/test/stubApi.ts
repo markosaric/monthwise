@@ -4,12 +4,31 @@ export type ApiHandlers = Record<string, (request: Request) => Response | Promis
 export const json = (body: unknown, status = 200) =>
   Response.json(body, { status, headers: { 'Content-Type': 'application/json' } })
 
-/** Replaces fetch with the given handlers; unknown requests get a 404. Returns the fetch mock. */
+/** The signed-in user of every test unless a test says otherwise (login FR-2). */
+export const signedInAdmin = {
+  id: 'user-admin',
+  displayName: 'Signed-in admin',
+  username: 'signed-in-admin',
+  role: 'HouseholdAdmin' as const,
+  isActive: true,
+  mustChangePassword: false,
+}
+
+/** Who is signed in: a household admin by default; override `GET /api/auth/state` to test sign-in. */
+export const signedIn = {
+  'GET /api/auth/state': () => json({ setupNeeded: false, user: signedInAdmin }),
+}
+
+/**
+ * Replaces fetch with the given handlers; unknown requests get a 404. A household admin is signed in
+ * unless the handlers answer `GET /api/auth/state` themselves. Returns the fetch mock.
+ */
 export function stubApi(handlers: ApiHandlers) {
+  const all: ApiHandlers = { ...signedIn, ...handlers }
   const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const request = input instanceof Request ? input : new Request(input, init)
     const url = new URL(request.url)
-    const handler = handlers[`${request.method} ${url.pathname}`]
+    const handler = all[`${request.method} ${url.pathname}`]
     return handler ? handler(request) : json({ title: 'Not found' }, 404)
   })
   vi.stubGlobal('fetch', fetchMock)

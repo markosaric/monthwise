@@ -1,7 +1,7 @@
 # Plan: Login
 
 - **Branch:** `feat/login`
-- **Status:** In progress
+- **Status:** Done
 - **Date:** 2026-11-27
 - **Requirements:** [login.md](../feature-requirements/login.md)
 
@@ -221,3 +221,32 @@ linked from `docs/INIT.md` (Tech stack: "Authentication" is no longer "planned")
 
 ## Open questions
 - None.
+
+## Changes during implementation
+- **Identity schema version 1:** Identity's newest schema adds a passkey table. Monthwise pins
+  `IdentitySchemaVersions.Version1`, so there is no `app_user_passkey` table and the design-time
+  and runtime models match. Passkeys stay a later option (ADR 0008).
+- **Storage packages:** Infrastructure also references
+  `Microsoft.AspNetCore.Identity.EntityFrameworkCore` and
+  `Microsoft.AspNetCore.DataProtection.EntityFrameworkCore`; the architecture test allows these two.
+- **Authorization without a fallback policy:** a fallback policy also applied to requests with no
+  endpoint (static files, unknown paths, the API docs). Instead the `/api` group has
+  `RequireAuthorization()` with the default policy "signed in, without a temporary password", and
+  the anonymous endpoints say `AllowAnonymous()`. Sign-out and own password change carry
+  `AllowTemporaryPassword()` metadata instead of a second policy. `AddDataPolicies` is gone; the
+  `HouseholdAdmin` policy lives in `LoginHosting`.
+- **Logging category:** sign-in, setup and user changes log through `ILogger<LoginLog>`.
+- **Form errors:** an API error without a field (such as a wrong sign-in) is shown as the form's
+  message (`applyApiErrors` returns `errors[""]`) instead of the problem's title.
+- **Test clients:** `SignedInClients` extensions on `WebApplicationFactory<Program>`, so tests that
+  configure the factory with `WithWebHostBuilder` sign in too. Tests that used a synchronous
+  `getBy` right after the first render now wait with `findBy`, since the app first loads the
+  sign-in state.
+- **Azure:** the setup code is mounted as the file `Setup__Code` in `/config/secrets`, like the
+  other secrets, instead of an environment variable. `deploy.sh --new-setup-code` writes a new Key
+  Vault version, sets the app's secret reference again so it is read at once, and restarts the
+  active revision.
+- **Setup code printing:** the scripts print the code when they create it (first start, or the
+  first start after an update from a version without login) and on `new-setup-code`, not on every
+  start.
+- **Smoke test:** also checks that `/api/dashboard` answers 401 without signing in.

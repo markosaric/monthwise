@@ -49,8 +49,9 @@ public sealed class SecurityHeadersTests : IDisposable
         await using var factory = new MonthwiseApiFactory(UnreachableDatabase, migrateOnStartup: false, _webRoot);
         using var client = factory.CreateClient();
 
-        // The database cannot be reached, so reading the cards fails inside the endpoint.
-        var response = await client.GetAsync(new Uri("/api/cards", UriKind.Relative), Ct);
+        // The database cannot be reached, so reading whether setup is needed fails inside the endpoint
+        // (an endpoint that needs no sign-in, so the request reaches it).
+        var response = await client.GetAsync(new Uri("/api/auth/state", UriKind.Relative), Ct);
 
         Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
         AssertProtected(response);

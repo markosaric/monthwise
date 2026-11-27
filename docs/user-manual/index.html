@@ -45,6 +45,7 @@
 <nav class="toc" aria-label="Contents">
 <ol>
   <li><a href="#start">Getting started</a></li>
+  <li><a href="#sign-in">Sign in and users</a></li>
   <li><a href="#dashboard">Dashboard</a></li>
   <li><a href="#month">Month</a></li>
   <li><a href="#cashflow">Cash flow</a></li>
@@ -72,12 +73,53 @@
   <li><strong>Typing amounts</strong>: <code>1.234,56</code>, <code>1234,56</code> and <code>1234.56</code> all work. <code>1.234</code> is refused, because it could mean a thousand or one euro: write <code>1234</code> or <code>1,23</code>.</li>
   <li><strong>Tiles at the top of a screen</strong> show only an icon and a number. To see what a number is, point at its icon, move to it with the Tab key, or long-press the icon on a phone.</li>
   <li><strong>Dates</strong> run from January 2000 to December 2100.</li>
-  <li><strong>One person at a time.</strong> Monthwise is made for one person keeping the household's books. If the same thing is edited in two tabs or on two devices at once, the last save wins.</li>
+  <li><strong>Several people, one household.</strong> Everyone signs in with their own user (see <a href="#sign-in">Sign in and users</a>) and sees the same data. If the same thing is edited in two tabs or on two devices at once, the last save wins.</li>
   <li><strong>When something goes wrong</strong>: if a screen cannot be shown, a short message offers to reload or go to the Dashboard; the menu keeps working. A red <em>System problem</em> box at the bottom of the menu (a bar above the bottom menu on a phone) means the app cannot reach its server or database.</li>
   <li>The <span class="ui">Savings</span> screen is not built yet.</li>
 </ul>
 
-<h2 id="dashboard">2. Dashboard</h2>
+<h2 id="sign-in">2. Sign in and users</h2>
+<p>Everyone who uses Monthwise signs in with their own username and password. All users see and change the same household data; a <em>household admin</em> also manages users and exports and imports data.</p>
+<h3 id="sign-in-first">The first start</h3>
+<p>A new installation, and an installation updated from a version without sign-in, shows only <span class="ui">Set up Monthwise</span>. Enter the <strong>setup code</strong>, your display name, a username and a password (at least 12 characters, spaces allowed) to create the first household admin. Your data stays as it was.</p>
+<figure><img src="images/setup.jpg" alt="Set up Monthwise form"><figcaption>Set up Monthwise</figcaption></figure>
+<p>Only the person who installed Monthwise can see the setup code:</p>
+<div class="table-wrap"><table>
+<tr><th>Installation</th><th>Where the setup code is</th></tr>
+<tr><td>Docker one-click and native service</td><td>The start or install command prints it, for example <code>Setup code: 7KQM-2WXR-…</code>. It is also the file <em>Setup__Code</em> in the secrets folder (see <a href="#install">Installing Monthwise</a>).</td></tr>
+<tr><td>Azure</td><td><code>deploy.sh</code> prints the command that reads it from Key Vault: <code>az keyvault secret show --vault-name &lt;vault&gt; --name setup-code --query value -o tsv</code></td></tr>
+</table></div>
+<p>Case, spaces and dashes in the code do not matter. A code works once; a wrong code is refused, and many attempts are slowed down.</p>
+<h3 id="sign-in-daily">Signing in and out</h3>
+<figure><img src="images/sign-in.jpg" alt="Sign-in screen"><figcaption>Sign in</figcaption></figure>
+<ul>
+  <li>Without <span class="ui">Stay signed in</span>, you are signed out when you close the browser, or after 12 hours. With it, you stay signed in for 30 days from the last use. Leave it off on a shared device.</li>
+  <li>Each browser and device has its own sign-in. Restarting or updating Monthwise does not sign anyone out.</li>
+  <li>Your name and the <span class="ui">Sign out</span> button are at the bottom of the menu.</li>
+  <li>After 5 wrong passwords in a row, that username is locked for 15 minutes, even with the right password.</li>
+</ul>
+<h3 id="sign-in-users">Users</h3>
+<p><span class="ui">Settings → Users</span> lists who can sign in. A household admin adds, edits and deletes users there; a member sees only their own user.</p>
+<figure><img src="images/users.jpg" alt="Users list"><figcaption>Users</figcaption></figure>
+<ul>
+  <li><span class="ui">Add user</span> asks for a display name, a username, a role and a <strong>temporary password</strong>. Give it to the person yourself; at their first sign-in they choose their own password before anything else.</li>
+  <li>The key button sets a new temporary password for someone who forgot theirs. That signs them out everywhere.</li>
+  <li>An <em>inactive</em> user cannot sign in. A change of role, active or delete applies at once, also on devices where the user is signed in.</li>
+  <li>There is always at least one active household admin: Monthwise refuses to make the last one a member, inactive or deleted.</li>
+  <li>The display name is shown in the menu and as "who" in the Data and backups history, which keeps it after the user is deleted.</li>
+</ul>
+<p><strong>Your own password.</strong> <span class="ui">Settings → Change password</span>: enter the current password and the new one twice. Your other devices are signed out.</p>
+<h3 id="sign-in-recovery">When no household admin can sign in</h3>
+<p>If a member forgot their password, a household admin sets a temporary one. If no household admin can sign in, the person who installed Monthwise makes a new setup code:</p>
+<div class="table-wrap"><table>
+<tr><th>Installation</th><th>Command</th></tr>
+<tr><td>Docker</td><td><code>./monthwise.sh new-setup-code</code> (Mac) or <code>.\monthwise.ps1 new-setup-code</code> (Windows), in the package folder</td></tr>
+<tr><td>Native service</td><td><code>monthwise.sh new-setup-code</code> or <code>monthwise.ps1 new-setup-code</code> in the <em>native</em> folder</td></tr>
+<tr><td>Azure</td><td><code>./deploy.sh --new-setup-code</code> in the <em>deploy/azure</em> folder</td></tr>
+</table></div>
+<p>The command restarts Monthwise and prints the new code (on Azure, the command that reads it). On the sign-in screen choose <span class="ui">Have a setup code?</span>, enter the code and the username of a household admin with a new password: that admin's password is replaced and, if it was inactive, it is active again. With a new username, a new household admin is added. The household data does not change. The username of a member cannot be used here.</p>
+
+<h2 id="dashboard">3. Dashboard</h2>
 <p>The home screen answers “how is this month going?”.</p>
 <figure><img src="images/dashboard.jpg" alt="Dashboard with inputs, outputs, month result, overdue warning and charts"><figcaption>Dashboard</figcaption></figure>
 <ul>
@@ -88,7 +130,7 @@
   <li><strong>Cash flow</strong>: a chart of inputs vs. outputs of the last six months; open it for the Cash flow screen. The small tiles under Coming up link to loans, cards, shared costs and recurring bills.</li>
 </ul>
 
-<h2 id="month">3. Month</h2>
+<h2 id="month">4. Month</h2>
 <p>The working screen: everything that comes in and goes out in one month. Use the arrows next to the title to move between months.</p>
 <figure><img src="images/month.jpg" alt="Month screen with income, bills, expenses, loan payments and card payments"><figcaption>Month: income, bills, expenses, loan and card payments</figcaption></figure>
 <ul>
@@ -103,11 +145,11 @@
 <figure><img src="images/new-input.jpg" alt="Add input form"><figcaption>Adding an input. Turn on <em>Recurring</em> for salary and other regular income.</figcaption></figure>
 <p class="tip">A bill or expense paid with a credit or charge card is not taken from your account straight away: it becomes part of that card's next card payment. Paid with a revolving card, it adds to that card's debt.</p>
 
-<h2 id="cashflow">4. Cash flow</h2>
+<h2 id="cashflow">5. Cash flow</h2>
 <p>Shows inputs and outputs over time: <span class="ui">This month</span> (day by day), <span class="ui">Last 12 months</span> or <span class="ui">This year</span>. Use <span class="ui">Filters</span> to narrow by payer, account or category, and <span class="ui">Show as table</span> for the numbers. Click a month in the list for its monthly report, which also lists that month's starting balances and corrections.</p>
 <figure><img src="images/cash-flow.jpg" alt="Cash flow chart for the current month"><figcaption>Cash flow</figcaption></figure>
 
-<h2 id="cards">5. Cards, installments and revolving cards</h2>
+<h2 id="cards">6. Cards, installments and revolving cards</h2>
 <p>The <span class="ui">Cards</span> screen shows the balance of each account now and at the end of the month, every card that allows installments, and your revolving cards.</p>
 <figure><img src="images/cards.jpg" alt="Cards screen with account balances and cards with installments"><figcaption>Cards</figcaption></figure>
 <ul>
@@ -126,45 +168,46 @@
   <li>A card with debt cannot be archived. When the bank issues a new card, mark the old one expired with the new one as its replacement, and the debt moves over.</li>
 </ul>
 
-<h2 id="loans">6. Loans and leasing</h2>
+<h2 id="loans">7. Loans and leasing</h2>
 <p>All bank loans and leases with monthly payment, progress and what is left to repay. <span class="ui">Add loan</span> asks for the lender, start month, payment day, monthly amount and number of payments (and a residual value for a lease).</p>
 <figure><img src="images/loans.jpg" alt="Loans and leasing overview"><figcaption>Loans and leasing</figcaption></figure>
 <p>Open a loan to see each payment. <span class="ui">Add payment change</span> records a new monthly amount or payment day from a given month (e.g. after a rate change). <span class="ui">Close loan</span> ends a loan that is paid off early.</p>
 <figure><img src="images/loan-details.jpg" alt="Loan detail with payments"><figcaption>One loan with its payments</figcaption></figure>
 <p class="tip">Payments by <em>standing order</em> are marked paid automatically on their date. Payments by <em>bill</em> wait until you tick them.</p>
 
-<h2 id="shared">7. Shared costs</h2>
+<h2 id="shared">8. Shared costs</h2>
 <p>For costs you split with someone (a partner or flatmate). Add the person under <span class="ui">Add participant</span>, then set their share on a recurring bill or loan. Each month Monthwise calculates what they owe you and lists it here and as an expected input on the Month screen. Tick a contribution when you receive the money.</p>
 <figure><img src="images/shared-costs.jpg" alt="Shared costs with outstanding contributions per participant"><figcaption>Shared costs</figcaption></figure>
 
-<h2 id="lending">8. Lending</h2>
+<h2 id="lending">9. Lending</h2>
 <p>For money you lend to someone, such as a friend or a relative, who will give it back later. <span class="ui">Add lending</span> asks for the borrower, the amount, the lend date, the account the money leaves and the date you expect it back, with an optional description. The borrower comes from the same list as the payers of inputs: pick a name that is suggested or type a new one, and it is added to the list (rename or remove it in <span class="ui">Settings → Payers</span>).</p>
 <p>The lent amount is an output of its account on the lend date. It is not an expense, a bill or a cash withdrawal. When money comes back, use <span class="ui">Record repayment</span> on the lending: the amount is prefilled with everything still owed and the account with the one the money left, so returning everything at once takes one click. A lending can be returned in several repayments, each an input of the account it arrives on. Until everything is back, what is still owed is an expected input on the expected return date. When the borrower asks for more time, edit the lending and change that date.</p>
 <p>The Lending screen shows what is still owed and the overdue part, a card per lending and the totals per borrower. A lending whose expected date has passed is marked <em>Overdue</em> in red here, on the Month screen and on the Dashboard. When everything is returned it is <em>Returned</em> and moves to the <span class="ui">Returned</span> filter. The Month screen has its own Lending list, and the Cash flow chart and monthly report show lending in its own group; the chart can be filtered by borrower.</p>
 
-<h2 id="settings">9. Settings</h2>
+<h2 id="settings">10. Settings</h2>
 <p>Lists the app uses everywhere: cards and accounts, payers, input categories, expense categories, loan categories and recurring bills. Add your own entries next to the starting ones. A category that is already in use cannot be deleted; hide it instead. The starting categories are shown in the chosen language until you rename them; a name you type is always shown as you typed it.</p>
 <figure><img src="images/settings.jpg" alt="Settings overview"><figcaption>Settings</figcaption></figure>
 <p>Card numbers and IBANs are stored encrypted and shown only on request. Open an account and choose <span class="ui">Add correction</span> when its balance differs from your bank; corrections change the balance but do not count as income or output.</p>
 <p id="language"><strong>Language.</strong> Under <span class="ui">Language</span> you choose <em>English</em> or <em>Hrvatski</em> (Croatian). The choice is remembered on that device, and the page reloads in the chosen language. Until a language is chosen, Monthwise follows the browser's language. Amounts and dates look the same in both languages, and the language never changes any stored data.</p>
 <p>At the bottom, Settings shows the Monthwise version and the time zone it uses for "today" (see <a href="#install">Installing Monthwise</a>).</p>
+<p>The <span class="ui">Users</span> tile and <span class="ui">Change password</span> are described in <a href="#sign-in">Sign in and users</a>.</p>
 <p>The <span class="ui">Data and backups</span> tile, in the <em>Data</em> group, exports and imports all your data; see <a href="#data">Data and backups</a>.</p>
 
-<h2 id="phone">10. On the phone</h2>
+<h2 id="phone">11. On the phone</h2>
 <p>Monthwise works in a phone browser too. The menu moves to a bar at the bottom of the screen; everything else works the same.</p>
 <figure class="phone"><img src="images/mobile-dashboard.jpg" alt="Dashboard on a phone"><figcaption>Dashboard on a phone</figcaption></figure>
-<h2 id="install">11. Installing Monthwise</h2>
+<h2 id="install">12. Installing Monthwise</h2>
 <p>Monthwise runs in one of three ways. All three use the same version of the app, and its data can move between them.</p>
 <div class="table-wrap"><table>
 <tr><th>Way</th><th>Best for</th><th>Cost</th></tr>
 <tr><td><a href="#install-docker">Docker one-click</a></td><td>Starting out on your Mac or Windows PC; the same package later runs on an always-on machine</td><td>€0</td></tr>
 <tr><td><a href="#install-native">Native background service</a></td><td>Your Mac or Windows PC without Docker; starts by itself when you log in</td><td>€0</td></tr>
-<tr><td><a href="#install-azure">Azure</a></td><td>Reaching Monthwise from anywhere over HTTPS, once login exists</td><td>about €15–20 per month after the free first year</td></tr>
+<tr><td><a href="#install-azure">Azure</a></td><td>Reaching Monthwise from anywhere over HTTPS</td><td>about €15–20 per month after the free first year</td></tr>
 </table></div>
 <p>To move Monthwise from one way to another, export your data on the old one and import it on the new one (see <a href="#data">Data and backups</a>).</p>
 <p>Every way needs the <a href="https://cli.github.com/">GitHub CLI</a>, because the Monthwise repository is private. Sign in once with <code>gh auth login</code>, then allow it to download the app image with <code>gh auth refresh --scopes read:packages</code>.</p>
 <p><strong>Time zone.</strong> Monthwise decides what "today" and the current month are in the household time zone, <code>Europe/Zagreb</code> unless you change it, whatever time zone your computer or Azure runs in. To use another one, give an IANA time zone name such as <code>Europe/Vienna</code>: on Docker and the native service add <code>"Household": { "TimeZone": "Europe/Vienna" }</code> to <em>settings.json</em> in the settings folder and restart Monthwise; on Azure set the container app's environment variable <code>Household__TimeZone</code>. An unknown name stops Monthwise from starting, and the log says which setting is wrong.</p>
-<div class="tip"><strong>Your secrets.</strong> On the first start Monthwise creates a database password and two encryption keys for card numbers and IBANs, and shows the folder they are in. Copy the files in that folder into your password manager straight away. Without them the stored card numbers and IBANs can never be read again, for example on a new computer. Monthwise never creates new keys for a database that already exists.</div>
+<div class="tip"><strong>Your secrets.</strong> On the first start Monthwise creates a database password and two encryption keys for card numbers and IBANs, and shows the folder they are in. Copy the files in that folder into your password manager straight away. Without them the stored card numbers and IBANs can never be read again, for example on a new computer. Monthwise never creates new keys for a database that already exists. It also creates and prints the <a href="#sign-in-first">setup code</a> for the first user; that one does not need to be kept.</div>
 
 <h3 id="install-docker">Docker one-click</h3>
 <ol>
@@ -179,7 +222,8 @@
 <tr><td><code>stop</code></td><td>Stops Monthwise. The data is kept.</td></tr>
 <tr><td><code>update</code> (or <code>update 1.2.0</code>)</td><td>Downloads the newest (or the given) version and restarts with all data kept. It saves an <a href="#install-update-backups">update backup</a> first, and goes back to the version before if the new one does not start. Monthwise then stays on that version until the next update; a new installation runs the version of the package you downloaded.</td></tr>
 <tr><td><code>status</code> / <code>logs</code></td><td>Shows whether it runs and its version, or the last log lines.</td></tr>
-<tr><td><code>network on</code> / <code>network off</code></td><td>Allows or stops connections from other devices, for example your phone through Tailscale. Off by default.</td></tr>
+<tr><td><code>network on</code> / <code>network off</code></td><td>Allows or stops connections from other devices, for example your phone through Tailscale. Off by default. Everyone who connects must sign in.</td></tr>
+<tr><td><code>new-setup-code</code></td><td>Makes a new setup code, restarts Monthwise and prints the code, for when no household admin can sign in (see <a href="#sign-in-recovery">Sign in and users</a>).</td></tr>
 <tr><td><code>remove</code> (<code>remove --data</code> on a Mac, <code>remove -Data</code> on Windows)</td><td>Removes Monthwise from Docker and keeps the data, unless you ask for the data to go too and type <code>DELETE</code>.</td></tr>
 </table></div>
 <p><strong>Where things are.</strong> The data is in the Docker volume <code>monthwise-pgdata</code>. The secrets and settings are in <em>~/Library/Application Support/Monthwise/docker</em> on a Mac and in <em>%LOCALAPPDATA%\Monthwise\docker</em> on Windows. Only your user account can open that folder.</p>
@@ -191,7 +235,7 @@
   <li><strong>Windows:</strong> <code>gh release download --repo markosaric/monthwise --pattern monthwise-native-windows.ps1</code>, then in PowerShell run <code>powershell -ExecutionPolicy Bypass -File .\monthwise-native-windows.ps1 install</code>. PostgreSQL comes with the release; no administrator rights are needed.</li>
   <li>Open <code>http://localhost:8080</code> and add it to the Dock or the taskbar as above.</li>
 </ol>
-<p>The installer copies its script into the Monthwise folder: <em>~/Library/Application Support/Monthwise/native/monthwise.sh</em> on a Mac, <em>%LOCALAPPDATA%\Monthwise\native\monthwise.ps1</em> on Windows. It takes <code>start</code>, <code>stop</code>, <code>update</code>, <code>status</code>, <code>logs</code> and <code>network on|off</code> like the Docker commands, and <code>uninstall</code>. Like the Docker command, <code>update</code> saves an <a href="#install-update-backups">update backup</a> first, and if the new version does not start, it puts the data back and goes back to the previous version by itself. <code>uninstall</code> keeps the data, secrets and logs unless you add <code>--data</code> (Mac) or <code>-Data</code> (Windows) and type <code>DELETE</code>.</p>
+<p>The installer copies its script into the Monthwise folder: <em>~/Library/Application Support/Monthwise/native/monthwise.sh</em> on a Mac, <em>%LOCALAPPDATA%\Monthwise\native\monthwise.ps1</em> on Windows. It takes <code>start</code>, <code>stop</code>, <code>update</code>, <code>status</code>, <code>logs</code>, <code>network on|off</code> and <code>new-setup-code</code> like the Docker commands, and <code>uninstall</code>. Like the Docker command, <code>update</code> saves an <a href="#install-update-backups">update backup</a> first, and if the new version does not start, it puts the data back and goes back to the previous version by itself. <code>uninstall</code> keeps the data, secrets and logs unless you add <code>--data</code> (Mac) or <code>-Data</code> (Windows) and type <code>DELETE</code>.</p>
 <p><strong>Where things are</strong>, in that same <em>native</em> folder: <em>pgdata</em> (the database), <em>config/secrets</em> (the secrets), <em>config/settings.json</em> (the settings) and <em>logs</em> (one log file per day, the last 14 days kept).</p>
 
 <h3 id="install-update-backups">Update backups</h3>
@@ -233,7 +277,7 @@ Remove-Item Env:PGPASSWORD
 <p>If the file name says <code>unknown</code>, use the version you ran before the failed update. The <code>update</code> at the end saves a new update backup of the restored data and starts that version.</p>
 
 <h3 id="install-azure">Azure</h3>
-<div class="tip">Azure gives Monthwise a public HTTPS address. Use it only once login exists.</div>
+<div class="tip">Azure gives Monthwise a public HTTPS address. Everyone must sign in, so choose strong passwords (see <a href="#sign-in">Sign in and users</a>).</div>
 <p>One script sets up everything in an EU region (default West Europe) in the resource group <em>rg-monthwise</em>:</p>
 <div class="table-wrap"><table>
 <tr><th>Resource</th><th>What it is for</th><th>Expected cost per month</th></tr>
@@ -241,7 +285,7 @@ Remove-Item Env:PGPASSWORD
 <tr><td>PostgreSQL Flexible Server, Burstable B1ms</td><td>The database, with 7 days of automatic backups</td><td>€0 for 12 months on a new account, then about €13–15 plus storage</td></tr>
 <tr><td>Virtual network and private DNS zone</td><td>Monthwise's private network: the database has no public address and can be reached only from there</td><td>about €0.50</td></tr>
 <tr><td>Container Apps job <em>caj-monthwise-db-setup</em></td><td>Runs for a few seconds on every deployment to set up Monthwise's own database login</td><td>€0 within the monthly free grant</td></tr>
-<tr><td>Key Vault</td><td>The database passwords and the encryption keys</td><td>a few cents</td></tr>
+<tr><td>Key Vault</td><td>The database passwords, the encryption keys and the setup code</td><td>a few cents</td></tr>
 <tr><td>Log Analytics</td><td>The log, kept 30 days</td><td>€0 at household use</td></tr>
 <tr><td>Budget alert</td><td>Emails you at 80 % of the budget (default 25) and when the month is forecast to go over it</td><td>€0</td></tr>
 </table></div>
@@ -250,14 +294,14 @@ Remove-Item Env:PGPASSWORD
   <li>Create a GitHub token with only the <em>read:packages</em> scope (GitHub → Settings → Developer settings → Personal access tokens), so Azure can download the app image.</li>
   <li>In <a href="https://shell.azure.com">Azure Cloud Shell</a> (Bash), or anywhere with the Azure CLI signed in, get the <em>deploy/azure</em> folder of the repository and run:<br>
   <code>GHCR_USERNAME=&lt;your GitHub user&gt; GHCR_TOKEN=&lt;the token&gt; BUDGET_EMAIL=&lt;your email&gt; ./deploy.sh 1.2.0</code></li>
-  <li>The script prints the address of Monthwise and, the first time, how to copy the encryption keys from Key Vault into your password manager.</li>
+  <li>The script prints the address of Monthwise and, the first time, how to copy the encryption keys from Key Vault into your password manager and how to read the <a href="#sign-in-first">setup code</a> for the first user.</li>
 </ol>
 <p>To update, run the same command with the new version. The data and the secrets are kept. To see the log: <code>az containerapp logs show -g rg-monthwise -n ca-monthwise</code>.</p>
 <p>The database is private: it accepts connections only from Monthwise's own network in Azure, not from the internet, other Azure customers or database tools on your computer. Monthwise signs in with its own login, <em>monthwise_app</em>, which can use only the Monthwise data. The server administrator's password (<em>postgres-password</em> in Key Vault) is never given to Monthwise; you need it only for maintenance from inside the network.</p>
 <p>An installation set up before the database became private cannot be moved in place. <code>deploy.sh</code> then changes nothing and prints the steps: export your data in Settings, deploy into a new resource group (<code>MONTHWISE_RESOURCE_GROUP=rg-monthwise-2</code> in front of the same command), import the file there, check it and delete the old resource group.</p>
 <p>On Azure the database's own automatic backups take the place of update backups. If a new version cannot bring the database up to date, it stops working on the database, and <code>deploy.sh</code> prints the time just before the deployment and the command to restore the database to it (see <a href="#data-azure">Azure's own backups</a>).</p>
 
-<h2 id="data">12. Data and backups</h2>
+<h2 id="data">13. Data and backups</h2>
 <p><span class="ui">Settings → Data and backups</span> saves all your data to one file on your device and brings it back from such a file. The top of the section shows when you last exported and imported.</p>
 <h3 id="data-export">Export</h3>
 <ol>
@@ -272,6 +316,7 @@ Remove-Item Env:PGPASSWORD
   <li>Type <code>REPLACE</code> and choose <span class="ui">Replace all data</span>. An import always replaces <em>all</em> data; it never adds the file to what is there.</li>
 </ol>
 <p>Right before an import Monthwise keeps a <strong>safety copy</strong> of the current data. If the import was a mistake, choose <span class="ui">Bring back</span> under <em>Safety copy</em>. If an import fails, nothing is changed. Files from older versions of Monthwise can be imported; a file from a newer version asks you to update Monthwise first. While an import runs, other screens wait a moment.</p>
+<p>Only a household admin can export and import; members see the history. Users and passwords are never in an export file, and an import does not change them.</p>
 <p>A file exported in one language is the same as one exported in the other, and imports in both. In Croatian the word to type is <code>ZAMIJENI</code>.</p>
 <h3 id="data-reminder">Reminder and history</h3>
 <p>The Dashboard reminds you to export when you have not done so for 30 days. Under <em>Export reminder</em> you can turn it off or choose 7, 14, 30, 60 or 90 days. <span class="ui">Dismiss</span> hides it until the next interval passes without an export.</p>

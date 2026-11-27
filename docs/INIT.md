@@ -141,7 +141,12 @@ share columns        share_participant_id → participant?, share_count? (2–4)
                      (1 … share_count − 1), contribution_account_id → card?   (all set for a shared cost)
 balance_snapshot     id, account_id, date, balance_cents   (planned; savings balances; card and current
                      account balances are balance_entry)
-user                 id, email, household_id, role   (planned)
+app_user             id, user_name, normalized_user_name, display_name, role (HouseholdAdmin|Member), is_active,
+                     must_change_password, password_hash, security_stamp, lockout_end?, access_failed_count, …
+                     (ASP.NET Core Identity; with app_user_claim, app_user_login, app_user_token)
+data_protection_key  id, friendly_name?, xml   (the keys that protect the sign-in cookie)
+setup_code_use       id, code_hash, used_at   (setup codes already used; see docs/feature-requirements/login.md)
+                     (all login tables are installation tables, see ADR 0008)
 data_transfer_log    id, occurred_at, kind (Export|Import|SafetyCopy|SafetyCopyRestore), user_name?, succeeded,
                      file_name?, release, file_created_at?, message?
                      (installation tables, not household data: never exported, never replaced by an import;
@@ -171,7 +176,7 @@ Key rules:
 | Back-end | **.NET 10 (LTS) – ASP.NET Core Web API**, minimal APIs or controllers, FluentValidation, OpenAPI | strongly typed, mature, good performance; OpenAPI spec is used to generate the TypeScript client for the front-end |
 | Data access | **Entity Framework Core** + Npgsql, code-first migrations | schema versioned in code; `decimal`/cents mapping kept exact |
 | Database | **PostgreSQL** | relational data (months, installments, accounts) and exact calculations |
-| Authentication (planned) | ASP.NET Core Identity (cookie auth) | one household, 1–2 users, no external provider needed |
+| Authentication | ASP.NET Core Identity (cookie auth), built-in accounts with the roles household admin and member; every endpoint needs a signed-in user unless it is marked anonymous; changing API calls carry the header `X-Monthwise-Request` | one household, a few users, works the same offline on every target; see [login.md](feature-requirements/login.md) and [ADR 0008](decisions/0008-built-in-accounts.md) |
 | Tests | xUnit (domain + API), Vitest (front-end) | calculation logic (installments, monthly summary, card reconciliation) is covered by unit tests |
 | Charts | Recharts | income vs. expense trend, debt over time |
 | Local dev | Docker Compose for PostgreSQL | one command to start the database |

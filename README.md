@@ -121,7 +121,7 @@ dotnet user-secrets set "ConnectionStrings:Monthwise" \
   --project src/Monthwise.Api
 ```
 
-### 5. Create the encryption keys for card numbers
+### 5. Create the encryption keys for card numbers and the setup code
 
 Card numbers and IBANs are stored encrypted ([ADR 0005](docs/decisions/0005-encrypted-sensitive-data.md)).
 You create two random keys once: one encrypts the numbers, the other makes the fingerprints used to
@@ -156,6 +156,20 @@ unset ENCRYPTION_KEY HASH_KEY
 
 On another computer, or after a reset, run only step 3 with the values from your password manager
 (replace the variables with the saved values). Do not generate new keys for an existing database.
+
+**4. A setup code for the first user** ([sign-in requirements](docs/feature-requirements/login.md)).
+Every screen needs signing in. On a new database Monthwise shows **Set up Monthwise**, which
+creates the first household admin with this code. Choose any code for your own machine:
+
+```bash
+cd backend
+dotnet user-secrets set "Setup:Code" "$(openssl rand -hex 12)" --project src/Monthwise.Api
+dotnet user-secrets list --project src/Monthwise.Api | grep Setup:Code
+cd ..
+```
+
+A code works once. If you forget your password, set a new code the same way and restart the API.
+The setup form then resets the password of a household admin with that username.
 
 ### 6. Install front-end packages
 
@@ -205,7 +219,8 @@ are skipped, and the test run prints a `NOTICE: MONTHWISE_TEST_DB is not set …
 missed. In CI (`CI=true`, set by GitHub Actions) the same tests fail instead, so CI never passes
 without testing the database. To check before a pull request that the database tests really ran,
 run them the CI way: `CI=true MONTHWISE_TEST_DB="…" dotnet test`. The tests use their own made-up
-encryption keys.
+encryption keys, and API tests sign in with a made-up user
+(`CreateSignedInClientAsync` in `MonthwiseApiFactory`).
 
 ### Troubleshooting
 
@@ -215,6 +230,8 @@ encryption keys.
 - **System problem "Database unhealthy" in the menu:** check `docker compose ps` and that the password in user
   secrets matches `.env`.
 - **API stops on startup with "SensitiveData:… is missing":** create the encryption keys (step 5).
+- **Set up Monthwise says the setup code is not configured:** set `Setup:Code` (step 5, part 4)
+  and restart the API.
 
 ## Building a release
 
@@ -236,6 +253,12 @@ git tag v1.0.0 && git push origin v1.0.0
 The Docker package runs the release it was built with: the workflow writes the version into
 `monthwise.sh` and `monthwise.ps1` (they say `dev` in the repository and refuse to pick a release
 on their own).
+
+**Setup code:** the Docker and native scripts create the secret `Setup__Code` (the setting
+`Setup:Code`) on the first start, and on the first start after an update from a version without
+login. They print it once. `monthwise.sh new-setup-code` (or `monthwise.ps1 new-setup-code`) writes
+a new one, restarts Monthwise and prints it. On Azure it is the Key Vault secret `setup-code`, and
+`deploy/azure/deploy.sh --new-setup-code` makes a new one.
 
 **Pinned build inputs:** every GitHub Action in the workflows is pinned to a commit SHA with its
 version as a comment (`uses: actions/checkout@<sha> # v5.1.0`), and CI fails on an action that is
