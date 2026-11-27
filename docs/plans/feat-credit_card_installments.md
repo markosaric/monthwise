@@ -1,7 +1,7 @@
 # Plan: Credit card installments
 
 - **Branch:** `feat/credit_card_installments`
-- **Status:** In progress
+- **Status:** Done
 - **Date:** 2026-10-08
 - **Requirements:** [credit-card-installments.md](../feature-requirements/credit-card-installments.md) (approved), and
   [credit-card-settings.md, Appendix 2](../feature-requirements/credit-card-settings.md#appendix-2-billing-dates-and-paying-account)

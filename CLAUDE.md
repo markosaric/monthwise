@@ -15,4 +15,6 @@ Monthwise: home finance app (React + TypeScript front-end, .NET 10 Web API back-
   - push rebased branches with `git push --force-with-lease`; never force-push `main`
   - every commit message follows Conventional Commits 1.0.0 (`type(scope): description`)
 - Money is stored as integer cents (EUR); never use floating point for amounts.
+- Every app text is added in English and Croatian in the same branch (`texts.ts` / `texts.hr.ts`, `ServerTexts`); a change users can see also updates both user manuals in `docs/user-manual/`.
+- Every API endpoint needs a signed-in user unless it is explicitly anonymous; see `docs/feature-requirements/login.md` and ADR 0008.
 - Never commit secrets or store them in code (passwords, connection strings with passwords, API keys, tokens, real financial data). Use `.env` and .NET user secrets; see "Secrets and sensitive data" in `CONTRIBUTING.md`.

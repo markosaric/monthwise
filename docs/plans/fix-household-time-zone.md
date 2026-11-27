@@ -1,7 +1,7 @@
 # Plan: "Today" is the household's date, not the server's
 
 - **Branch:** `fix/household-time-zone`
-- **Status:** In progress
+- **Status:** Done
 - **Date:** 2026-11-17
 - **Requirements:** [production-packaging.md, Appendix 6](../feature-requirements/production-packaging.md#appendix-6-today-is-the-households-date-not-the-servers)
 

@@ -1,7 +1,7 @@
 # Plan: Dependency hygiene
 
 - **Branch:** `fix/dependency-hygiene`
-- **Status:** In progress
+- **Status:** Done
 - **Date:** 2026-11-16
 - **Requirements:** [production-packaging.md, Appendix 4](../feature-requirements/production-packaging.md#appendix-4-no-known-high-risk-vulnerabilities-kept-current-automatically)
 

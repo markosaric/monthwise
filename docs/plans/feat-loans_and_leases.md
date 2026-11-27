@@ -1,7 +1,7 @@
 # Plan: Loans and leases
 
 - **Branch:** `feat/loans_and_leases`
-- **Status:** Draft
+- **Status:** Done
 - **Date:** 2026-10-08
 - **Requirements:** [loans-and-leases.md](../feature-requirements/loans-and-leases.md) (approved), and
   [input-cash-flow.md, Appendix 1](../feature-requirements/input-cash-flow.md#appendix-1-loan-payments-in-the-account-balance-chart-and-report)

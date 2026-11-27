@@ -1,7 +1,7 @@
 # Plan: The Azure database is private, and Monthwise uses its own database login
 
 - **Branch:** `fix/azure-database-access`
-- **Status:** In progress
+- **Status:** Done
 - **Date:** 2026-11-16
 - **Requirements:** [production-packaging.md, Appendix 5](../feature-requirements/production-packaging.md#appendix-5-the-azure-database-is-private-and-monthwise-uses-its-own-database-login)
 

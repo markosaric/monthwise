@@ -1,8 +1,9 @@
 # Monthwise
 
 Personal home finance app for tracking monthly income and expenses, card purchases in installments,
-revolving cards, loans and leases, and costs shared with other people. Card statement
-reconciliation and savings are planned and not built yet.
+revolving cards, loans and leases, costs shared with other people and money lent to them. Everyone
+in the household signs in with their own user and sees the same data. The app is in English and
+Croatian. Card statement reconciliation and savings are planned and not built yet.
 
 Starting document with the domain, data model and architecture: [docs/INIT.md](docs/INIT.md).
 Architecture decisions: [docs/decisions](docs/decisions/README.md). Working practices: [CONTRIBUTING.md](CONTRIBUTING.md).
@@ -15,6 +16,11 @@ A short guide to every screen, with screenshots of made-up data, in English
 source, so open the file in a browser from your clone (or download it with its `images/` folder).
 The app itself is in English or Croatian, chosen in Settings.
 
+**Sign in**: everyone signs in with their own user; a new installation first asks for its setup
+code to create the first household admin, who manages users in Settings.
+
+![Sign in](docs/user-manual/images/sign-in.jpg)
+
 **Dashboard**: how the current month is going, what is overdue and what is coming up.
 
 ![Dashboard](docs/user-manual/images/dashboard.jpg)
@@ -23,6 +29,10 @@ The app itself is in English or Croatian, chosen in Settings.
 received or paid.
 
 ![Month](docs/user-manual/images/month.jpg)
+
+**Cash flow**: inputs and outputs over time, with a monthly report.
+
+![Cash flow](docs/user-manual/images/cash-flow.jpg)
 
 **Cards**: account balances now and at month end, cards with purchases in installments, and
 revolving cards with their debt and monthly bill.
@@ -36,6 +46,14 @@ revolving cards with their debt and monthly bill.
 **Shared costs**: what people who share bills and loans with you still owe.
 
 ![Shared costs](docs/user-manual/images/shared-costs.jpg)
+
+**Lending**: money lent to someone outside the household, its repayments, and what is still owed
+or overdue.
+
+**Settings**: cards and accounts, payers, categories, recurring bills, users, language, and data
+export and import.
+
+![Settings](docs/user-manual/images/settings.jpg)
 
 ## Development process
 

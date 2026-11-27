@@ -13,6 +13,7 @@ Replace the manual monthly budget kept in Numbers with an app that:
 - **reconciles** the calculated card statement amount with the actual bank statement (planned),
 - shows the **available budget** (calculated and actual) and the **carryover** into the next month (carryover planned),
 - gives an overview of **debt** (short-term: cards; long-term: loans, leasing),
+- tracks **money lent** to people outside the household until it is returned,
 - tracks **savings** (account balances over time) (planned),
 - works on both phone and desktop.
 
@@ -84,7 +85,7 @@ revolving_bill       id, card_id, month, minimum_cents?, interest_cents? (correc
                      only when paid, unticked or corrected)
 card_issuer          id, name, is_predefined   (Visa, Mastercard, … extendable by the user)
 bank                 id, name, is_predefined   (ZaBa, PBZ, … extendable by the user)
-payer                id, name, removed_on?   (saved automatically when an input names it)
+payer                id, name, removed_on?   (saved automatically when an input or a lending names it)
 input_category       id, name, is_predefined, hidden_on?   (Salary, Salary add-ons, … extendable)
 cash_flow_input      id, payer_id, category_id, account_id → card, amount_cents, issue_date,
                      expected_date, received_date?, description?, recurring_input_id?, occurrence_date?,
@@ -97,8 +98,9 @@ recurring_input      id, payer_id, category_id, account_id → card, amount_cent
                      (occurrences are CALCULATED; one is stored as cash_flow_input only when changed or received)
 skipped_occurrence   recurring_input_id, occurrence_date   (a deleted occurrence)
 balance_entry        id, account_id → card, kind (Starting|Correction), date, balance_cents, note?
-                     (balance at the end of that date; account balance = latest entry + inputs received
-                     − loan and card payments, bills and expenses paid from it after it)
+                     (balance at the end of that date; account balance = latest entry + inputs and lending
+                     repayments received − loan and card payments, bills, expenses and lendings paid from it
+                     after it)
 period               id, household_id, year, month, opening_carryover_cents, closed_at   (planned)
 expense_category     id, name, is_predefined, is_fixed, hidden_on?
                      (one list for card purchases, bills and expenses: Electricity, Groceries, … extendable;
@@ -137,6 +139,13 @@ loan_subcategory     id, category_id → loan_category, name, is_predefined, hid
 participant          id, name, payer_id → payer, description?, archived_on?
                      (a person outside the household who shares bills and loans; see
                      docs/feature-requirements/shared-bills.md)
+lending              id, payer_id → payer (the borrower), amount_cents, lend_date, from_account_id → card,
+                     expected_return_date, description?
+                     (money lent outside the household: an output of its account on the lend date; what is
+                     still owed is CALCULATED and is an expected input on the expected return date; see
+                     docs/feature-requirements/money-lending.md)
+lending_repayment    id, lending_id, amount_cents, received_date, to_account_id → card, note?
+                     (an input of its account on the received date)
 share columns        share_participant_id → participant?, share_count? (2–4), participant_share_count?
                      (1 … share_count − 1), contribution_account_id → card?   (all set for a shared cost)
 balance_snapshot     id, account_id, date, balance_cents   (planned; savings balances; card and current
@@ -195,7 +204,9 @@ Importing history from Numbers is out of scope for now.
 
 ```
 /frontend                        React app (Vite)
-  /src/pages                     dashboard, month, cards, loans, savings, settings
+  /src/pages                     dashboard, month, cash flow, cards, loans, shared costs, lending,
+                                 savings, settings (with users and password)
+  /src/components/login          set up, sign in and the sign-in gate
   /src/components                UI components (/design: shared design-refresh building blocks)
   /src/api                       generated API client
 /backend
@@ -206,7 +217,7 @@ Importing history from Numbers is out of scope for now.
   /tests/Monthwise.Domain.Tests
   /tests/Monthwise.Api.Tests
   Monthwise.sln
-/docs                            INIT.md, decisions (ADR)
+/docs                            INIT.md, feature requirements, plans, decisions (ADR), user manual
 docker-compose.yml               PostgreSQL for local development
 Dockerfile                       release image: the API serving the built front-end
 /deploy                          Docker one-click, native service and Azure scripts, smoke test
@@ -227,6 +238,11 @@ The look of all screens (colours, fonts, key figures, charts, the collapsible me
 4. **Loans and leasing** – monthly payment, due date, share.
 5. **Savings** (planned) – account balances over time.
 6. **Settings** – categories, recurring items, accounts/cards, shares.
+
+Built since: **Cash flow** (inputs and outputs over time, monthly report), **Shared costs**
+(contributions of participants), **Lending** (money lent and its repayments), **Sign in** with
+**Settings → Users** and **Change password**, and **Settings → Data and backups** (export and
+import). The user manual in [user-manual/](user-manual/index.html) describes every screen.
 
 ## 6. Plan
 
